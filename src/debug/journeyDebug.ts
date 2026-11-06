@@ -12,6 +12,8 @@ export interface JourneyDebug {
   anchors(): Record<string, [number, number]> | null;
   /** The sound: whether it is on, how loud, and which of its effects have played. */
   sound(): { on: boolean; running: boolean; context: string; level: number; counts: Record<string, number>; landed: boolean };
+  /** How far along the flight, how fast, and through what lens. */
+  flight(): { s: number; speed: number; fov: number } | null;
 }
 
 declare global {

@@ -14,7 +14,7 @@ export function canvasOpaque(f: number): boolean {
   return f >= 372;
 }
 
-/** How far the circle has opened as the shield goes, 0 to 1. */
+/** How far the circle has opened as the shield goes, 0 to 1. Once the camera is at the opening it has no edge at all: the iris is about to pass behind it. */
 export function windowReach(f: number): number {
-  return ramp(f, 336, 340);
+  return f >= 366 ? Infinity : ramp(f, 336, 340);
 }

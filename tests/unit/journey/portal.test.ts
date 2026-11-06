@@ -25,6 +25,12 @@ describe('the window onto the tunnel', () => {
     expect(windowReach(336)).toBe(0);
     expect(windowReach(340)).toBe(1);
   });
+
+  it('has no edge once the camera is at the opening, since the machine round it is all that is left to hide it', () => {
+    expect(windowReach(365)).toBe(1);
+    expect(windowReach(366)).toBe(Infinity);
+    expect(windowReach(371)).toBe(Infinity);
+  });
 });
 
 describe('the labels on the stack', () => {

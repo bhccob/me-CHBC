@@ -40,7 +40,7 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
         made.warm(0);
         onReady({
           frame(f, dt, now) {
-            const state = made.update(f, dt);
+            const state = made.update(f, dt, now);
             advance(now);
             return state;
           },
@@ -61,6 +61,16 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
   useEffect(() => {
     world.current?.resize(size.width, size.height);
   }, [size.width, size.height]);
+
+  useEffect(() => {
+    const aim = (event: PointerEvent): void => {
+      // A finger scrolls: it does not look around.
+      if (event.pointerType === 'touch') return;
+      world.current?.pointer((event.clientX / innerWidth) * 2 - 1, 1 - (event.clientY / innerHeight) * 2);
+    };
+    addEventListener('pointermove', aim, { passive: true });
+    return () => removeEventListener('pointermove', aim);
+  }, []);
 
   // A positive priority: R3F leaves the drawing to this.
   useFrame(() => world.current?.render(), 1);

@@ -351,10 +351,27 @@ async function portal(browser, step) {
     await goToFrame(page, f, 120);
     writeFileSync(join(dir, `portal-${f}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
   }
+  // The tunnel really shows through the opening: light on a dark ground, not one flat colour.
+  await goToFrame(page, 360, 120);
+  await page.waitForTimeout(500);
+  const open = await sharp(await page.screenshot({ type: 'png' })).extract({ left: 570, top: 255, width: 300, height: 300 }).stats();
+  step.check(open.channels[0].stdev > 4 && open.channels[0].max > 60, `frame 360: the tunnel's light shows through the iris (spread ${open.channels[0].stdev.toFixed(1)}, brightest ${open.channels[0].max})`);
+  // And round the machine the canvas holds nothing, so that what is behind it can show.
+  await goToFrame(page, 345, 120);
+  await page.evaluate(() => document.documentElement.style.setProperty('background', '#00ff00', 'important'));
+  await page.evaluate(() => document.body.style.setProperty('background', '#00ff00', 'important'));
+  await page.waitForTimeout(300);
+  const round = await sharp(await page.screenshot({ type: 'png' })).extract({ left: 20, top: 200, width: 60, height: 400 }).stats();
+  step.check(round.channels[1].mean > 100, `frame 345: the canvas is clear round the machine (green behind it reads ${round.channels[1].mean.toFixed(0)})`);
+  await page.evaluate(() => document.documentElement.style.removeProperty('background'));
+  await page.evaluate(() => document.body.style.removeProperty('background'));
+  await goToFrame(page, 362, 120);
   // Where the canvas changes from the machine to the tunnel alone, the picture must not jump.
   let previous = null;
+  let previousPicture = null;
   let worst = 0;
-  for (let f = 369; f <= 375; f += 1) {
+  const changes = [];
+  for (let f = 367; f <= 377; f += 1) {
     await goToFrame(page, f, 120);
     const shot = await page.screenshot({ type: 'jpeg', quality: 88 });
     if (f === 372) writeFileSync(join(dir, 'portal-372.jpg'), shot);
@@ -362,10 +379,77 @@ async function portal(browser, step) {
     const bright = channels.reduce((sum, c) => sum + c.mean, 0) / 3;
     if (previous !== null) worst = Math.max(worst, Math.abs(bright - previous));
     previous = bright;
+    const picture = await sharp(shot).greyscale().resize(320, 180).raw().toBuffer();
+    if (previousPicture) {
+      let sum = 0;
+      for (let i = 0; i < picture.length; i++) sum += Math.abs(picture[i] - previousPicture[i]);
+      changes.push({ f, by: sum / picture.length });
+    }
+    previousPicture = picture;
   }
   step.check(worst < 12, `no cut: around the hand-over at frame 372 the page's brightness changes by under 12 of 255 a frame (the most ${worst.toFixed(1)})`);
+  // And the picture itself: the frame that changes over moves no more than the frames either side of it.
+  const sorted = changes.map((c) => c.by).sort((a, b) => a - b);
+  const usual = sorted[Math.floor(sorted.length / 2)];
+  const over = Math.max(...changes.filter((c) => c.f === 372 || c.f === 373).map((c) => c.by));
+  step.check(over < usual * 1.6 + 0.5, `no cut: at the hand-over the picture changes by ${over.toFixed(1)}, the usual frame by ${usual.toFixed(1)}`);
   await context.close();
   return `the most ${worst.toFixed(1)}`;
+}
+
+/** The flight: its stills, its light drawing, its streaks and lens growing with speed, and settling when you stop. */
+async function flight(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  const errors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  page.on('pageerror', (error) => errors.push(String(error)));
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await goToFrame(page, 372);
+  const read = () => page.evaluate(() => window.__journeyDebug.flight());
+  for (const f of [370, 420, 470, 520, 560]) {
+    await goToFrame(page, f, 160);
+    await page.waitForTimeout(900);
+    const shot = await page.screenshot({ type: 'jpeg', quality: 88 });
+    writeFileSync(join(dir, `flight-${f}.jpg`), shot);
+    const { channels } = await sharp(shot).stats();
+    const bright = channels[0].mean;
+    const most = channels[0].max;
+    step.check(most > 90, `frame ${f}: the tunnel's light draws (the brightest red ${most})`);
+    step.check(bright < 70, `frame ${f}: and stays dark around it (the mean red ${bright.toFixed(1)})`);
+  }
+  // Stopped, the lens is at rest. At speed it widens, and the streaks with it.
+  await goToFrame(page, 420, 160);
+  await page.waitForTimeout(1200);
+  const still = await read();
+  step.check(still.speed < 0.02, `stopped, the flight has settled (speed ${still.speed.toFixed(3)})`);
+  step.check(Math.abs(still.fov - 54) < 0.3, `stopped, the lens is at its 54 degrees (${still.fov.toFixed(1)})`);
+  // A long, hard scroll, read in the middle of it.
+  let fast = still;
+  for (let i = 0; i < 24; i++) {
+    await page.mouse.wheel(0, 260);
+    await page.waitForTimeout(16);
+    const now = await read();
+    if (now.speed > fast.speed) fast = now;
+  }
+  step.check(fast.speed > 0.4, `scrolled hard, it speeds up (speed ${fast.speed.toFixed(2)})`);
+  step.check(fast.fov > still.fov + 2, `and the lens widens (${fast.fov.toFixed(1)} degrees)`);
+  const hard = await page.screenshot({ type: 'jpeg', quality: 88 });
+  writeFileSync(join(dir, 'flight-fast.jpg'), hard);
+  await page.waitForTimeout(1400);
+  const after = await read();
+  step.check(after.speed < 0.02, `then it settles again (speed ${after.speed.toFixed(3)})`);
+  // The light runs on while you read.
+  const a = await page.screenshot({ type: 'png' });
+  await page.waitForTimeout(500);
+  const b = await page.screenshot({ type: 'png' });
+  step.check(!a.equals(b), 'stopped, the light on the wires runs on');
+
+  step.check(errors.length === 0, `no errors on the way (${errors.slice(0, 2).join(' | ') || 'none'})`);
+  await context.close();
+  return `lens ${still.fov.toFixed(1)} to ${fast.fov.toFixed(1)}`;
 }
 
 const doorShown = (page) => page.waitForFunction(() => document.querySelector('.j-door-on'), null, { timeout: 40_000 });
@@ -589,7 +673,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { flight, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

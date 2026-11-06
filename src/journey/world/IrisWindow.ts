@@ -1,21 +1,10 @@
 import { BlendFunction, Effect } from 'postprocessing';
-import { BufferGeometry, Float32BufferAttribute, HalfFloatType, Mesh, OrthographicCamera, type PerspectiveCamera, Scene, ShaderMaterial, Uniform, Vector2, Vector3, WebGLRenderTarget, type WebGLRenderer } from 'three';
+import { BufferGeometry, Float32BufferAttribute, Mesh, OrthographicCamera, type PerspectiveCamera, Scene, ShaderMaterial, Uniform, Vector2, Vector3, WebGLRenderTarget, type WebGLRenderer } from 'three';
 
-/** The tunnel's picture from linear light to the screen's: ACES, as the approved mock drew it. */
-const ACES = /* glsl */ `
-vec3 acesFit(vec3 v) {
-  vec3 a = v * (v + 0.0245786) - 0.000090537;
-  vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
-  return a / b;
-}
-vec3 aces(vec3 color) {
-  const mat3 inputMat = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777));
-  const mat3 outputMat = mat3(vec3(1.60475, -0.10208, -0.00327), vec3(-0.53108, 1.10813, -0.07276), vec3(-0.07367, -0.00605, 1.07602));
-  color *= 1.2 / 0.6;
-  color = inputMat * color;
-  color = acesFit(color);
-  color = outputMat * color;
-  return clamp(color, 0.0, 1.0);
+/** The tunnel's picture holds the screen's values, as the approved mock drew them. The chain under the machine works in linear light and encodes at its end. */
+const FROM_SCREEN = /* glsl */ `
+vec3 fromScreen(vec3 c) {
+  return mix(pow((c + 0.055) / 1.055, vec3(2.4)), c / 12.92, vec3(lessThanEqual(c, vec3(0.04045))));
 }
 `;
 
@@ -28,14 +17,14 @@ class WindowEffect extends Effect {
       uniform vec2 center;
       uniform float reach;
       uniform vec2 size;
-      ${ACES}
+      ${FROM_SCREEN}
       void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
         outputColor = inputColor;
         if (reach <= 0.0) return;
         float inside = 1.0 - smoothstep(reach - 1.5, reach, distance(uv * size, center));
         float through = inside * (1.0 - inputColor.a);
         if (through <= 0.0) return;
-        outputColor = vec4(inputColor.rgb + aces(texture2D(tunnel, uv).rgb) * through, inputColor.a + through);
+        outputColor = vec4(inputColor.rgb + fromScreen(texture2D(tunnel, uv).rgb) * through, inputColor.a + through);
       }
     `,
       {
@@ -62,7 +51,7 @@ export function canvasPoint(at: readonly [number, number, number], camera: Persp
 /** The tunnel's picture: drawn apart, then shown through the iris under the machine, and alone once you are inside. */
 export class IrisWindow {
   readonly effect = new WindowEffect();
-  private readonly target = new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: 4 });
+  private readonly target = new WebGLRenderTarget(1, 1, { samples: 4 });
   private readonly screen = new Scene();
   private readonly screenCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private readonly triangle: Mesh<BufferGeometry, ShaderMaterial>;
@@ -81,10 +70,8 @@ export class IrisWindow {
         fragmentShader: /* glsl */ `
           uniform sampler2D tunnel;
           varying vec2 vUv;
-          ${ACES}
           void main() {
-            gl_FragColor = vec4(aces(texture2D(tunnel, vUv).rgb), 1.0);
-            #include <colorspace_fragment>
+            gl_FragColor = vec4(texture2D(tunnel, vUv).rgb, 1.0);
           }
         `,
         depthTest: false,
@@ -106,7 +93,7 @@ export class IrisWindow {
     const [cx, cy] = canvasPoint(center, camera, this.size);
     const [ex, ey] = canvasPoint(edge, camera, this.size);
     (this.effect.uniforms.get('center')!.value as Vector2).set(cx, cy);
-    this.effect.uniforms.get('reach')!.value = Math.hypot(ex - cx, ey - cy) * reach;
+    this.effect.uniforms.get('reach')!.value = Number.isFinite(reach) ? Math.hypot(ex - cx, ey - cy) * reach : 4 * (this.size.x + this.size.y);
   }
 
   /** The circle shut: the machine's picture alone. */
@@ -118,6 +105,8 @@ export class IrisWindow {
     renderer.setRenderTarget(this.target);
     renderer.render(scene, camera);
     renderer.setRenderTarget(null);
+    // The scene's background leaves its colour as the clear colour, which the machine's pass would then clear with: opaque, and no window.
+    renderer.setClearAlpha(0);
   }
 
   /** The tunnel alone on the canvas. */

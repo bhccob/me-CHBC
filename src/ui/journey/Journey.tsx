@@ -1,14 +1,16 @@
 import { type JSX, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { profile } from '~/data/profile';
+import { projects } from '~/data/projects';
 import { installJourneyDebug } from '~/debug/journeyDebug';
 import { useTranslator } from '~/i18n/useTranslator';
+import { flightLayout, timelineFor } from '~/journey/flight/layout';
 import { frameForHash, frameOfChapter, glideTo, noteFrame, takePlace } from '~/journey/jump';
 import { layersAt, TAG_NAMES, tagPlace } from '~/journey/layers';
 import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } from '~/journey/loader/plan';
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
 import { Sound } from '~/journey/sound/music';
-import { buildTimeline, type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
+import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet } from './applyLayers';
 import { type BandKind, paintBand } from './bands';
 import { ChapterRail, updateRail } from './ChapterRail';
@@ -28,7 +30,7 @@ const JourneyCanvas = lazy(() => import('./JourneyCanvas'));
 /** The home page's journey: one machine, from code to a new universe (spec 2026-11-05-bob-machine-rebuild-design.md). */
 export function Journey(): JSX.Element {
   const { locale, t } = useTranslator();
-  const timeline = useMemo(() => buildTimeline(), []);
+  const timeline = useMemo(() => timelineFor(flightLayout(projects.byDate())), []);
   const canvas = useRef<CanvasHandle | null>(null);
   const [started, setStarted] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -81,7 +83,7 @@ export function Journey(): JSX.Element {
     let first: number | null = null;
     let before = 0;
     let lastState: WorldState | null = null;
-    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null, sound: () => Sound.report() }));
+    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null, sound: () => Sound.report(), flight: () => lastState?.flight ?? null }));
 
     // A chapter a link names: there at once, on arrival.
     const arrival = frameForHash(location.hash, timeline);

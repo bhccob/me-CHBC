@@ -1,11 +1,13 @@
 import { BloomEffect, DepthOfFieldEffect, EffectComposer, EffectPass, RenderPass, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
 import { HalfFloatType, NoToneMapping, Vector3, VSMShadowMap, type WebGLRenderer } from 'three';
+import { projects } from '~/data/projects';
 import type { Locale } from '~/i18n/Translator';
+import { flightLayout } from '../flight/layout';
 import type { TagName } from '../layers';
 import { cameraPose } from '../machine/camera';
 import { machinePose } from '../machine/choreography';
 import type { Timeline } from '../timeline';
-import { TunnelScene } from './flight/TunnelScene';
+import { type FlightState, TunnelScene } from './flight/TunnelScene';
 import { IrisWindow } from './IrisWindow';
 import { LookEffect } from './LookEffect';
 import { blurShare } from './looks';
@@ -26,6 +28,7 @@ export interface WorldState {
   hover: string | null;
   opaque: boolean;
   fired: number;
+  flight: FlightState;
 }
 
 /** The blur below which depth of field is not worth drawing, as a share of the page's width: about a pixel at 1080p. */
@@ -37,12 +40,13 @@ const point = new Vector3();
 export class World {
   private readonly renderer: WebGLRenderer;
   private readonly machine: MachineScene;
-  private readonly tunnel = new TunnelScene();
+  private readonly tunnel: TunnelScene;
   private readonly iris = new IrisWindow();
   private readonly composer: EffectComposer;
   private readonly depthOfField: DepthOfFieldEffect;
   private readonly bokehPass: EffectPass;
-  private readonly state: WorldState = { anchors: { armour: [0, 0], controls: [0, 0], brain: [0, 0], body: [0, 0] }, hover: null, opaque: false, fired: 0 };
+  private readonly state: WorldState;
+  private readonly reduce: boolean;
   private width = 1;
   private height = 1;
   private drawn = -1;
@@ -50,6 +54,10 @@ export class World {
 
   constructor(renderer: WebGLRenderer, input: WorldInput) {
     this.renderer = renderer;
+    this.reduce = input.reduce;
+    const dated = projects.byDate();
+    this.tunnel = new TunnelScene({ layout: flightLayout(dated), tints: dated.map((project) => project.flight.tint), frames: input.timeline.flight, reduce: input.reduce });
+    this.state = { anchors: { armour: [0, 0], controls: [0, 0], brain: [0, 0], body: [0, 0] }, hover: null, opaque: false, fired: 0, flight: this.tunnel.state };
     renderer.toneMapping = NoToneMapping;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = VSMShadowMap;
@@ -80,10 +88,10 @@ export class World {
     this.composer.render();
     this.iris.present(this.renderer);
     this.drawn = -1;
-    this.update(f, 0);
+    this.update(f, 0, 0);
   }
 
-  update(f: number, _dt: number): WorldState {
+  update(f: number, dt: number, now: number): WorldState {
     const moved = f !== this.drawn;
     const inside = canvasOpaque(f);
     const window = irisWindowOn(f);
@@ -91,11 +99,15 @@ export class World {
       this.drawn = f;
       this.dirty = true;
       if (!inside) this.moveMachine(f);
-      if (window || inside) this.tunnel.update(f);
       if (window) {
         const { iris } = machinePose(f);
         this.iris.place(iris.center, iris.edge, this.machine.camera, windowReach(f));
       } else this.iris.close();
+    }
+    // The tunnel never stands still: its light runs on and its speed settles while you read. With less motion asked for, it moves only with you.
+    if (window || inside) {
+      this.tunnel.update(f, dt, now);
+      if (!this.reduce) this.dirty = true;
     }
     this.state.opaque = inside;
     return this.state;
@@ -142,7 +154,10 @@ export class World {
     this.dirty = true;
   }
 
-  pointer(): void {}
+  /** Where the pointer aims, -1 to 1 each way. */
+  pointer(x: number, y: number): void {
+    this.tunnel.pointer(x, y);
+  }
 
   dispose(): void {
     this.machine.dispose();
