@@ -566,6 +566,47 @@ async function dissolveStep(browser, step) {
   return '';
 }
 
+/** Bob's questions along the gold line: each one read inside the page, on 1440x810 and 1280x720, in both languages. */
+async function qaStep(browser, step) {
+  const { en } = await tsImport('../../src/i18n/en.ts', import.meta.url);
+  const { nl } = await tsImport('../../src/i18n/nl.ts', import.meta.url);
+  const { qaReadFrames } = await tsImport('../../src/journey/world/void/path.ts', import.meta.url);
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  const reads = qaReadFrames(timeline);
+  for (const [viewport, route, words, tag] of [
+    [{ width: 1440, height: 810 }, '/en/journey/', en, 'en'],
+    [{ width: 1440, height: 810 }, '/journey/', nl, 'nl'],
+    [{ width: 1280, height: 720 }, '/en/journey/', en, 'en-720'],
+    [{ width: 1280, height: 720 }, '/journey/', nl, 'nl-720'],
+  ]) {
+    const { context, page } = await openJourney(browser, step, viewport, { route });
+    await flightLoaded(page, projects.byDate().length);
+    await page.waitForFunction(() => window.__journeyDebug.stops()?.questions.every((q) => q.words.length > 0), null, { timeout: 30_000 });
+    await goToFrame(page, 372);
+    if (tag === 'en') {
+      await goToFrame(page, 668 + timeline.shift, 260);
+      await page.waitForTimeout(800);
+      writeFileSync(join(dir, 'qa-word.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+    }
+    for (let i = 0; i < reads.length; i++) {
+      await goToFrame(page, reads[i], 220);
+      await page.waitForTimeout(tag === 'en' ? 900 : 500);
+      if (tag === 'en' || tag === 'nl') writeFileSync(join(dir, `qa-${tag}-${i + 1}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
+      const { questions } = await page.evaluate(() => window.__journeyDebug.stops());
+      const q = questions[i];
+      const written = q.words.join(' ');
+      const want = words.end.questions[i];
+      step.check(q.shown && q.gear, `${tag} ${i + 1}: the question and its gear show`);
+      step.check(written === `${want.question.toUpperCase()} ${want.answer}`, `${tag} ${i + 1}: the words are his, unchanged`);
+      const [l, t, r, b] = q.rect;
+      step.check(l >= 0 && t >= 0 && r <= viewport.width && b <= viewport.height, `${tag} ${i + 1}: its words are inside the page (${l.toFixed(0)}, ${t.toFixed(0)} to ${r.toFixed(0)}, ${b.toFixed(0)} of ${viewport.width}x${viewport.height})`);
+    }
+    await context.close();
+  }
+  return '';
+}
+
 const atFrame = (page) => page.evaluate(() => window.__journeyDebug.frame());
 const openAddress = (page) => page.evaluate(() => location.pathname);
 
@@ -908,7 +949,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

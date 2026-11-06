@@ -26,6 +26,7 @@ import type { WorldState } from '~/journey/world/World';
 import { createPaper, createSparks } from './paper';
 import { PortalWord } from './PortalWord';
 import { ProjectLinks } from './ProjectLinks';
+import { QaText } from './QaText';
 import { StackWords } from './StackWords';
 import { Story, updateStory } from './Story';
 
@@ -259,6 +260,7 @@ export function Journey(): JSX.Element {
       <StackWords />
       <PortalWord />
       <ProjectLinks />
+      <QaText />
       {started && !failed ? (
         <Suspense fallback={null}>
           <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} label={t.journey.hero.machineAlt} onProgress={onProgress} onReady={onReady} onFail={onFail} />

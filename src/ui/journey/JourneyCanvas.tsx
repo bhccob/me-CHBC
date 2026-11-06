@@ -4,6 +4,7 @@ import codeScreenUrl from '~/assets/journey/code-screen.webp?url';
 import type { Locale } from '~/i18n/Translator';
 import type { Timeline } from '~/journey/timeline';
 import type { StopReport } from '~/journey/world/flight/TunnelScene';
+import type { QuestionReport } from '~/journey/world/void/Questions';
 import { World, type WorldState } from '~/journey/world/World';
 
 export interface CanvasHandle {
@@ -12,7 +13,7 @@ export interface CanvasHandle {
   /** Where a project's screen stands on the page: left, top, width, height. */
   screenRect(id: string): [number, number, number, number] | null;
   /** What stands in the flight, for those checking it. */
-  report(): { stops: StopReport[]; walls: number };
+  report(): { stops: StopReport[]; walls: number; questions: QuestionReport[] };
 }
 
 interface HostProps {

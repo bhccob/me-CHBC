@@ -1,6 +1,7 @@
 import { BloomEffect, DepthOfFieldEffect, EffectComposer, EffectPass, RenderPass, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
 import { HalfFloatType, NoToneMapping, Vector3, VSMShadowMap, type WebGLRenderer } from 'three';
 import { projects } from '~/data/projects';
+import { translatorFor } from '~/i18n/useTranslator';
 import type { Locale } from '~/i18n/Translator';
 import { flightLayout } from '../flight/layout';
 import type { TagName } from '../layers';
@@ -9,6 +10,7 @@ import { machinePose } from '../machine/choreography';
 import type { Timeline } from '../timeline';
 import { type FlightProject, type FlightState, type StopReport, TunnelScene } from './flight/TunnelScene';
 import { IrisWindow } from './IrisWindow';
+import type { QuestionReport } from './void/Questions';
 import { LookEffect } from './LookEffect';
 import { blurShare } from './looks';
 import { MachineScene } from './MachineScene';
@@ -70,7 +72,13 @@ export class World {
         nl: { kind: project.copy('nl').flightKind, line: project.copy('nl').flightLine },
       },
     }));
-    this.tunnel = new TunnelScene({ layout: flightLayout(dated), projects: flying, locale: input.locale, timeline: input.timeline, reduce: input.reduce });
+    const wordsOf = (locale: Locale) => {
+      const { t } = translatorFor(locale);
+      return t.end.questions.map(({ question, answer }) => ({ question, answer: answer ?? t.end.placeholder }));
+    };
+    const questions = { en: wordsOf('en'), nl: wordsOf('nl') };
+    const qaWord = { en: translatorFor('en').t.journey.qaWord, nl: translatorFor('nl').t.journey.qaWord };
+    this.tunnel = new TunnelScene({ layout: flightLayout(dated), projects: flying, questions, qaWord, locale: input.locale, timeline: input.timeline, reduce: input.reduce });
     this.state = { anchors: { armour: [0, 0], controls: [0, 0], brain: [0, 0], body: [0, 0] }, hover: null, opaque: false, fired: 0, flight: this.tunnel.state };
     renderer.toneMapping = NoToneMapping;
     renderer.shadowMap.enabled = true;
@@ -186,8 +194,8 @@ export class World {
   }
 
   /** What stands in the flight, for those checking it. */
-  report(): { stops: StopReport[]; walls: number } {
-    return { stops: this.tunnel.report(), walls: this.tunnel.wallCount };
+  report(): { stops: StopReport[]; walls: number; questions: QuestionReport[] } {
+    return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, questions: this.tunnel.questionReport() };
   }
 
   /** Where the pointer aims, -1 to 1 each way. */

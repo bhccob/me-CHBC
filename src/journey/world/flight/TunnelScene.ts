@@ -7,6 +7,7 @@ import type { Timeline } from '../../timeline';
 import { displayReferred, displayValue } from '../displayOutput';
 import { movingShare, starShare } from '../void/Dissolve';
 import { endFov, voidDistanceAt, voidOpening, type VoidPose, voidPose, wallReach } from '../void/path';
+import { type QuestionReport, Questions, type QuestionWords } from '../void/Questions';
 import { VoidScene } from '../void/VoidScene';
 import { Gates } from './Gates';
 import { bankAt, center, fovAt, frameAt, nearestStop, type Rgb, tintAt, washAt } from './path';
@@ -26,6 +27,9 @@ export interface FlightProject extends StopProject {
 export interface TunnelInput {
   layout: FlightLayout;
   projects: readonly FlightProject[];
+  /** His questions and answers, and the big word over them, in each language. */
+  questions: Record<Locale, readonly QuestionWords[]>;
+  qaWord: Record<Locale, string>;
   locale: Locale;
   timeline: Timeline;
   reduce: boolean;
@@ -116,6 +120,7 @@ export class TunnelScene {
   private readonly ray = new Raycaster();
   private readonly pointerAt = new Vector2(9, 9);
   private stops: ProjectStop[] = [];
+  private questions: Questions | null = null;
   private locale: Locale;
   private anisotropy = 1;
   private width = 1;
@@ -199,8 +204,18 @@ export class TunnelScene {
       await nextFrame();
     }
     if (this.gone) return;
+    const questions = new Questions(this.scene, gltf.scene, layout.end);
+    questions.buildWord(this.input.qaWord[this.locale], this.phone, this.anisotropy);
+    this.questions = questions;
+    await nextFrame();
+    for (const [i, words] of this.input.questions[this.locale].entries()) {
+      if (this.gone) return;
+      questions.buildQuestion(i, words, this.phone, this.anisotropy);
+      await nextFrame();
+    }
+    if (this.gone) return;
     await renderer.compileAsync(this.scene, this.camera);
-    for (const texture of [...pictures.flatMap(({ images, piece }) => (piece ? [...images, piece] : images)), ...this.stops.flatMap((stop) => stop.textures())]) {
+    for (const texture of [...pictures.flatMap(({ images, piece }) => (piece ? [...images, piece] : images)), ...this.stops.flatMap((stop) => stop.textures()), ...(questions.textures() as Texture[])]) {
       if (this.gone) return;
       renderer.initTexture(texture);
       await nextFrame();
@@ -225,8 +240,10 @@ export class TunnelScene {
     await nextFrame();
     if (this.gone) return;
     this.voidScene.show(true);
+    questions.show(true);
     draw();
     this.voidScene.show(false);
+    questions.show(false);
   }
 
   /** The words in another language: the world stays, only they change. */
@@ -238,6 +255,15 @@ export class TunnelScene {
 
   private rebuildWords(): void {
     this.stops.forEach((stop, i) => stop.buildWords(this.input.projects[i].words[this.locale], this.phone, this.anisotropy));
+    const { questions } = this;
+    if (!questions) return;
+    questions.buildWord(this.input.qaWord[this.locale], this.phone, this.anisotropy);
+    this.input.questions[this.locale].forEach((words, i) => questions.buildQuestion(i, words, this.phone, this.anisotropy));
+  }
+
+  questionReport(): QuestionReport[] {
+    this.camera.updateMatrixWorld();
+    return this.questions?.report(this.camera, this.width, this.height) ?? [];
   }
 
   /** Where a project's screen stands on the page: left, top, width, height. */
@@ -341,6 +367,7 @@ export class TunnelScene {
     this.gates?.update(s, dissolve, opening);
     this.walls.update(s, calm, dissolve);
     this.voidScene.update({ f, distance: beyond, dissolve, opening, camera: camera.position });
+    this.questions?.update({ distance: beyond, now: reduce ? 0 : now, mouse: this.mouse, sway: m }, this.phone);
 
     // Each project swings out of the wall as you near it.
     let at: ProjectStop | null = null;
@@ -380,6 +407,7 @@ export class TunnelScene {
     this.gates?.dispose();
     this.walls.dispose();
     this.voidScene.dispose();
+    this.questions?.dispose();
     for (const stop of this.stops) stop.dispose();
     this.scene.environment?.dispose();
     for (const mesh of this.meshes) {

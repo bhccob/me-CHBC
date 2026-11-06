@@ -1,10 +1,11 @@
-import { AdditiveBlending, BackSide, BufferGeometry, DoubleSide, Float32BufferAttribute, LineSegments, Mesh, type Object3D, PlaneGeometry, type Scene, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
+import { AdditiveBlending, BackSide, BufferGeometry, DoubleSide, Float32BufferAttribute, type IUniform, LineSegments, Mesh, type Object3D, PlaneGeometry, type Scene, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
 import { ease, mix, seeded, TAU } from '../../math';
 import type { Timeline } from '../../timeline';
 import { frameAt, type PathFrame } from '../flight/path';
 import type { TunnelUniforms } from '../flight/tunnelParts';
 import { makeSparks, type Sparks } from './Dissolve';
-import { FLOOR } from './path';
+import { makeBus } from './GoldBus';
+import { FLOOR, LOOK_DISTANCE } from './path';
 
 const BASE_END = 180;
 
@@ -82,6 +83,8 @@ export class VoidScene {
   private readonly tubeMirror: LineSegments<BufferGeometry, ShaderMaterial>;
   private readonly tubeOut = { value: 0 };
   private readonly sparks: Sparks;
+  private readonly bus: Mesh<BufferGeometry, ShaderMaterial>;
+  private readonly busOn: IUniform<number>;
   /** The tunnel's own reflections: the walls, standing upside down under the floor. */
   private readonly wallMirrors: readonly Object3D[];
   private readonly timeline: Timeline;
@@ -150,7 +153,10 @@ export class VoidScene {
     this.tubeMirror.position.y = 2 * FLOOR;
 
     this.sparks = makeSparks(end, uniforms);
-    scene.add(this.sky, this.floor, this.tube, this.tubeMirror, this.sparks.points, this.sparks.mirror);
+    const bus = makeBus(end, uniforms.uTime);
+    this.bus = bus.mesh;
+    this.busOn = bus.on;
+    scene.add(this.sky, this.floor, this.bus, this.tube, this.tubeMirror, this.sparks.points, this.sparks.mirror);
     this.show(false);
   }
 
@@ -175,12 +181,15 @@ export class VoidScene {
     this.tubeMirror.visible = this.tube.visible && this.mirrorsAllowed;
     this.sparks.points.visible = dissolve > 0;
     this.sparks.mirror.visible = dissolve > 0 && on && this.mirrorsAllowed;
-    this.floor.material.uniforms.uDim.value = mix(1, 0.3, ease(f, this.timeline.collapse[0] + 2, this.timeline.collapse[0] + 28));
+    const fall = this.timeline.collapse[0];
+    this.floor.material.uniforms.uDim.value = mix(1, 0.3, ease(f, fall + 2, fall + 28));
+    this.busOn.value = ease(distance, LOOK_DISTANCE - 2, LOOK_DISTANCE + 16) * (1 - ease(f, fall + 4, fall + 24));
+    this.bus.visible = this.busOn.value > 0.002;
   }
 
   /** All of it or none, for drawing it once before anything shows. */
   show(on: boolean): void {
-    this.sky.visible = this.floor.visible = this.tube.visible = this.tubeMirror.visible = this.sparks.points.visible = this.sparks.mirror.visible = on;
+    this.sky.visible = this.floor.visible = this.bus.visible = this.tube.visible = this.tubeMirror.visible = this.sparks.points.visible = this.sparks.mirror.visible = on;
     for (const mirror of this.wallMirrors) mirror.visible = on;
   }
 
@@ -189,12 +198,14 @@ export class VoidScene {
     this.sky.material.dispose();
     this.floor.geometry.dispose();
     this.floor.material.dispose();
+    this.bus.geometry.dispose();
+    this.bus.material.dispose();
     this.tube.geometry.dispose();
     this.tube.material.dispose();
     this.tubeMirror.material.dispose();
     this.sparks.points.geometry.dispose();
     this.sparks.points.material.dispose();
     this.sparks.mirror.material.dispose();
-    this.scene.remove(this.sky, this.floor, this.tube, this.tubeMirror, this.sparks.points, this.sparks.mirror);
+    this.scene.remove(this.sky, this.floor, this.bus, this.tube, this.tubeMirror, this.sparks.points, this.sparks.mirror);
   }
 }
