@@ -7,6 +7,7 @@ import { layersAt, TAG_NAMES, tagPlace } from '~/journey/layers';
 import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } from '~/journey/loader/plan';
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
+import { Sound } from '~/journey/sound/music';
 import { buildTimeline, type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet } from './applyLayers';
 import { type BandKind, paintBand } from './bands';
@@ -66,6 +67,9 @@ export function Journey(): JSX.Element {
     // The art uses the page's fonts, and is not needed for the first moments.
     const painting = (document.fonts?.ready ?? Promise.resolve()).then(paintBands);
     void painting;
+    // After a reload he had sound on: it comes back with the next click or key.
+    const stopResume = Sound.resumeIfWanted();
+    Sound.setShift(timeline.shift);
     const onResize = (): void => {
       paper.fit();
       sparks.fit();
@@ -77,7 +81,7 @@ export function Journey(): JSX.Element {
     let first: number | null = null;
     let before = 0;
     let lastState: WorldState | null = null;
-    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null }));
+    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null, sound: () => Sound.report() }));
 
     // A chapter a link names: there at once, on arrival.
     const arrival = frameForHash(location.hash, timeline);
@@ -88,6 +92,7 @@ export function Journey(): JSX.Element {
       reduce: reduce.current,
       onFrame: (f, dt, now) => {
         shown = f;
+        Sound.frame(f, dt);
         const layers = layersAt(f, timeline, innerHeight > innerWidth);
         applyLayer(hero, layers.hero);
         if (hero) hero.style.pointerEvents = layers.hero.opacity < 0.5 ? 'none' : 'auto';
@@ -136,6 +141,7 @@ export function Journey(): JSX.Element {
       noteFrame(null);
       uninstall();
       removeEventListener('resize', onResize);
+      stopResume();
       document.removeEventListener('click', onClick);
     };
   }, [timeline]);
@@ -151,8 +157,11 @@ export function Journey(): JSX.Element {
     setReady(true);
   }, []);
   const onProgress = useCallback((share: number) => setModel(share), []);
-  const onEnter = useCallback((_choice: DoorChoice) => {}, []);
-  const onLand = useCallback(() => growTree.current?.(), []);
+  const onEnter = useCallback((choice: DoorChoice) => Sound.enter(choice === 'with-sound'), []);
+  const onLand = useCallback(() => {
+    growTree.current?.();
+    Sound.land();
+  }, []);
   const onLoaderDone = useCallback(() => {}, []);
   const onFail = useCallback((error: unknown) => {
     console.error('the journey could not start', error);

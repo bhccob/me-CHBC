@@ -27,6 +27,8 @@ const { chromium } = process.env.PLAYWRIGHT_CORE ? require(resolve(process.env.P
 const { buildTimeline, scrollFromFrame } = await tsImport('../../src/journey/timeline.ts', import.meta.url);
 const { profile } = await tsImport('../../src/data/profile.ts', import.meta.url);
 const profileAge = () => profile.ageOn();
+const { HITS } = await tsImport('../../src/journey/sound/score.ts', import.meta.url);
+const HIT_NAMES = HITS.map(([, name]) => name);
 
 const ROUTE = process.env.ROUTE ?? '/journey/';
 const OUT = resolve(process.env.PROOF_DIR ?? './proof-out');
@@ -481,7 +483,53 @@ async function giveUp(browser, step) {
   return `${took} ms`;
 }
 
-const STEPS = { stills, smooth, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+/** The sounds, walking the whole journey at a person's pace: every part once, nothing distorted, and the switch. */
+async function soundStep(browser, step) {
+  const { context, page } = await openPage(browser, step);
+  await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+  await doorShown(page);
+  const before = await page.evaluate(() => window.__journeyDebug.sound());
+  step.check(before.context === 'none', `no sound at all before the door (${before.context})`);
+  await page.locator('.j-door-go').click();
+  await inkGone(page);
+  const entered = await page.evaluate(() => window.__journeyDebug.sound());
+  step.check(entered.on && entered.running, 'going in with sound starts it');
+  const label = await page.locator('.j-sound').innerText();
+  step.check(/aan|on/i.test(label), `the header says so (${label})`);
+  await page.mouse.move(700, 300);
+  const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  const target = scrollFromFrame(timeline.last, max, timeline);
+  let peak = 0;
+  for (let y = 0; y < target; y += 130) {
+    await page.mouse.wheel(0, 130);
+    await page.waitForTimeout(90);
+    peak = Math.max(peak, await page.evaluate(() => window.__journeyDebug.sound().level));
+  }
+  await page.waitForTimeout(800);
+  const { counts } = await page.evaluate(() => window.__journeyDebug.sound());
+  const missing = HIT_NAMES.filter((name) => counts[name] !== 1);
+  step.check(missing.length === 0, `every part of the machine played once (not: ${missing.map((n) => `${n}=${counts[n] ?? 0}`).join(', ') || 'none'})`);
+  step.check(peak <= 0.6, `nothing distorts (the loudest ${peak.toFixed(3)})`);
+  step.check(counts.fall === 1 && counts.bang === 1, 'the way into the end plays once');
+  await page.locator('.j-sound').click();
+  await page.waitForTimeout(1200);
+  const off = await page.evaluate(() => window.__journeyDebug.sound());
+  step.check(!off.on && off.level < 0.002, `the switch silences it (${off.level.toFixed(4)})`);
+  await page.locator('.j-sound').click();
+  await page.waitForTimeout(300);
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 30_000 });
+  const reloaded = await page.evaluate(() => window.__journeyDebug.sound());
+  step.check(reloaded.context === 'none', 'after a reload it stays silent until the next click or key');
+  await page.keyboard.press('Shift');
+  await page.waitForTimeout(600);
+  const back = await page.evaluate(() => window.__journeyDebug.sound());
+  step.check(back.on && back.running, 'and comes back with that key');
+  await context.close();
+  return `the loudest ${peak.toFixed(3)}`;
+}
+
+const STEPS = { stills, smooth, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

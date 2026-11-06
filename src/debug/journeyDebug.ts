@@ -10,6 +10,8 @@ export interface JourneyDebug {
   quality(): number;
   /** Where the stack's labels point, in CSS pixels. */
   anchors(): Record<string, [number, number]> | null;
+  /** The sound: whether it is on, how loud, and which of its effects have played. */
+  sound(): { on: boolean; running: boolean; context: string; level: number; counts: Record<string, number>; landed: boolean };
 }
 
 declare global {

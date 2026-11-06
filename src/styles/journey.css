@@ -122,6 +122,26 @@ html[data-route='journey'] .poster {
 }
 
 /* The header on the journey. */
+html[data-route='journey'] main {
+  position: static;
+  z-index: auto;
+}
+
+html[data-route='journey'] .site-header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 6;
+  min-height: 60px;
+  padding: 0 34px;
+  flex-wrap: nowrap;
+}
+
+html[data-route='journey'] .header-nav,
+html[data-route='journey'] .menu-links {
+  gap: 24px;
+  align-items: center;
+}
+
 html[data-route='journey'] .site-name {
   font: 700 15px/1 var(--j-sans);
   letter-spacing: -0.01em;
@@ -620,4 +640,25 @@ html[data-route='journey'] .header-cta {
 .j-ld-rise .j-vert,
 .j-ld-rise .site-header {
   transition: opacity 0.8s ease, translate 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.j-sound {
+  all: unset;
+  cursor: pointer;
+  font: 500 15px / 1 var(--j-sans);
+  color: var(--j-muted);
+  padding: 6px 0;
+}
+
+.j-sound:hover {
+  color: var(--j-ink);
+}
+
+.j-sound[aria-pressed='true'] {
+  color: var(--j-gold);
+}
+
+.j-sound:focus-visible {
+  outline: 2px solid var(--j-gold);
+  outline-offset: 3px;
 }

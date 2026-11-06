@@ -5,6 +5,7 @@ import { routeFromPath } from '~/i18n/locale';
 import { useTranslator } from '~/i18n/useTranslator';
 import { goToTop } from '~/input/useHomeScroll';
 import { isPlainClick } from './BackLink';
+import { SoundButton } from './journey/SoundButton';
 import { LangSwitch } from './LangSwitch';
 
 /** The id of the header's nav, which on a phone is the menu the Menu button opens (a popover). */
@@ -83,6 +84,7 @@ export function SiteHeader(): JSX.Element {
           <div className="menu-links">
             {onJourney ? (
               <>
+                <SoundButton />
                 <a className="header-control" href="#projects" data-jump="projects">
                   {t.journey.rail.projects}
                 </a>
