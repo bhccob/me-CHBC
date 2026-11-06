@@ -3,7 +3,7 @@ import { ease, mix, seeded, TAU } from '../../math';
 import type { Timeline } from '../../timeline';
 import { frameAt, type PathFrame } from '../flight/path';
 import type { TunnelUniforms } from '../flight/tunnelParts';
-import { makeSparks, type Sparks } from './Dissolve';
+import { makeSparks, type SparkControls, type Sparks } from './Dissolve';
 import { makeBus } from './GoldBus';
 import { FLOOR, LOOK_DISTANCE } from './path';
 
@@ -17,6 +17,12 @@ export interface VoidFrame {
   dissolve: number;
   /** How far the void has opened, 0 to 1. */
   opening: number;
+  /** How much of its floor and sky is left. */
+  voidLeft: number;
+  /** How far everything has fallen, and how far the bang has gone. */
+  fall: number;
+  bang: number;
+  dt: number;
   camera: Vector3;
 }
 
@@ -90,6 +96,7 @@ export class VoidScene {
   private readonly timeline: Timeline;
   private mirrorsAllowed = true;
   private mirrorsOn = false;
+  private drift = 0;
 
   constructor(scene: Scene, uniforms: TunnelUniforms, end: number, timeline: Timeline, wallMirrors: readonly Object3D[]) {
     this.scene = scene;
@@ -170,8 +177,18 @@ export class VoidScene {
     this.mirrorsAllowed = on;
   }
 
-  update({ f, distance, dissolve, opening, camera }: VoidFrame): void {
-    const on = opening > 0.002;
+  /** What the fall, the bang and the end page do to the points. */
+  get sparkControls(): SparkControls {
+    return this.sparks.controls;
+  }
+
+  /** How large a spark is drawn: the galaxies share it. */
+  get sparkPixels(): IUniform<number> {
+    return this.sparks.pixels;
+  }
+
+  update({ f, distance, dissolve, opening, voidLeft, fall, bang, dt, camera }: VoidFrame): void {
+    const on = voidLeft > 0.002;
     this.sky.visible = this.floor.visible = on;
     this.sky.position.copy(camera);
     this.mirrorsOn = this.mirrorsAllowed && opening > 0.5 && dissolve < 1;
@@ -180,10 +197,15 @@ export class VoidScene {
     this.tube.visible = this.tubeOut.value > 0.002 && dissolve < 1;
     this.tubeMirror.visible = this.tube.visible && this.mirrorsAllowed;
     this.sparks.points.visible = dissolve > 0;
-    this.sparks.mirror.visible = dissolve > 0 && on && this.mirrorsAllowed;
-    const fall = this.timeline.collapse[0];
-    this.floor.material.uniforms.uDim.value = mix(1, 0.3, ease(f, fall + 2, fall + 28));
-    this.busOn.value = ease(distance, LOOK_DISTANCE - 2, LOOK_DISTANCE + 16) * (1 - ease(f, fall + 4, fall + 24));
+    this.sparks.mirror.visible = dissolve > 0 && voidLeft > 0.02 && this.mirrorsAllowed;
+    const { controls } = this.sparks;
+    controls.uImp.value = fall;
+    controls.uBang.value = bang;
+    this.drift = bang > 0.4 ? this.drift + dt * 1.1 : 0;
+    controls.uDrift.value = this.drift;
+    const start = this.timeline.collapse[0];
+    this.floor.material.uniforms.uDim.value = mix(1, 0.3, ease(f, start + 2, start + 28));
+    this.busOn.value = ease(distance, LOOK_DISTANCE - 2, LOOK_DISTANCE + 16) * (1 - ease(f, start + 4, start + 24)) * (1 - ease(fall, 0, 0.6));
     this.bus.visible = this.busOn.value > 0.002;
   }
 

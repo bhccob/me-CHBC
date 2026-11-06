@@ -607,6 +607,60 @@ async function qaStep(browser, step) {
   return '';
 }
 
+/** The light waits with its hint; a click plays the bang to the end by itself. */
+async function bangClick(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await flightLoaded(page, projects.byDate().length);
+  await goToFrame(page, 372);
+  const waiting = timeline.collapse[0] + 16;
+  await goToFrame(page, waiting, 260);
+  await page.waitForTimeout(700);
+  writeFileSync(join(dir, 'bang-waiting.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  const hint = await page.evaluate(() => {
+    const el = document.getElementById('j-hint');
+    const style = getComputedStyle(el);
+    return { text: el.textContent, opacity: Number(style.opacity), visibility: style.visibility };
+  });
+  step.check(hint.text.trim() === 'Click the light to let it go, or keep scrolling' && hint.opacity > 0.5 && hint.visibility === 'visible', `the hint shows beside the light (${hint.opacity})`);
+  const start = Date.now();
+  await page.mouse.click(700, 500);
+  await page.waitForFunction((last) => window.__journeyDebug.frame() > last - 0.5, timeline.last, { timeout: 12_000 });
+  const took = (Date.now() - start) / 1000;
+  step.check(took >= 3.6 && took <= 5.5, `a click plays to the end by itself, in about 4 seconds (${took.toFixed(1)} s)`);
+  await context.close();
+  return `${took.toFixed(1)} s`;
+}
+
+/** Scrolling scrubs the bang, and it is never brighter than the approved mock-up's at the same moment. */
+async function bangScroll(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await flightLoaded(page, projects.byDate().length);
+  await goToFrame(page, 372);
+  await goToFrame(page, timeline.collapse[0], 280);
+  // The mean brightness of the mock-up's page at these moments, 0 to 255, measured on 2026-11-06 from .superpowers/rebuild-mock.
+  const MOCK = { 883: 45.4, 888: 46.7, 896: 28.0, 905: 19.6 };
+  let previous = -1;
+  for (const [moment, mock] of Object.entries(MOCK)) {
+    const f = Number(moment) + timeline.shift;
+    await goToFrame(page, f, 90);
+    await page.waitForTimeout(600);
+    const at = await page.evaluate(() => window.__journeyDebug.frame());
+    step.check(at > previous, `scrolling moves it on (${at.toFixed(1)})`);
+    previous = at;
+    const shot = await page.screenshot({ type: 'jpeg', quality: 88 });
+    writeFileSync(join(dir, `bang-${moment}.jpg`), shot);
+    const { channels } = await sharp(shot).stats();
+    const mean = channels.reduce((sum, c) => sum + c.mean, 0) / 3;
+    step.check(mean <= mock * 1.05, `frame ${moment}: no brighter than the mock-up plus 5% (${mean.toFixed(1)}, the mock-up ${mock})`);
+  }
+  await context.close();
+  return '';
+}
+
 const atFrame = (page) => page.evaluate(() => window.__journeyDebug.frame());
 const openAddress = (page) => page.evaluate(() => location.pathname);
 
@@ -949,7 +1003,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

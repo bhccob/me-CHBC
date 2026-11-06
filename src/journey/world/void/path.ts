@@ -125,7 +125,14 @@ const END_PITCH = Math.atan(0.2 / 7.1);
 const endPoint = voidAt(VOID_LENGTH, new Vector3());
 const endHeading = voidAt(VOID_LENGTH + 3, new Vector3()).sub(endPoint).setY(0).normalize();
 const endForward = endHeading.clone().multiplyScalar(Math.cos(END_PITCH)).add(new Vector3(0, -Math.sin(END_PITCH), 0)).normalize();
+const endRight = endForward.clone().cross(UP).normalize();
+const endUp = endRight.clone().cross(endForward).normalize();
 const END_LIFT = 10 * Math.tan(END_PITCH);
+
+/** Where the way ends behind a flight of `end`, and how the camera stands there. */
+export function endFrame(end: number): { point: Vector3; heading: Vector3; forward: Vector3; right: Vector3; up: Vector3 } {
+  return { point: voidAt(VOID_LENGTH, new Vector3(), end), heading: endHeading, forward: endForward, right: endRight, up: endUp };
+}
 
 /** The camera at distance `d` along the way. */
 export function voidPose(d: number, end: number, out: VoidPose): VoidPose {

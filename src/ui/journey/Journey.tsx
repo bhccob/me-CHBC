@@ -11,6 +11,7 @@ import { layersAt, TAG_NAMES, tagPlace } from '~/journey/layers';
 import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } from '~/journey/loader/plan';
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
+import { lightWaiting, playBang } from '~/journey/bang';
 import { Sound } from '~/journey/sound/music';
 import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet } from './applyLayers';
@@ -71,6 +72,8 @@ export function Journey(): JSX.Element {
     const sheets = t.journey.sheets.map((_, n) => document.getElementById(`j-sheet-${n}`));
     const stack = document.getElementById('j-stack');
     const portal = document.getElementById('j-portal');
+    const flash = document.getElementById('j-flash');
+    const hint = document.getElementById('j-hint');
     const openLinks = new Map(Array.from(document.querySelectorAll<HTMLElement>('.j-project')).map((el) => [el.dataset.project ?? '', el.querySelector<HTMLElement>('.j-open')]));
     let projectNow: string | null = null;
     let hotNow = false;
@@ -142,6 +145,8 @@ export function Journey(): JSX.Element {
         layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet));
         applyLayer(stack, { opacity: layers.stack });
         applyLayer(portal, { opacity: layers.portal });
+        applyLayer(flash, { opacity: layers.flash });
+        applyLayer(hint, { opacity: layers.hint });
         // While a project is open over it, the world waits.
         const paused = openedProject() !== null;
         const state = paused ? null : canvas.current?.frame(f, dt, now);
@@ -181,6 +186,11 @@ export function Journey(): JSX.Element {
       }
       if (hoverNow && !target?.closest?.('a, button')) {
         openProject(hoverNow, shown ?? 0);
+        return;
+      }
+      // The light, waiting: a click lets it go.
+      if (shown !== null && lightWaiting(shown, timeline.shift) && !target?.closest?.('a, button')) {
+        playBang(timeline);
         return;
       }
       const link = target?.closest?.('[data-jump]');
@@ -261,6 +271,10 @@ export function Journey(): JSX.Element {
       <PortalWord />
       <ProjectLinks />
       <QaText />
+      <div id="j-flash" className="j-flash" aria-hidden="true" />
+      <p id="j-hint" className="j-hint">
+        {t.journey.collapse.hint}
+      </p>
       {started && !failed ? (
         <Suspense fallback={null}>
           <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} label={t.journey.hero.machineAlt} onProgress={onProgress} onReady={onReady} onFail={onFail} />

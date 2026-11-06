@@ -5,6 +5,8 @@ import { distanceAt, type DistanceTable, distanceTable, type FlightLayout } from
 import { clamp, ease, ez, mix, ramp } from '../../math';
 import type { Timeline } from '../../timeline';
 import { displayReferred, displayValue } from '../displayOutput';
+import { Bang } from '../end/Bang';
+import { bangShare, collapseShare, fallPoint, voidLeftAfter } from '../end/Collapse';
 import { movingShare, starShare } from '../void/Dissolve';
 import { endFov, voidDistanceAt, voidOpening, type VoidPose, voidPose, wallReach } from '../void/path';
 import { type QuestionReport, Questions, type QuestionWords } from '../void/Questions';
@@ -116,6 +118,7 @@ export class TunnelScene {
   private readonly glow = glowTexture();
   private readonly walls: WallScreens;
   private readonly voidScene: VoidScene;
+  private readonly bang: Bang;
   private readonly pose: VoidPose = { place: new Vector3(), look: new Vector3(), T: new Vector3(), R: new Vector3(), U: new Vector3(), roll: 0, arrive: 0, sway: 1, lens: 1 };
   private readonly ray = new Raycaster();
   private readonly pointerAt = new Vector2(9, 9);
@@ -160,6 +163,9 @@ export class TunnelScene {
     this.scene.add(wires.mesh, rings.mesh, wires.mirror, rings.mirror);
     this.camera.add(streaks.mesh);
     this.voidScene = new VoidScene(this.scene, this.uniforms, end, input.timeline, [wires.mirror, rings.mirror]);
+    const point = fallPoint(end, new Vector3());
+    this.voidScene.sparkControls.uPoint.value.copy(point);
+    this.bang = new Bang(this.scene, this.uniforms, point, this.glow);
 
     this.orb = new Sprite(displayReferred(new SpriteMaterial({ map: this.glow, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending, toneMapped: false, fog: false }), false));
     this.orb.scale.setScalar(22);
@@ -256,9 +262,11 @@ export class TunnelScene {
     if (this.gone) return;
     this.voidScene.show(true);
     questions.show(true);
+    this.bang.show(true);
     draw();
     this.voidScene.show(false);
     questions.show(false);
+    this.bang.show(false);
   }
 
   /** The words in another language: the world stays, only they change. */
@@ -318,8 +326,11 @@ export class TunnelScene {
     const opening = voidOpening(f, timeline);
     state.sparks = movingShare(dissolve);
     state.stars = starShare(dissolve);
+    const fall = collapseShare(f, timeline);
+    const bang = bangShare(f, timeline);
+    const voidLeft = voidLeftAfter(opening, fall);
     this.uniforms.uDis.value = dissolve;
-    this.uniforms.uVoid.value = opening;
+    this.uniforms.uVoid.value = voidLeft;
     this.uniforms.uFar.value = wallReach(opening);
     state.speed = reduce ? 0 : state.speed + (clamp(moved / FULL_SPEED, 0, 1.6) - state.speed) * (1 - Math.exp(-dt / 0.14));
     this.uniforms.uTime.value = reduce ? 0 : now / 1000;
@@ -357,11 +368,14 @@ export class TunnelScene {
     camera.position.copy(place);
     camera.lookAt(look);
     camera.rotateZ(roll);
+    // The bang opens the lens wide for a moment, and throws the streaks past you.
+    if (!reduce) wantFov += 13 * Math.sin(Math.PI * clamp((bang - 0.01) / 0.4));
+    const burst = Math.sin(Math.PI * clamp((bang - 0.01) / 0.42));
     state.fov += (wantFov - state.fov) * (dt > 0 ? 1 - Math.exp(-dt / 0.16) : 1);
     camera.fov = state.fov;
     camera.updateProjectionMatrix();
-    this.streaks.uTravel.value = s + (reduce ? 0 : now / 6000);
-    this.streaks.uSpeed.value = state.speed;
+    this.streaks.uTravel.value = s + (reduce ? 0 : now / 6000) + bang * 300;
+    this.streaks.uSpeed.value = reduce ? 0 : Math.max(state.speed, burst * 1.15);
 
     // The colour follows the nearest project.
     const { near } = nearestStop(s, layout);
@@ -381,7 +395,8 @@ export class TunnelScene {
     this.orb.visible = opening < 0.99;
     this.gates?.update(s, dissolve, opening);
     this.walls.update(s, calm, dissolve);
-    this.voidScene.update({ f, distance: beyond, dissolve, opening, camera: camera.position });
+    this.voidScene.update({ f, distance: beyond, dissolve, opening, voidLeft, fall, bang, dt, camera: camera.position });
+    this.bang.update(fall, bang, now, camera.quaternion);
     this.questions?.update({ distance: beyond, now: reduce ? 0 : now, mouse: this.mouse, sway: m }, this.phone);
 
     // Each project swings out of the wall as you near it.
@@ -426,6 +441,7 @@ export class TunnelScene {
     this.gates?.dispose();
     this.walls.dispose();
     this.voidScene.dispose();
+    this.bang.dispose();
     this.questions?.dispose();
     for (const stop of this.stops) stop.dispose();
     this.scene.environment?.dispose();

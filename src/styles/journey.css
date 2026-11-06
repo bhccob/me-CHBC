@@ -663,6 +663,31 @@ html[data-route='journey'] .header-cta {
   outline-offset: 3px;
 }
 
+/* The bang: a short, soft flash over the canvas, and the hint beside the waiting light. */
+.j-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  background: radial-gradient(circle at 50% 50%, rgb(255 244 214 / 0.95), rgb(255 196 110 / 0.5) 34%, rgb(255 170 80 / 0) 72%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.j-hint {
+  position: fixed;
+  left: 50%;
+  top: 58%;
+  z-index: 5;
+  margin: 0;
+  color: var(--j-ink, #f2efe8);
+  font: 500 13px / 1 var(--j-mono, 'IBM Plex Mono', monospace);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
 /* The questions and answers: drawn in the 3D, so these are for whoever reads the page another way. */
 .j-qa-text {
   position: absolute;
