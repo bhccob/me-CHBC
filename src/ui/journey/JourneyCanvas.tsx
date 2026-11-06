@@ -4,6 +4,7 @@ import codeScreenUrl from '~/assets/journey/code-screen.webp?url';
 import type { Locale } from '~/i18n/Translator';
 import type { Timeline } from '~/journey/timeline';
 import type { StopReport } from '~/journey/world/flight/TunnelScene';
+import type { UniverseReport } from '~/journey/world/end/Universe';
 import type { QuestionReport } from '~/journey/world/void/Questions';
 import { World, type WorldState } from '~/journey/world/World';
 
@@ -13,7 +14,9 @@ export interface CanvasHandle {
   /** Where a project's screen stands on the page: left, top, width, height. */
   screenRect(id: string): [number, number, number, number] | null;
   /** What stands in the flight, for those checking it. */
-  report(): { stops: StopReport[]; walls: number; questions: QuestionReport[] };
+  report(): { stops: StopReport[]; walls: number; questions: QuestionReport[]; end: UniverseReport | null };
+  /** A press on the end page, and letting go. */
+  hold(on: boolean, cancelled?: boolean): void;
 }
 
 interface HostProps {
@@ -52,6 +55,7 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
           },
           screenRect: (id) => made.screenRect(id),
           report: () => made.report(),
+          hold: (on, cancelled) => made.hold(on, cancelled),
         });
         // What the flight needs comes after the first view. Without it the tunnel still runs, with nothing standing in it.
         return made.load('flight').catch((error: unknown) => console.error(error));

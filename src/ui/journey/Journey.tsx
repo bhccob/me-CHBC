@@ -12,11 +12,13 @@ import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } f
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
 import { lightWaiting, playBang } from '~/journey/bang';
+import { canHold, endWordsAt } from '~/journey/end';
 import { Sound } from '~/journey/sound/music';
 import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet } from './applyLayers';
 import { type BandKind, paintBand } from './bands';
 import { ChapterRail, updateRail } from './ChapterRail';
+import { EndWords } from './EndWords';
 import { closeProject, listenToHistory, openedProject, openProject } from './openProject';
 import { type PageRect, ProjectOverlay } from './ProjectOverlay';
 import { FieldSheet } from './FieldSheet';
@@ -74,6 +76,16 @@ export function Journey(): JSX.Element {
     const portal = document.getElementById('j-portal');
     const flash = document.getElementById('j-flash');
     const hint = document.getElementById('j-hint');
+    const endPage = document.getElementById('j-end');
+    const endHub = document.getElementById('j-end-hub');
+    const endWord = document.getElementById('j-end-word');
+    const endToy = document.getElementById('j-end-toy');
+    let risen = false;
+    let aimX = 0;
+    let aimY = 0;
+    let tiltX = 0;
+    let tiltY = 0;
+    let holding = false;
     const openLinks = new Map(Array.from(document.querySelectorAll<HTMLElement>('.j-project')).map((el) => [el.dataset.project ?? '', el.querySelector<HTMLElement>('.j-open')]));
     let projectNow: string | null = null;
     let hotNow = false;
@@ -147,10 +159,30 @@ export function Journey(): JSX.Element {
         applyLayer(portal, { opacity: layers.portal });
         applyLayer(flash, { opacity: layers.flash });
         applyLayer(hint, { opacity: layers.hint });
+        const end = endWordsAt(f, timeline.shift);
+        applyLayer(endPage, { opacity: end.page });
+        if (end.rise !== risen) {
+          risen = end.rise;
+          endPage?.classList.toggle('on', risen);
+        }
+        if (end.page > 0) {
+          if (endWord) {
+            endWord.style.opacity = end.word.opacity.toFixed(3);
+            endWord.style.filter = end.word.blur > 0 ? `blur(${end.word.blur.toFixed(1)}px)` : 'none';
+            endWord.style.letterSpacing = `${end.word.spacing.toFixed(3)}em`;
+          }
+          // The words lean a few degrees toward the cursor.
+          if (endHub && !reduce.current) {
+            tiltX += (aimX - tiltX) * Math.min(1, dt * 5);
+            tiltY += (aimY - tiltY) * Math.min(1, dt * 5);
+            endHub.style.transform = `translate(-50%, -50%) perspective(1100px) rotateY(${(tiltX * 7).toFixed(2)}deg) rotateX(${(tiltY * -5).toFixed(2)}deg)`;
+          }
+        }
         // While a project is open over it, the world waits.
         const paused = openedProject() !== null;
         const state = paused ? null : canvas.current?.frame(f, dt, now);
         if (state) showProject(state.flight.project, state.flight.link, state.hover);
+        if (state && state.fired > 0 && endToy) endToy.style.opacity = '0';
         else if (paused) cool();
         tags.forEach((tag, n) => {
           if (!tag) return;
@@ -202,6 +234,31 @@ export function Journey(): JSX.Element {
       else go();
     };
     const stopHistory = listenToHistory(() => shown ?? 0, () => homePath.current);
+
+    // The end page: the cursor leans the words; hold anywhere but on a link to start a universe.
+    const aim = (event: PointerEvent): void => {
+      aimX = (event.clientX / innerWidth) * 2 - 1;
+      aimY = (event.clientY / innerHeight) * 2 - 1;
+    };
+    const press = (event: PointerEvent): void => {
+      if (event.button !== 0 || shown === null || reduce.current || !canHold(shown, timeline)) return;
+      if ((event.target as Partial<Pick<Element, 'closest'>> | null)?.closest?.('a, button')) return;
+      holding = true;
+      canvas.current?.hold(true);
+      Sound.hold(true);
+    };
+    const letGo = (cancelled: boolean): void => {
+      if (!holding) return;
+      holding = false;
+      canvas.current?.hold(false, cancelled);
+      Sound.hold(false);
+    };
+    const up = (): void => letGo(false);
+    const given = (): void => letGo(true);
+    addEventListener('pointermove', aim, { passive: true });
+    addEventListener('pointerdown', press);
+    addEventListener('pointerup', up);
+    addEventListener('pointercancel', given);
     document.addEventListener('click', onClick);
 
     return () => {
@@ -213,6 +270,10 @@ export function Journey(): JSX.Element {
       document.removeEventListener('click', onClick);
       stopHistory();
       cool();
+      removeEventListener('pointermove', aim);
+      removeEventListener('pointerdown', press);
+      removeEventListener('pointerup', up);
+      removeEventListener('pointercancel', given);
     };
   }, [timeline, stopIds]);
 
@@ -271,6 +332,7 @@ export function Journey(): JSX.Element {
       <PortalWord />
       <ProjectLinks />
       <QaText />
+      <EndWords />
       <div id="j-flash" className="j-flash" aria-hidden="true" />
       <p id="j-hint" className="j-hint">
         {t.journey.collapse.hint}

@@ -15,7 +15,7 @@ export interface JourneyDebug {
   /** How far along the flight, how fast, and through what lens. */
   flight(): { s: number; speed: number; fov: number; calm: number; project: string | null; link: [number, number] | null; screen: [number, number] | null; hover: string | null; voidDistance: number; sparks: number; stars: number } | null;
   /** What stands in the flight: each stop's screens, pieces and words as drawn, and the screens on the walls. */
-  stops(): { stops: { id: string; screens: number; pieces: number; words: string[] }[]; walls: number; questions: { words: string[]; rect: [number, number, number, number]; gear: boolean; shown: boolean }[] } | null;
+  stops(): { stops: { id: string; screens: number; pieces: number; words: string[] }[]; walls: number; questions: { words: string[]; rect: [number, number, number, number]; gear: boolean; shown: boolean }[]; end: { stars: number; gas: number; yours: number; fired: number; charge: number; gate: { x: number; y: number; inner: number } } | null } | null;
 }
 
 declare global {

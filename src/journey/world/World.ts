@@ -9,6 +9,7 @@ import { cameraPose } from '../machine/camera';
 import { machinePose } from '../machine/choreography';
 import type { Timeline } from '../timeline';
 import { type FlightProject, type FlightState, type StopReport, TunnelScene } from './flight/TunnelScene';
+import type { UniverseReport } from './end/Universe';
 import { IrisWindow } from './IrisWindow';
 import type { QuestionReport } from './void/Questions';
 import { LookEffect } from './LookEffect';
@@ -139,6 +140,7 @@ export class World {
     }
     this.state.opaque = inside;
     this.state.hover = inside ? this.tunnel.state.hover : null;
+    this.state.fired = this.tunnel.fired;
     return this.state;
   }
 
@@ -194,8 +196,14 @@ export class World {
   }
 
   /** What stands in the flight, for those checking it. */
-  report(): { stops: StopReport[]; walls: number; questions: QuestionReport[] } {
-    return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, questions: this.tunnel.questionReport() };
+  report(): { stops: StopReport[]; walls: number; questions: QuestionReport[]; end: UniverseReport | null } {
+    return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, questions: this.tunnel.questionReport(), end: this.tunnel.endReport() };
+  }
+
+  /** A press on the end page, and letting go; `cancelled` leaves nothing behind. */
+  hold(on: boolean, cancelled = false): void {
+    if (on) this.tunnel.press();
+    else this.tunnel.release(cancelled);
   }
 
   /** Where the pointer aims, -1 to 1 each way. */

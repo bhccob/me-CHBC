@@ -661,6 +661,135 @@ async function bangScroll(browser, step) {
   return '';
 }
 
+/** To the end page, settled. */
+async function openEnd(browser, step, viewport = VIEW, route = '/en/journey/') {
+  const opened = await openJourney(browser, step, viewport, { route });
+  await flightLoaded(opened.page, projects.byDate().length);
+  await opened.page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
+  await goToFrame(opened.page, 372);
+  await goToFrame(opened.page, timeline.last, 300);
+  await opened.page.waitForTimeout(1200);
+  return opened;
+}
+
+/** How far the furthest word stands from the gate's middle, and how far its inner edge reaches at its nearest. */
+const wordsAndGate = (page) => page.evaluate(() => {
+  const { x, y, inner } = window.__journeyDebug.stops().end.gate;
+  let furthest = 0;
+  for (const el of document.getElementById('j-end-hub').children) {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const box = range.getBoundingClientRect();
+    // The letters, not their line box: a line stands about a fifth of its size clear of its tallest letter, and a tenth of its lowest.
+    const size = parseFloat(getComputedStyle(el).fontSize);
+    const top = box.top + size * 0.2;
+    const bottom = box.bottom - size * 0.1;
+    for (const [px, py] of [[box.left, top], [box.right, top], [box.left, bottom], [box.right, bottom]]) furthest = Math.max(furthest, Math.hypot(px - x, py - y));
+  }
+  return { furthest, inner };
+});
+
+/** "Let's talk." sharpens out of a blur, with the words inside the gate's inner edge. */
+async function endPage(browser, step) {
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  for (const [viewport, tag] of [[{ width: 1440, height: 810 }, '1440'], [{ width: 1920, height: 1080 }, '1920']]) {
+    const { context, page } = await openEnd(browser, step, viewport);
+    writeFileSync(join(dir, `end-${tag}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
+    const seen = await page.evaluate(() => {
+      const report = window.__journeyDebug.stops().end;
+      const word = document.getElementById('j-end-word');
+      return { report, blur: getComputedStyle(word).filter, opacity: getComputedStyle(word).opacity, text: document.getElementById('j-end').textContent };
+    });
+    step.check(seen.blur === 'none' && Number(seen.opacity) === 1, `${tag}: "Let's talk." has settled, sharp`);
+    step.check(seen.report.stars === 4 && seen.report.gas > 0, `${tag}: four galaxies and the gas stand behind it (${seen.report.stars}, ${seen.report.gas})`);
+    const { furthest, inner } = await wordsAndGate(page);
+    step.check(furthest < inner, `${tag}: the words stay inside the gate's inner edge (${furthest.toFixed(0)} of ${inner.toFixed(0)} px from its middle)`);
+    for (const words of ['bhccob@gmail.com', '@bhccob', 'Send a message', 'Back to the start', 'Rotterdam, born in Aruba']) step.check(seen.text.includes(words), `${tag}: "${words}" shows`);
+    if (tag === '1440') {
+      // Back in the blast, it is still pulling itself together.
+      await goToFrame(page, timeline.bang[0] + 22, 90);
+      await page.waitForTimeout(500);
+      const earlier = await page.evaluate(() => getComputedStyle(document.getElementById('j-end-word')).filter);
+      step.check(earlier.startsWith('blur('), `"Let's talk." starts as a blur (${earlier})`);
+      writeFileSync(join(dir, 'end-blur.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+    }
+    await context.close();
+  }
+  return '';
+}
+
+/** The cursor swings the camera round. */
+async function endOrbit(browser, step) {
+  const { context, page } = await openEnd(browser, step);
+  const shot = () => page.screenshot({ type: 'png' });
+  await page.mouse.move(720, 405);
+  await page.waitForTimeout(1200);
+  const middle = await sharp(await shot()).greyscale().resize(320, 180).raw().toBuffer();
+  await page.mouse.move(1400, 60);
+  await page.waitForTimeout(1500);
+  const shotCorner = await shot();
+  writeFileSync(join(OUT, 'stills', 'end-orbit.jpg'), await sharp(shotCorner).jpeg({ quality: 88 }).toBuffer());
+  const corner = await sharp(shotCorner).greyscale().resize(320, 180).raw().toBuffer();
+  let sum = 0;
+  for (let i = 0; i < corner.length; i++) sum += Math.abs(corner[i] - middle[i]);
+  const moved = sum / corner.length;
+  step.check(moved > 2, `the cursor swings the view round (changed by ${moved.toFixed(1)})`);
+  const lean = await page.evaluate(() => document.getElementById('j-end-hub').style.transform);
+  step.check(/rotateY\(-?[1-9]/.test(lean), `and the words lean with it (${lean})`);
+  // However far it swings, the words never cross the gate's metal.
+  for (const [x, y] of [[1430, 10], [10, 10], [10, 800], [1430, 800], [720, 405]]) {
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(1600);
+    const { furthest, inner } = await wordsAndGate(page);
+    step.check(furthest < inner, `with the cursor at ${x}, ${y}, the words stay inside the gate (${furthest.toFixed(0)} of ${inner.toFixed(0)} px)`);
+  }
+  await context.close();
+  return '';
+}
+
+/** Hold and let go: a galaxy of your own, at most eight. A press on a link is only a press on a link. */
+async function endHold(browser, step) {
+  const { context, page } = await openEnd(browser, step);
+  const end = () => page.evaluate(() => window.__journeyDebug.stops().end);
+  const toy = () => page.evaluate(() => getComputedStyle(document.getElementById('j-end-toy')).opacity);
+  step.check(Number(await toy()) > 0.5, 'the hint shows before you have tried it');
+  await page.mouse.move(420, 240);
+  await page.mouse.down();
+  await page.waitForTimeout(900);
+  step.check((await end()).charge > 0.4, `holding grows a light (${(await end()).charge.toFixed(2)})`);
+  writeFileSync(join(OUT, 'stills', 'end-hold.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  await page.mouse.up();
+  await page.waitForTimeout(250);
+  step.check((await end()).fired === 1 && (await end()).yours === 1, 'letting go leaves a galaxy');
+  await page.waitForTimeout(900);
+  step.check(Number(await toy()) < 0.05, 'and the hint goes after the first');
+  writeFileSync(join(OUT, 'stills', 'end-shock.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  for (let i = 0; i < 9; i++) {
+    await page.mouse.move(200 + i * 110, 220 + (i % 3) * 120);
+    await page.mouse.down();
+    await page.waitForTimeout(40);
+    await page.mouse.up();
+    await page.waitForTimeout(40);
+  }
+  const many = await end();
+  step.check(many.fired === 10 && many.yours === 8, `at most eight stay (${many.yours} of ${many.fired})`);
+  // Links keep working while the toy is live.
+  const before = many.fired;
+  const link = page.locator('.j-end-bar a[data-jump]');
+  const box = await link.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(60);
+  step.check((await end()).charge === 0, 'a press on a link does not start a hold');
+  await page.mouse.up();
+  step.check((await end()).fired === before, 'and leaves no galaxy');
+  await page.waitForFunction(() => window.__journeyDebug.frame() < 40, null, { timeout: 15_000 });
+  step.check(true, '"Back to the start" goes back to the start');
+  await context.close();
+  return '';
+}
+
 const atFrame = (page) => page.evaluate(() => window.__journeyDebug.frame());
 const openAddress = (page) => page.evaluate(() => location.pathname);
 
@@ -1003,7 +1132,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

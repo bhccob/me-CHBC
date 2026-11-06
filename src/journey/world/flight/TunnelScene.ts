@@ -5,10 +5,12 @@ import { distanceAt, type DistanceTable, distanceTable, type FlightLayout } from
 import { clamp, ease, ez, mix, ramp } from '../../math';
 import type { Timeline } from '../../timeline';
 import { displayReferred, displayValue } from '../displayOutput';
+import { orbitAngles } from '../../end';
 import { Bang } from '../end/Bang';
 import { bangShare, collapseShare, fallPoint, voidLeftAfter } from '../end/Collapse';
+import { Universe, type UniverseReport } from '../end/Universe';
 import { movingShare, starShare } from '../void/Dissolve';
-import { endFov, voidDistanceAt, voidOpening, type VoidPose, voidPose, wallReach } from '../void/path';
+import { endFov, endFrame, voidDistanceAt, voidOpening, type VoidPose, voidPose, wallReach } from '../void/path';
 import { type QuestionReport, Questions, type QuestionWords } from '../void/Questions';
 import { VoidScene } from '../void/VoidScene';
 import { Gates } from './Gates';
@@ -99,6 +101,8 @@ function reflections(renderer: WebGLRenderer): Texture {
 
 const WORD_FONTS = ['800 168px Barlow', '500 56px Barlow', '500 46px "IBM Plex Mono"'];
 
+const WORLD_UP = new Vector3(0, 1, 0);
+const orbit = new Vector3();
 const place = new Vector3();
 const point = new Vector3();
 const nextFrame = (): Promise<void> => new Promise((done) => requestAnimationFrame(() => done()));
@@ -119,6 +123,10 @@ export class TunnelScene {
   private readonly walls: WallScreens;
   private readonly voidScene: VoidScene;
   private readonly bang: Bang;
+  private readonly fallsTo: Vector3;
+  /** The end page's light. It stands from the start, since a lit material's shader depends on how many lights there are. */
+  private readonly endLight = new PointLight(0xffd6a0, 0, 320, 1);
+  private universe: Universe | null = null;
   private readonly pose: VoidPose = { place: new Vector3(), look: new Vector3(), T: new Vector3(), R: new Vector3(), U: new Vector3(), roll: 0, arrive: 0, sway: 1, lens: 1 };
   private readonly ray = new Raycaster();
   private readonly pointerAt = new Vector2(9, 9);
@@ -163,9 +171,10 @@ export class TunnelScene {
     this.scene.add(wires.mesh, rings.mesh, wires.mirror, rings.mirror);
     this.camera.add(streaks.mesh);
     this.voidScene = new VoidScene(this.scene, this.uniforms, end, input.timeline, [wires.mirror, rings.mirror]);
-    const point = fallPoint(end, new Vector3());
-    this.voidScene.sparkControls.uPoint.value.copy(point);
-    this.bang = new Bang(this.scene, this.uniforms, point, this.glow);
+    this.fallsTo = fallPoint(end, new Vector3());
+    this.voidScene.sparkControls.uPoint.value.copy(this.fallsTo);
+    this.bang = new Bang(this.scene, this.uniforms, this.fallsTo, this.glow);
+    this.scene.add(this.endLight);
 
     this.orb = new Sprite(displayReferred(new SpriteMaterial({ map: this.glow, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending, toneMapped: false, fog: false }), false));
     this.orb.scale.setScalar(22);
@@ -182,10 +191,12 @@ export class TunnelScene {
     if (this.scene.environment) return;
     this.scene.environment = reflections(renderer);
     for (const side of [FrontSide, DoubleSide]) {
-      const speck = new Mesh(new BoxGeometry(0.001, 0.001, 0.001), displayReferred(new MeshStandardMaterial({ transparent: true, side }), true));
-      speck.frustumCulled = false;
-      this.scene.add(speck);
-      this.specks.push(speck);
+      for (const fog of [true, false]) {
+        const speck = new Mesh(new BoxGeometry(0.001, 0.001, 0.001), displayReferred(new MeshStandardMaterial({ transparent: true, side, fog }), true));
+        speck.frustumCulled = false;
+        this.scene.add(speck);
+        this.specks.push(speck);
+      }
     }
     draw();
     for (const speck of this.specks) speck.visible = false;
@@ -229,6 +240,10 @@ export class TunnelScene {
     questions.buildWord(this.input.qaWord[this.locale], this.phone, this.anisotropy);
     this.questions = questions;
     await nextFrame();
+    if (this.gone) return;
+    const universe = new Universe(this.scene, gltf.scene, layout.end, this.uniforms.uTime, this.voidScene.sparkPixels, this.voidScene.sparkControls, this.fallsTo, this.glow, this.endLight);
+    this.universe = universe;
+    await nextFrame();
     for (const [i, words] of this.input.questions[this.locale].entries()) {
       if (this.gone) return;
       questions.buildQuestion(i, words, this.phone, this.anisotropy);
@@ -263,10 +278,31 @@ export class TunnelScene {
     this.voidScene.show(true);
     questions.show(true);
     this.bang.show(true);
+    universe.show(true);
     draw();
     this.voidScene.show(false);
     questions.show(false);
     this.bang.show(false);
+    universe.show(false);
+  }
+
+  /** A press on the end page: a light grows at the cursor. */
+  press(): void {
+    if (!this.input.reduce) this.universe?.press();
+  }
+
+  /** Let go, or the press given up. */
+  release(cancelled: boolean): void {
+    this.universe?.release(this.pointerAt, this.camera, cancelled, this.input.reduce);
+  }
+
+  endReport(): UniverseReport | null {
+    this.camera.updateMatrixWorld();
+    return this.universe?.report(this.camera, this.width, this.height) ?? null;
+  }
+
+  get fired(): number {
+    return this.universe?.fired ?? 0;
   }
 
   /** The words in another language: the world stays, only they change. */
@@ -348,6 +384,14 @@ export class TunnelScene {
       m *= pose.sway;
       place.copy(pose.place);
       look.copy(pose.look);
+      // Settled in the dark, the cursor swings you round the point it all came from.
+      const round = reduce ? 0 : ease(bang, 0.42, 0.94);
+      if (round > 0) {
+        const { yaw, pitch } = orbitAngles(this.mouse.x, this.mouse.y);
+        orbit.subVectors(place, this.fallsTo).applyAxisAngle(WORLD_UP, -yaw * round).applyAxisAngle(endFrame(end).right, pitch * round);
+        place.copy(this.fallsTo).add(orbit);
+        look.lerp(this.fallsTo, round);
+      }
       right = pose.R;
       up = pose.U;
       roll = pose.roll;
@@ -397,6 +441,7 @@ export class TunnelScene {
     this.walls.update(s, calm, dissolve);
     this.voidScene.update({ f, distance: beyond, dissolve, opening, voidLeft, fall, bang, dt, camera: camera.position });
     this.bang.update(fall, bang, now, camera.quaternion);
+    this.universe?.update({ bang, now, dt, pointer: this.pointerAt, mouse: this.mouse, camera, phone: this.phone, reduce });
     this.questions?.update({ distance: beyond, now: reduce ? 0 : now, mouse: this.mouse, sway: m }, this.phone);
 
     // Each project swings out of the wall as you near it.
@@ -442,6 +487,7 @@ export class TunnelScene {
     this.walls.dispose();
     this.voidScene.dispose();
     this.bang.dispose();
+    this.universe?.dispose();
     this.questions?.dispose();
     for (const stop of this.stops) stop.dispose();
     this.scene.environment?.dispose();
