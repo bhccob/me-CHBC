@@ -1,4 +1,4 @@
-import { AdditiveBlending, BackSide, Color, DoubleSide, FogExp2, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, PointLight, Raycaster, Scene, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
+import { AdditiveBlending, BackSide, BoxGeometry, Color, DoubleSide, FogExp2, FrontSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, PointLight, Raycaster, Scene, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { Locale } from '~/i18n/Translator';
 import { distanceAt, type DistanceTable, distanceTable, type FlightLayout } from '../../flight/layout';
@@ -128,6 +128,8 @@ export class TunnelScene {
   private gone = false;
   private readonly headlamp = new PointLight(0xffffff, 22, 30, 1.4);
   private gates: Gates | null = null;
+  /** Kept, with their materials, so that the shader they readied stays ready. */
+  private readonly specks: Mesh<BoxGeometry, MeshStandardMaterial>[] = [];
   private readonly fog = new FogExp2(0x000000, 0.017);
   private readonly background = new Color();
   private readonly mouse = new Vector2();
@@ -165,9 +167,22 @@ export class TunnelScene {
     this.scene.add(this.orb);
   }
 
-  /** What cannot be spread over frames, done behind the loader: the room the metal reflects takes a third of a second to make. */
-  prepare(renderer: WebGLRenderer): void {
-    this.scene.environment ??= reflections(renderer);
+  /**
+   * What cannot be spread over frames, done behind the loader. The room the metal reflects takes a third of a second to make,
+   * and the driver readies a lit material's shader only at its first draw, a fifth of a second: that first draw is a speck
+   * here, not the gates after the first view. `draw` draws the tunnel once.
+   */
+  prepare(renderer: WebGLRenderer, draw: () => void): void {
+    if (this.scene.environment) return;
+    this.scene.environment = reflections(renderer);
+    for (const side of [FrontSide, DoubleSide]) {
+      const speck = new Mesh(new BoxGeometry(0.001, 0.001, 0.001), displayReferred(new MeshStandardMaterial({ transparent: true, side }), true));
+      speck.frustumCulled = false;
+      this.scene.add(speck);
+      this.specks.push(speck);
+    }
+    draw();
+    for (const speck of this.specks) speck.visible = false;
   }
 
   /** Loads what stands in the tunnel, and readies it to draw. `draw` draws the tunnel once, out of sight. */
@@ -184,7 +199,7 @@ export class TunnelScene {
     ]);
     if (this.gone) return;
     // The first view is already moving: one thing a frame, so that none of this catches it.
-    this.prepare(renderer);
+    this.prepare(renderer, draw);
     const gates = new Gates(gltf.scene);
     gates.place(layout);
     this.scene.add(gates.group);
@@ -404,6 +419,10 @@ export class TunnelScene {
 
   dispose(): void {
     this.gone = true;
+    for (const speck of this.specks) {
+      speck.geometry.dispose();
+      speck.material.dispose();
+    }
     this.gates?.dispose();
     this.walls.dispose();
     this.voidScene.dispose();

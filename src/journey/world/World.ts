@@ -110,7 +110,7 @@ export class World {
   warm(f: number): void {
     this.machine.showAll();
     this.renderer.compile(this.machine.scene, this.machine.camera);
-    this.tunnel.prepare(this.renderer);
+    this.tunnel.prepare(this.renderer, () => this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera));
     this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
     this.iris.close();
     this.composer.render();
