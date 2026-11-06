@@ -13,7 +13,9 @@ export interface JourneyDebug {
   /** The sound: whether it is on, how loud, and which of its effects have played. */
   sound(): { on: boolean; running: boolean; context: string; level: number; counts: Record<string, number>; landed: boolean };
   /** How far along the flight, how fast, and through what lens. */
-  flight(): { s: number; speed: number; fov: number } | null;
+  flight(): { s: number; speed: number; fov: number; calm: number; project: string | null; link: [number, number] | null; screen: [number, number] | null; hover: string | null } | null;
+  /** What stands in the flight: each stop's screens, pieces and words as drawn, and the screens on the walls. */
+  stops(): { stops: { id: string; screens: number; pieces: number; words: string[] }[]; walls: number } | null;
 }
 
 declare global {

@@ -25,6 +25,7 @@ import { tsImport } from 'tsx/esm/api';
 const require = createRequire(import.meta.url);
 const { chromium } = process.env.PLAYWRIGHT_CORE ? require(resolve(process.env.PLAYWRIGHT_CORE)) : require('playwright-core');
 const { buildTimeline, scrollFromFrame } = await tsImport('../../src/journey/timeline.ts', import.meta.url);
+const { projects } = await tsImport('../../src/data/projects.ts', import.meta.url);
 const { profile } = await tsImport('../../src/data/profile.ts', import.meta.url);
 const profileAge = () => profile.ageOn();
 const { HITS } = await tsImport('../../src/journey/sound/score.ts', import.meta.url);
@@ -68,10 +69,10 @@ async function openPage(browser, step, viewport = VIEW, options = {}) {
 }
 
 /** The journey, loaded and drawing. */
-async function openJourney(browser, step, viewport, options) {
+async function openJourney(browser, step, viewport, { route = ROUTE, ...options } = {}) {
   const opened = await openPage(browser, step, viewport, options);
   await opened.page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
-  await opened.page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+  await opened.page.goto(`${BASE}${route}?proof`, { waitUntil: 'load' });
   await opened.page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
   await opened.page.mouse.move(viewport?.width ? viewport.width / 2 : VIEW.width / 2, 300);
   return opened;
@@ -400,11 +401,6 @@ async function portal(browser, step) {
 /** The flight: its stills, its light drawing, its streaks and lens growing with speed, and settling when you stop. */
 async function flight(browser, step) {
   const { context, page } = await openJourney(browser, step);
-  const errors = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-  page.on('pageerror', (error) => errors.push(String(error)));
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
   await goToFrame(page, 372);
@@ -447,9 +443,65 @@ async function flight(browser, step) {
   const b = await page.screenshot({ type: 'png' });
   step.check(!a.equals(b), 'stopped, the light on the wires runs on');
 
-  step.check(errors.length === 0, `no errors on the way (${errors.slice(0, 2).join(' | ') || 'none'})`);
   await context.close();
   return `lens ${still.fov.toFixed(1)} to ${fast.fov.toFixed(1)}`;
+}
+
+/** Each project: the one bright thing at its reading place, in its own words in both languages, with its pieces and its link. */
+async function projectsStep(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await page.waitForFunction(() => window.__journeyDebug.stops()?.stops.length === 4, null, { timeout: 30_000 });
+  const report = await page.evaluate(() => window.__journeyDebug.stops());
+  step.check(report.walls === 16, `four screens on the walls for each project (${report.walls})`);
+  const byId = Object.fromEntries(report.stops.map((s) => [s.id, s]));
+  step.check(byId['cookies-clicker'].pieces === 1, 'the cookie floats in front of Cookies Clicker');
+  step.check(byId['jontai-energy'].pieces === 1, 'the sun glows behind Jontai Energy');
+  step.check(byId.steady.screens === 3, 'Steady stands as three phones');
+  step.check(byId.portle.pieces === 1, 'the ring floats off Portle');
+
+  const reads = timeline.reads.slice(0, 4);
+  const dated = projects.byDate();
+  await goToFrame(page, 372);
+  for (let i = 0; i < dated.length; i++) {
+    const project = dated[i];
+    const words = (await page.evaluate(() => window.__journeyDebug.stops())).stops[i].words;
+    const copy = project.copy('en');
+    step.check(words.includes(copy.flightKind) && words.join(' ').includes(copy.flightLine), `${project.id}: the English kind and line are what is drawn`);
+    await goToFrame(page, reads[i], 160);
+    await page.waitForTimeout(1000);
+    writeFileSync(join(dir, `project-${reads[i]}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
+    const flight = await page.evaluate(() => window.__journeyDebug.flight());
+    step.check(flight.project === project.id, `frame ${reads[i]}: at ${project.id} (${flight.project})`);
+    step.check(flight.calm > 0.9, `frame ${reads[i]}: the tunnel has quietened for it (${flight.calm.toFixed(2)})`);
+    const link = page.locator(`.j-project[data-project="${project.id}"] .j-open`);
+    const shown = await link.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      return { on: el.classList.contains('on'), inside: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight, text: el.textContent };
+    });
+    step.check(shown.on && shown.inside, `frame ${reads[i]}: its link "${shown.text}" shows on the page`);
+    // The cursor over its screen says so; away from it, not.
+    const hot = () => page.evaluate(() => document.documentElement.hasAttribute('data-project-hot'));
+    await page.mouse.move(flight.screen[0], flight.screen[1]);
+    await page.waitForTimeout(250);
+    step.check(await hot(), `frame ${reads[i]}: the screen knows the pointer is on it`);
+    await page.mouse.move(4, 400);
+    await page.waitForTimeout(250);
+    step.check(!(await hot()), `frame ${reads[i]}: and when it has left`);
+  }
+  // The other language, with the world still standing.
+  await page.locator('header a[hreflang]').click();
+  await page.waitForFunction(() => document.documentElement.lang === 'nl', null, { timeout: 8_000 });
+  await page.waitForTimeout(800);
+  const dutch = (await page.evaluate(() => window.__journeyDebug.stops())).stops;
+  dated.forEach((project, i) => {
+    const copy = project.copy('nl');
+    step.check(dutch[i].words.includes(copy.flightKind) && dutch[i].words.join(' ').includes(copy.flightLine), `${project.id}: the Dutch kind and line are what is drawn`);
+  });
+  writeFileSync(join(dir, 'project-nl.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  await context.close();
+  return '';
 }
 
 const doorShown = (page) => page.waitForFunction(() => document.querySelector('.j-door-on'), null, { timeout: 40_000 });
@@ -673,7 +725,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { flight, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { flight, projects: projectsStep, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

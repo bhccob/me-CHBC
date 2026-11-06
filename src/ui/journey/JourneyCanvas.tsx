@@ -3,11 +3,14 @@ import { type JSX, useEffect, useRef } from 'react';
 import codeScreenUrl from '~/assets/journey/code-screen.webp?url';
 import type { Locale } from '~/i18n/Translator';
 import type { Timeline } from '~/journey/timeline';
+import type { StopReport } from '~/journey/world/flight/TunnelScene';
 import { World, type WorldState } from '~/journey/world/World';
 
 export interface CanvasHandle {
   /** Moves the world to frame `f` and draws it. */
   frame(f: number, dt: number, now: number): WorldState;
+  /** What stands in the flight, for those checking it. */
+  report(): { stops: StopReport[]; walls: number };
 }
 
 interface HostProps {
@@ -44,6 +47,7 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
             advance(now);
             return state;
           },
+          report: () => made.report(),
         });
         // What the flight needs comes after the first view. Without it the tunnel still runs, with nothing standing in it.
         return made.load('flight').catch((error: unknown) => console.error(error));
@@ -59,6 +63,10 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
     // The language is left out on purpose: switching it keeps the world, and only its words change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gl, timeline, reduce, onProgress, onReady, onFail]);
+
+  useEffect(() => {
+    world.current?.setLocale(locale);
+  }, [locale]);
 
   useEffect(() => {
     world.current?.resize(size.width, size.height);

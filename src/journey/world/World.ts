@@ -7,7 +7,7 @@ import type { TagName } from '../layers';
 import { cameraPose } from '../machine/camera';
 import { machinePose } from '../machine/choreography';
 import type { Timeline } from '../timeline';
-import { type FlightState, TunnelScene } from './flight/TunnelScene';
+import { type FlightProject, type FlightState, type StopReport, TunnelScene } from './flight/TunnelScene';
 import { IrisWindow } from './IrisWindow';
 import { LookEffect } from './LookEffect';
 import { blurShare } from './looks';
@@ -56,7 +56,21 @@ export class World {
     this.renderer = renderer;
     this.reduce = input.reduce;
     const dated = projects.byDate();
-    this.tunnel = new TunnelScene({ layout: flightLayout(dated), tints: dated.map((project) => project.flight.tint), frames: input.timeline.flight, reduce: input.reduce });
+    const flying: FlightProject[] = dated.map((project) => ({
+      id: project.id,
+      year: project.year,
+      tint: project.flight.tint,
+      titleLines: project.flight.titleLines,
+      screens: project.flight.screens,
+      piece: project.flight.piece,
+      images: project.flight.images,
+      pieceImage: project.flight.pieceImage,
+      words: {
+        en: { kind: project.copy('en').flightKind, line: project.copy('en').flightLine },
+        nl: { kind: project.copy('nl').flightKind, line: project.copy('nl').flightLine },
+      },
+    }));
+    this.tunnel = new TunnelScene({ layout: flightLayout(dated), projects: flying, locale: input.locale, frames: input.timeline.flight, reduce: input.reduce });
     this.state = { anchors: { armour: [0, 0], controls: [0, 0], brain: [0, 0], body: [0, 0] }, hover: null, opaque: false, fired: 0, flight: this.tunnel.state };
     renderer.toneMapping = NoToneMapping;
     renderer.shadowMap.enabled = true;
@@ -117,6 +131,7 @@ export class World {
       if (!this.reduce) this.dirty = true;
     }
     this.state.opaque = inside;
+    this.state.hover = inside ? this.tunnel.state.hover : null;
     return this.state;
   }
 
@@ -159,6 +174,16 @@ export class World {
     this.iris.resize(this.renderer);
     this.drawn = -1;
     this.dirty = true;
+  }
+
+  /** The words in another language: the world stays, only they change. */
+  setLocale(locale: Locale): void {
+    this.tunnel.setLocale(locale);
+  }
+
+  /** What stands in the flight, for those checking it. */
+  report(): { stops: StopReport[]; walls: number } {
+    return { stops: this.tunnel.report(), walls: this.tunnel.wallCount };
   }
 
   /** Where the pointer aims, -1 to 1 each way. */

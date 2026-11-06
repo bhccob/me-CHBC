@@ -21,6 +21,7 @@ import type { CanvasHandle } from './JourneyCanvas';
 import type { WorldState } from '~/journey/world/World';
 import { createPaper, createSparks } from './paper';
 import { PortalWord } from './PortalWord';
+import { ProjectLinks } from './ProjectLinks';
 import { StackWords } from './StackWords';
 import { Story, updateStory } from './Story';
 
@@ -62,6 +63,24 @@ export function Journey(): JSX.Element {
     const sheets = t.journey.sheets.map((_, n) => document.getElementById(`j-sheet-${n}`));
     const stack = document.getElementById('j-stack');
     const portal = document.getElementById('j-portal');
+    const openLinks = new Map(Array.from(document.querySelectorAll<HTMLElement>('.j-project')).map((el) => [el.dataset.project ?? '', el.querySelector<HTMLElement>('.j-open')]));
+    let projectNow: string | null = null;
+    let hotNow = false;
+    // Only the project you are at shows its link, under its words; the cursor reads whether its screen is under the pointer.
+    const showProject = (project: string | null, link: [number, number] | null, hover: string | null): void => {
+      if (project !== projectNow) {
+        if (projectNow) openLinks.get(projectNow)?.classList.remove('on');
+        if (project) openLinks.get(project)?.classList.add('on');
+        projectNow = project;
+      }
+      const open = project ? openLinks.get(project) : null;
+      if (open && link) open.style.transform = `translate(${link[0].toFixed(1)}px, ${link[1].toFixed(1)}px)`;
+      const hot = hover !== null;
+      if (hot !== hotNow) {
+        document.documentElement.toggleAttribute('data-project-hot', hot);
+        hotNow = hot;
+      }
+    };
     const tags = TAG_NAMES.map((name) => document.querySelector<HTMLElement>(`[data-tag="${name}"]`));
     const paintBands = (): void => {
       for (const band of document.querySelectorAll<HTMLCanvasElement>('.j-band')) paintBand(band, band.dataset.kind as BandKind);
@@ -83,7 +102,7 @@ export function Journey(): JSX.Element {
     let first: number | null = null;
     let before = 0;
     let lastState: WorldState | null = null;
-    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null, sound: () => Sound.report(), flight: () => lastState?.flight ?? null }));
+    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null, sound: () => Sound.report(), flight: () => lastState?.flight ?? null, stops: () => canvas.current?.report() ?? null }));
 
     // A chapter a link names: there at once, on arrival.
     const arrival = frameForHash(location.hash, timeline);
@@ -108,6 +127,7 @@ export function Journey(): JSX.Element {
         applyLayer(stack, { opacity: layers.stack });
         applyLayer(portal, { opacity: layers.portal });
         const state = canvas.current?.frame(f, dt, now);
+        if (state) showProject(state.flight.project, state.flight.link, state.hover);
         tags.forEach((tag, n) => {
           if (!tag) return;
           applyLayer(tag, { opacity: state ? layers.stack : 0 });
@@ -184,6 +204,7 @@ export function Journey(): JSX.Element {
       <canvas id="j-sparks" className="j-sparks" aria-hidden="true" />
       <StackWords />
       <PortalWord />
+      <ProjectLinks />
       {started && !failed ? (
         <Suspense fallback={null}>
           <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} label={t.journey.hero.machineAlt} onProgress={onProgress} onReady={onReady} onFail={onFail} />
