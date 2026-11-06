@@ -145,7 +145,7 @@ async function smooth(browser, step) {
   const { times, tasks } = await page.evaluate(() => ({ times: window.__journeyDebug.frameTimes(), tasks: window.__tasks }));
   const walk = times.slice(start).sort((a, b) => a - b);
   const median = walk[Math.floor(walk.length / 2)] ?? 0, p95 = walk[Math.floor(walk.length * 0.95)] ?? 0, worst = walk.at(-1) ?? 0;
-  step.check(walk.length > 100, `the walk drew frames all the way (${walk.length})`);
+  step.check(walk.length > 100, `the walk drew frames all the way (${walk.length}: median ${median.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, worst ${worst.toFixed(1)} ms)`);
   const longest = tasks.reduce((a, b) => (b.ms > a.ms ? b : a), { ms: 0, frame: 0 });
   step.check(longest.ms < 200, `no main-thread task over 200 ms (the longest ${longest.ms.toFixed(0)}, near frame ${longest.frame.toFixed(0)})`);
   step.median = median;
@@ -448,13 +448,19 @@ async function flight(browser, step) {
   return `lens ${still.fov.toFixed(1)} to ${fast.fov.toFixed(1)}`;
 }
 
+/** The flight's parts come a frame at a time after the first view: all of them, with their words. */
+const flightLoaded = (page, n) => page.waitForFunction((count) => {
+  const report = window.__journeyDebug.stops();
+  return report?.stops.length === count && report.walls === 4 * count && report.stops.every((stop) => stop.words.length > 0);
+}, n, { timeout: 30_000 });
+
 /** Each project: the one bright thing at its reading place, in its own words in both languages, with its pieces and its link. */
 async function projectsStep(browser, step) {
   const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
   const dated = projects.byDate();
-  await page.waitForFunction((n) => window.__journeyDebug.stops()?.stops.length === n, dated.length, { timeout: 30_000 });
+  await flightLoaded(page, dated.length);
   const report = await page.evaluate(() => window.__journeyDebug.stops());
   step.check(report.walls === 4 * dated.length, `four screens on the walls for each project (${report.walls})`);
   const byId = Object.fromEntries(report.stops.map((s) => [s.id, s]));
@@ -516,7 +522,7 @@ async function projectOpen(browser, step) {
   const dated = projects.byDate();
   const index = dated.findIndex((p) => p.id === 'jontai-energy');
   const read = timeline.reads[index];
-  await page.waitForFunction((n) => window.__journeyDebug.stops()?.stops.length === n, dated.length, { timeout: 30_000 });
+  await flightLoaded(page, dated.length);
   await goToFrame(page, 372);
   await goToFrame(page, read, 160);
   await page.waitForTimeout(1000);
