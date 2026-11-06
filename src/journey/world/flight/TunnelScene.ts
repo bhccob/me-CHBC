@@ -1,4 +1,4 @@
-import { AdditiveBlending, BackSide, BoxGeometry, Color, DoubleSide, FogExp2, FrontSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, PointLight, Raycaster, Scene, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
+import { AdditiveBlending, BackSide, BoxGeometry, type BufferGeometry, Color, DoubleSide, FogExp2, FrontSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, PointLight, type Points, Raycaster, Scene, type ShaderMaterial, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { Locale } from '~/i18n/Translator';
 import { distanceAt, type DistanceTable, distanceTable, type FlightLayout } from '../../flight/layout';
@@ -8,7 +8,7 @@ import { displayReferred, displayValue } from '../displayOutput';
 import { orbitAngles } from '../../end';
 import { Bang } from '../end/Bang';
 import { bangShare, collapseShare, fallPoint, voidLeftAfter } from '../end/Collapse';
-import { Universe, type UniverseReport } from '../end/Universe';
+import { galaxy, Universe, type UniverseReport } from '../end/Universe';
 import { movingShare, starShare } from '../void/Dissolve';
 import { endFov, endFrame, voidDistanceAt, voidOpening, type VoidPose, voidPose, wallReach } from '../void/path';
 import { type QuestionReport, Questions, type QuestionWords } from '../void/Questions';
@@ -140,7 +140,7 @@ export class TunnelScene {
   private readonly headlamp = new PointLight(0xffffff, 22, 30, 1.4);
   private gates: Gates | null = null;
   /** Kept, with their materials, so that the shader they readied stays ready. */
-  private readonly specks: Mesh<BoxGeometry, MeshStandardMaterial>[] = [];
+  private readonly specks: (Mesh<BoxGeometry, MeshStandardMaterial> | Points<BufferGeometry, ShaderMaterial>)[] = [];
   private readonly fog = new FogExp2(0x000000, 0.017);
   private readonly background = new Color();
   private readonly mouse = new Vector2();
@@ -184,8 +184,9 @@ export class TunnelScene {
 
   /**
    * What cannot be spread over frames, done behind the loader. The room the metal reflects takes a third of a second to make,
-   * and the driver readies a lit material's shader only at its first draw, a fifth of a second: that first draw is a speck
-   * here, not the gates after the first view. `draw` draws the tunnel once.
+   * and the driver readies each shader only at its first draw: a third of a second more, for all of them. So their first
+   * draws are here, of what needs no download and of a speck for what does, and not in the middle of the journey. `draw`
+   * draws the tunnel once.
    */
   prepare(renderer: WebGLRenderer, draw: () => void): void {
     if (this.scene.environment) return;
@@ -198,7 +199,14 @@ export class TunnelScene {
         this.specks.push(speck);
       }
     }
+    const stars = galaxy(1, 1, 2, this.uniforms.uTime, this.voidScene.sparkPixels);
+    this.scene.add(stars);
+    this.specks.push(stars);
+    this.voidScene.show(true);
+    this.bang.show(true);
     draw();
+    this.voidScene.show(false);
+    this.bang.show(false);
     for (const speck of this.specks) speck.visible = false;
   }
 
@@ -275,14 +283,13 @@ export class TunnelScene {
     this.walls.show(false);
     await nextFrame();
     if (this.gone) return;
-    this.voidScene.show(true);
     questions.show(true);
-    this.bang.show(true);
+    draw();
+    questions.show(false);
+    await nextFrame();
+    if (this.gone) return;
     universe.show(true);
     draw();
-    this.voidScene.show(false);
-    questions.show(false);
-    this.bang.show(false);
     universe.show(false);
   }
 

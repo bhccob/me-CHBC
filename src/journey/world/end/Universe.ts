@@ -42,7 +42,7 @@ function puffTexture(): CanvasTexture {
 }
 
 /** A spiral galaxy: a few thousand stars in a turning disc. */
-function galaxy(seed: number, count: number, arms: number, time: IUniform<number>, pixels: IUniform<number>): Points<BufferGeometry, ShaderMaterial> {
+export function galaxy(seed: number, count: number, arms: number, time: IUniform<number>, pixels: IUniform<number>): Points<BufferGeometry, ShaderMaterial> {
   const r = seeded(seed);
   const stars = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
