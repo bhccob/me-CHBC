@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { routeFromPath } from '~/i18n/locale';
 import { Translator } from '~/i18n/Translator';
 import { useTranslator } from '~/i18n/useTranslator';
+import { rememberPlace } from '~/journey/jump';
 
 /**
  * A link to the same page in the other language. It shows that language's code ("EN", "NL"), and its name is the
@@ -28,6 +29,7 @@ export function LangSwitch(): JSX.Element {
       hrefLang={otherLocale}
       aria-label={`${code} – ${t.nav.switchTo}`}
       className="header-control"
+      onClick={() => rememberPlace()}
     >
       {code}
     </Link>

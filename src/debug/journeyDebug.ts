@@ -1,6 +1,8 @@
 /** What the proof harness may read of the journey, behind `?proof` only. */
 export interface JourneyDebug {
   frame(): number;
+  /** The first frame the loop showed: on a reload in the middle, that place and not a run up to it. */
+  first(): number | null;
   /** The time each frame took so far, ms. */
   frameTimes(): number[];
   /** Whether the world has loaded and is drawing. */

@@ -1,6 +1,6 @@
 import type { JSX, MouseEvent } from 'react';
 import { Link, useLocation } from 'react-router';
-import { PAGES } from '~/data/pages';
+import { JOURNEY_PATHS, PAGES } from '~/data/pages';
 import { routeFromPath } from '~/i18n/locale';
 import { useTranslator } from '~/i18n/useTranslator';
 import { goToTop } from '~/input/useHomeScroll';
@@ -56,6 +56,7 @@ export function SiteHeader(): JSX.Element {
   const i18n = useTranslator();
   const { t } = i18n;
   const { pathname } = useLocation();
+  const onJourney = (JOURNEY_PATHS as readonly string[]).includes(pathname);
 
   return (
     <>
@@ -63,9 +64,15 @@ export function SiteHeader(): JSX.Element {
         {t.nav.skip}
       </a>
       <header className="site-header">
-        <Link className="site-name" to={i18n.path(PAGES.home)} aria-label={t.nav.home} onClick={(event) => nameToTop(event, pathname)}>
-          {t.needle.hero.name}
-        </Link>
+        {onJourney ? (
+          <a className="site-name" href="#top" aria-label={t.nav.home} data-jump="who">
+            Bob Chung
+          </a>
+        ) : (
+          <Link className="site-name" to={i18n.path(PAGES.home)} aria-label={t.nav.home} onClick={(event) => nameToTop(event, pathname)}>
+            {t.needle.hero.name}
+          </Link>
+        )}
         <button type="button" className="menu-toggle" popoverTarget={MENU_ID}>
           <span className="menu-label-open">{t.nav.menu}</span>
           <span className="menu-label-close">{t.nav.close}</span>
@@ -74,9 +81,20 @@ export function SiteHeader(): JSX.Element {
         <nav id={MENU_ID} className="header-nav" aria-label={t.nav.menu} popover="auto" onClick={closeMenuOnLink}>
           {/* Bob (2026-10-30): "remove the Over mij and Werk in the header": Contact alone, and the language. */}
           <div className="menu-links">
-            <Link className="header-control" to={i18n.path(PAGES.contact)}>
-              {t.nav.contact}
-            </Link>
+            {onJourney ? (
+              <>
+                <a className="header-control" href="#projects" data-jump="projects">
+                  {t.journey.rail.projects}
+                </a>
+                <a className="header-control header-cta" href="#contact" data-jump="contact">
+                  {t.journey.rail.contact}
+                </a>
+              </>
+            ) : (
+              <Link className="header-control" to={i18n.path(PAGES.contact)}>
+                {t.nav.contact}
+              </Link>
+            )}
           </div>
           <div className="menu-extras">
             <LangSwitch />

@@ -49,7 +49,9 @@ function Host({ locale, timeline, reduce, onReady, onFail }: HostProps): null {
       world.current = null;
       made.dispose();
     };
-  }, [gl, locale, timeline, reduce, onReady, onFail]);
+    // The language is left out on purpose: switching it keeps the world, and only its words change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gl, timeline, reduce, onReady, onFail]);
 
   useEffect(() => {
     world.current?.resize(size.width, size.height);

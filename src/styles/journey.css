@@ -43,3 +43,93 @@ html[data-route='journey'] body {
 html[data-route='journey'] .poster {
   display: none;
 }
+
+/* The bar along the top, and the chapters on the right. */
+.j-bar {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--j-gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  z-index: 7;
+}
+
+.j-rail {
+  position: fixed;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  gap: 13px;
+  justify-items: end;
+  z-index: 5;
+  font: 500 12px/1 var(--j-mono);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.j-rail button {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--j-muted);
+  padding: 2px 0;
+}
+
+.j-rail button:hover {
+  color: var(--j-ink);
+}
+
+.j-rail button i {
+  width: 14px;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.j-rail button[aria-current] {
+  color: var(--j-gold);
+}
+
+.j-rail button[aria-current] i {
+  width: 34px;
+}
+
+.j-rail button:focus-visible {
+  outline: 2px solid var(--j-gold);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .j-rail {
+    display: none;
+  }
+}
+
+/* The header on the journey. */
+html[data-route='journey'] .site-name {
+  font: 700 15px/1 var(--j-sans);
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+html[data-route='journey'] .header-control {
+  font: 500 15px/1 var(--j-sans);
+  color: var(--j-muted);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+html[data-route='journey'] .header-control:hover {
+  color: var(--j-ink);
+}
+
+html[data-route='journey'] .header-cta {
+  color: var(--j-ink);
+  border: 1px solid var(--j-line);
+  border-radius: 2px;
+  padding: 7px 13px;
+}

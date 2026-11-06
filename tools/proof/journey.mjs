@@ -146,7 +146,89 @@ async function smooth(browser, step) {
   return `median ${median.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, worst ${worst.toFixed(1)} ms, ${walk.length} frames`;
 }
 
-const STEPS = { stills, smooth };
+/** The header's links and the rail's buttons, and the current chapter in gold. */
+async function jumps(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  await page.getByRole('link', { name: /projects|projecten/i }).first().click();
+  await page.waitForFunction(() => Math.abs(window.__journeyDebug.frame() - 392) < 1, null, { timeout: 15_000 });
+  step.check(true, 'the header goes to the flight');
+  const current = await page.evaluate(() => document.querySelector('#j-rail [aria-current]')?.getAttribute('data-jump'));
+  step.check(current === 'projects', `the rail shows Projects as current (${current})`);
+  const colour = await page.evaluate(() => getComputedStyle(document.querySelector('#j-rail [aria-current]')).color);
+  step.check(colour === 'rgb(230, 184, 74)', `in gold (${colour})`);
+  await page.locator('#j-rail button[data-jump="security"]').click();
+  await page.waitForFunction(() => Math.abs(window.__journeyDebug.frame() - 188) < 1, null, { timeout: 15_000 });
+  step.check(true, 'the rail goes to its chapter');
+  await page.locator('header a[data-jump="contact"]').first().click();
+  await page.waitForFunction((last) => Math.abs(window.__journeyDebug.frame() - last) < 1, timeline.last, { timeout: 15_000 });
+  step.check(true, 'Contact goes to the end');
+  await page.locator('header a[data-jump="who"]').click();
+  await page.waitForFunction(() => scrollY === 0, null, { timeout: 15_000 });
+  step.check(true, 'the name goes to the very top');
+  await context.close();
+  return '';
+}
+
+/** A link that names a chapter lands on it. */
+async function hash(browser, step) {
+  for (const [name, want] of [['projects', 392], ['contact', timeline.last]]) {
+    const { context, page } = await openPage(browser, step);
+    await page.goto(`${BASE}${ROUTE}?proof#${name}`, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
+    const first = await page.evaluate(() => window.__journeyDebug.first());
+    step.check(Math.abs(first - want) < 2, `#${name} lands on frame ${want} at once (${first})`);
+    await context.close();
+  }
+  return '';
+}
+
+/** A reload in the middle lands on the same place, with no run up to it. */
+async function reloadMid(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  await goToFrame(page, 300);
+  await page.waitForTimeout(400);
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
+  const { first, now } = await page.evaluate(() => ({ first: window.__journeyDebug.first(), now: window.__journeyDebug.frame() }));
+  step.check(Math.abs(first - 300) < 2, `the first frame shown is the place it was (${first?.toFixed(1)})`);
+  step.check(Math.abs(now - 300) < 2, `and it stays there (${now?.toFixed(1)})`);
+  await context.close();
+  return '';
+}
+
+/** A resize in the middle keeps the frame. */
+async function resizeKeepsPlace(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  await goToFrame(page, 300);
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await page.waitForTimeout(600);
+  const narrow = await page.evaluate(() => window.__journeyDebug.frame());
+  await page.setViewportSize({ width: 1700, height: 950 });
+  await page.waitForTimeout(600);
+  const wide = await page.evaluate(() => window.__journeyDebug.frame());
+  step.check(Math.abs(narrow - 300) < 2, `narrower, it stays (${narrow.toFixed(1)})`);
+  step.check(Math.abs(wide - 300) < 2, `wider, it stays (${wide.toFixed(1)})`);
+  await context.close();
+  return '';
+}
+
+/** The language link keeps your place. */
+async function langKeepsPlace(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  await goToFrame(page, 300);
+  await page.locator('header a[hreflang]').click();
+  await page.waitForURL(/\/en\/journey\//, { timeout: 10_000 });
+  await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
+  await page.waitForTimeout(400);
+  const here = await page.evaluate(() => window.__journeyDebug?.frame());
+  step.check(Math.abs(here - 300) < 2, `it stays at the same place (${here?.toFixed(1)})`);
+  const rail = await page.locator('#j-rail button[data-jump="security"]').innerText();
+  step.check(/security/i.test(rail), `and the words change with it (${rail})`);
+  await context.close();
+  return '';
+}
+
+const STEPS = { stills, smooth, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 
