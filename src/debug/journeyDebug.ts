@@ -8,6 +8,8 @@ export interface JourneyDebug {
   /** Whether the world has loaded and is drawing. */
   ready(): boolean;
   quality(): number;
+  /** Where the stack's labels point, in CSS pixels. */
+  anchors(): Record<string, [number, number]> | null;
 }
 
 declare global {

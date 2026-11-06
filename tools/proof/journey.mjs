@@ -315,7 +315,56 @@ async function engineeringReadable(browser, step) {
   return '';
 }
 
-const STEPS = { stills, smooth, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+/** The stack: each label stands where its part is, and says what it is. */
+async function stackStep(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  await goToFrame(page, 304);
+  mkdirSync(join(OUT, 'stills'), { recursive: true });
+  writeFileSync(join(OUT, 'stills', 'stack.jpg'), await page.screenshot({ type: 'jpeg', quality: 90 }));
+  const seen = await page.evaluate(() => {
+    const anchors = window.__journeyDebug.anchors();
+    return [...document.querySelectorAll('[data-tag]')].map((tag) => ({ name: tag.dataset.tag, text: tag.innerText.replace(/\s+/g, ' '), left: parseFloat(tag.style.left), top: parseFloat(tag.style.top), anchor: anchors[tag.dataset.tag], visible: getComputedStyle(tag).visibility }));
+  });
+  for (const tag of seen) {
+    const dx = Math.abs(tag.left - tag.anchor[0]), dy = Math.abs(tag.top - tag.anchor[1]);
+    step.check(tag.visible === 'visible', `${tag.name} shows (${tag.text})`);
+    const off = tag.name === 'controls' || tag.name === 'brain';
+    if (off) step.check(dx < 12 && dy < 12, `${tag.name} is within 12 px of its part (${dx.toFixed(0)}, ${dy.toFixed(0)})`);
+  }
+  const words = await page.locator('#j-stack').innerText();
+  step.check(/machine/i.test(words), 'the words say one machine');
+  await context.close();
+  return '';
+}
+
+/** The iris opens onto the tunnel, with no cut on the way through. */
+async function portal(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await goToFrame(page, 332);
+  for (const f of [340, 345, 352, 360, 366]) {
+    await goToFrame(page, f, 120);
+    writeFileSync(join(dir, `portal-${f}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  }
+  // Where the canvas changes from the machine to the tunnel alone, the picture must not jump.
+  let previous = null;
+  let worst = 0;
+  for (let f = 369; f <= 375; f += 1) {
+    await goToFrame(page, f, 120);
+    const shot = await page.screenshot({ type: 'jpeg', quality: 88 });
+    if (f === 372) writeFileSync(join(dir, 'portal-372.jpg'), shot);
+    const { channels } = await sharp(shot).stats();
+    const bright = channels.reduce((sum, c) => sum + c.mean, 0) / 3;
+    if (previous !== null) worst = Math.max(worst, Math.abs(bright - previous));
+    previous = bright;
+  }
+  step.check(worst < 12, `no cut: around the hand-over at frame 372 the page's brightness changes by under 12 of 255 a frame (the most ${worst.toFixed(1)})`);
+  await context.close();
+  return `the most ${worst.toFixed(1)}`;
+}
+
+const STEPS = { stills, smooth, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

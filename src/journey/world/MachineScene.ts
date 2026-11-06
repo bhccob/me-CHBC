@@ -27,6 +27,10 @@ export class MachineScene {
   private readonly codeUrl: string;
   private readonly catcher = new ShadowMaterial({ opacity: 0.6 });
   private readonly sleeveWall = new ShaderMaterial({
+    // Behind the rings, which stand a hair off the wall: no flicker where you see them edge on.
+    polygonOffset: true,
+    polygonOffsetFactor: 2,
+    polygonOffsetUnits: 4,
     uniforms: { glow: new Uniform(0), color: new Uniform(new Color().setRGB(1.0, 0.72, 0.32)) },
     vertexShader: /* glsl */ `
       varying vec3 vPlace;

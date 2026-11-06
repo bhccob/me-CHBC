@@ -3,7 +3,8 @@ import { profile } from '~/data/profile';
 import { installJourneyDebug } from '~/debug/journeyDebug';
 import { useTranslator } from '~/i18n/useTranslator';
 import { frameForHash, frameOfChapter, glideTo, noteFrame, takePlace } from '~/journey/jump';
-import { layersAt } from '~/journey/layers';
+import { layersAt, TAG_NAMES, tagPlace } from '~/journey/layers';
+import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
 import { buildTimeline, type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet } from './applyLayers';
@@ -12,7 +13,10 @@ import { ChapterRail, updateRail } from './ChapterRail';
 import { FieldSheet } from './FieldSheet';
 import { FirstView } from './FirstView';
 import type { CanvasHandle } from './JourneyCanvas';
+import type { WorldState } from '~/journey/world/World';
 import { createPaper, createSparks } from './paper';
+import { PortalWord } from './PortalWord';
+import { StackWords } from './StackWords';
 import { Story, updateStory } from './Story';
 
 // three.js and R3F load after hydration, in their own chunk; the prerendered page holds the words alone.
@@ -45,6 +49,9 @@ export function Journey(): JSX.Element {
     sparks.fit();
     paper.grow(performance.now());
     const sheets = t.journey.sheets.map((_, n) => document.getElementById(`j-sheet-${n}`));
+    const stack = document.getElementById('j-stack');
+    const portal = document.getElementById('j-portal');
+    const tags = TAG_NAMES.map((name) => document.querySelector<HTMLElement>(`[data-tag="${name}"]`));
     const paintBands = (): void => {
       for (const band of document.querySelectorAll<HTMLCanvasElement>('.j-band')) paintBand(band, band.dataset.kind as BandKind);
     };
@@ -61,7 +68,8 @@ export function Journey(): JSX.Element {
     let shown = 0;
     let first: number | null = null;
     let before = 0;
-    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0 }));
+    let lastState: WorldState | null = null;
+    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null }));
 
     // A chapter a link names: there at once, on arrival.
     const arrival = frameForHash(location.hash, timeline);
@@ -82,13 +90,25 @@ export function Journey(): JSX.Element {
         if (layers.paper) paper.draw(now);
         sparks.draw(reduce.current ? 0 : layers.sparks, dt, now);
         layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet));
+        applyLayer(stack, { opacity: layers.stack });
+        applyLayer(portal, { opacity: layers.portal });
+        const state = canvas.current?.frame(f, dt, now);
+        tags.forEach((tag, n) => {
+          if (!tag) return;
+          applyLayer(tag, { opacity: state ? layers.stack : 0 });
+          if (!state || layers.stack <= 0.002) return;
+          const name = TAG_NAMES[n];
+          const [x, y] = tagPlace(name, state.anchors[name], pageFit(f, innerWidth / innerHeight), Math.max(innerWidth / 1280, innerHeight / 720));
+          tag.style.left = `${x.toFixed(1)}px`;
+          tag.style.top = `${y.toFixed(1)}px`;
+        });
+        lastState = state ?? null;
         noteFrame(f);
         first ??= f;
         if (before > 0) frames.push(now - before);
         before = now;
         if (rail) updateRail(rail, f, timeline);
         if (bar) bar.style.transform = `scaleX(${(f / timeline.last).toFixed(4)})`;
-        canvas.current?.frame(f, now);
       },
     });
 
@@ -137,9 +157,11 @@ export function Journey(): JSX.Element {
         <FieldSheet key={n} sheet={sheet} n={n} />
       ))}
       <canvas id="j-sparks" className="j-sparks" aria-hidden="true" />
+      <StackWords />
+      <PortalWord />
       {started && !failed ? (
         <Suspense fallback={null}>
-          <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} onReady={onReady} onFail={onFail} />
+          <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} label={t.journey.hero.machineAlt} onReady={onReady} onFail={onFail} />
         </Suspense>
       ) : null}
     </div>

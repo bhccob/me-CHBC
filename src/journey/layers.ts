@@ -32,6 +32,16 @@ function sheetAt(f: number, n: number): SheetLayer {
   return { on: q > 0 && covered < 1 && gone < 1, y: (1 - q) * 112, tilt: (1 - q) * -2.6, opacity: 1 - gone, inner: last ? 1 - ease(f, 272, 288) : 1 };
 }
 
+export const TAG_NAMES = ['armour', 'controls', 'brain', 'body'] as const;
+export type TagName = (typeof TAG_NAMES)[number];
+
+/** Where a label's box stands on the page, from where it points, how small the machine stands and how the page scales. */
+export function tagPlace(name: TagName, [x, y]: readonly [number, number], fit: number, pageScale: number): [number, number] {
+  const k = (fit * pageScale) / 1.125;
+  const off = name === 'armour' ? [-660 * k, 12] : name === 'body' ? [230 * k, 90] : [0, 0];
+  return [x + off[0], y - 8 + off[1]];
+}
+
 export interface LayerStates {
   hero: Layer;
   vert: Layer;
@@ -43,6 +53,10 @@ export interface LayerStates {
   /** How much of the drifting sparks shows. */
   sparks: number;
   sheets: SheetLayer[];
+  /** The stack's words and labels. */
+  stack: number;
+  /** The word over the opening iris. */
+  portal: number;
 }
 
 export function layersAt(f: number, _tl: Timeline, _tall: boolean): LayerStates {
@@ -55,5 +69,7 @@ export function layersAt(f: number, _tl: Timeline, _tall: boolean): LayerStates 
     paper: f < 70,
     sparks: 1 - ease(f, 4, 26),
     sheets: sheetWindows.map((_, n) => sheetAt(f, n)),
+    stack: band(f, 280, 292, 312, 322),
+    portal: band(f, 338, 344, 354, 360),
   };
 }

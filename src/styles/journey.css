@@ -445,3 +445,86 @@ html[data-route='journey'] .header-cta {
   color: var(--j-gold);
   font-weight: 500;
 }
+
+/* The exploded stack, and the word over the iris. */
+.j-stack {
+  position: fixed;
+  left: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(34vw, 460px);
+  z-index: 5;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.j-stack h2 {
+  margin: 0 0 12px;
+  font: 800 clamp(38px, 4.8vw, 76px) / 0.95 var(--j-sans);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.j-stack p {
+  margin: 0;
+  font: 500 clamp(15px, 1.3vw, 19px) / 1.4 var(--j-sans);
+  color: var(--j-muted);
+}
+
+.j-tag {
+  position: fixed;
+  z-index: 5;
+  font: 500 13px / 1.25 var(--j-mono);
+  color: var(--j-ink);
+  opacity: 0;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  padding-left: 40px;
+}
+
+.j-tag::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 34px;
+  height: 1px;
+  background: var(--j-gold);
+}
+
+.j-tag b {
+  display: block;
+  color: var(--j-gold);
+  font-weight: 500;
+}
+
+.j-tag-left {
+  padding: 0 40px 0 0;
+  text-align: right;
+}
+
+.j-tag-left::before {
+  left: auto;
+  right: 0;
+}
+
+.j-portal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  opacity: 0;
+  visibility: hidden;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.j-portal h2 {
+  margin: 0;
+  font: 800 clamp(64px, 11vw, 180px) / 0.9 var(--j-sans);
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+}

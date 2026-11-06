@@ -21,7 +21,14 @@ export interface MachinePose {
   lights: { key: number; rim: number; strip: number; low: number; top: number; bench: number; lamp: number };
   /** How much of the code has typed itself, 0 to 1 in sixteenths. */
   typed: number;
+  /** Where the stack's four labels point, in the machine's space. */
+  labels: Record<'armour' | 'controls' | 'brain' | 'body', [number, number, number]>;
+  /** The opening of the iris: its centre and a point on its edge. */
+  iris: { center: [number, number, number]; edge: [number, number, number] };
 }
+
+/** The iris's radius in the lid, a little wider than its hole as the mock had it. */
+const IRIS_EDGE = 0.4 * 1.3;
 
 const LZ = 0.6, WALL_Z = 0.23, HIP_Z = 0.05, L1 = 0.78, L2 = 1.05, Z = 0.0178, BLADES = 9;
 const POSTS: readonly (readonly [number, number])[] = [[-0.72, -0.72], [0.72, -0.72], [-0.72, 0.72], [0.72, 0.72]];
@@ -136,6 +143,13 @@ export function machinePose(f: number): MachinePose {
   return {
     parts,
     typed,
+    labels: {
+      armour: [parts.lid.p[0] + 0.78, parts.lid.p[1] - 0.78, lidZ + 0.03],
+      controls: [parts.game.p[0] + 0.63, parts.game.p[1] - 0.63, parts.game.p[2]],
+      brain: [parts.code.p[0] + 0.63, parts.code.p[1] - 0.63, parts.code.p[2]],
+      body: [0.72, -0.72, 0.3],
+    },
+    iris: { center: [0, 0, lidZ], edge: [IRIS_EDGE, 0, lidZ] },
     emit: {
       pulse: f < 334 ? 4 * wake : 14,
       led: f < 356 ? led : mix(led, 1.5, ease(f, 356, 374)),

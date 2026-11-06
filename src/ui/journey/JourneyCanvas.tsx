@@ -3,17 +3,19 @@ import { type JSX, useEffect, useRef } from 'react';
 import codeScreenUrl from '~/assets/journey/code-screen.webp?url';
 import type { Locale } from '~/i18n/Translator';
 import type { Timeline } from '~/journey/timeline';
-import { World } from '~/journey/world/World';
+import { World, type WorldState } from '~/journey/world/World';
 
 export interface CanvasHandle {
   /** Moves the world to frame `f` and draws it. */
-  frame(f: number, now: number): void;
+  frame(f: number, dt: number, now: number): WorldState;
 }
 
 interface HostProps {
   locale: Locale;
   timeline: Timeline;
   reduce: boolean;
+  /** What the canvas shows, in words. */
+  label: string;
   onReady: (handle: CanvasHandle) => void;
   onFail: (error: unknown) => void;
 }
@@ -35,9 +37,10 @@ function Host({ locale, timeline, reduce, onReady, onFail }: HostProps): null {
         made.resize(gl.domElement.clientWidth, gl.domElement.clientHeight);
         made.warm(0);
         onReady({
-          frame(f, now) {
-            made.update(f);
+          frame(f, dt, now) {
+            const state = made.update(f, dt);
             advance(now);
+            return state;
           },
         });
       })
@@ -69,6 +72,8 @@ export default function JourneyCanvas(props: JourneyCanvasProps): JSX.Element {
   return (
     <Canvas
       className="journey-canvas"
+      role="img"
+      aria-label={props.label}
       frameloop="never"
       flat
       dpr={[1, 1.5]}
