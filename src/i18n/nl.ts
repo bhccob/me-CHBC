@@ -7,7 +7,7 @@ export const nl: Dictionary = {
       from: 'Van code',
       to: 'naar',
       words: ['games.', 'beveiliging.', 'machines.'],
-      intro: 'Ik ben Bob Chung, {age}. Geboren en getogen op Aruba, nu in Rotterdam, waar ik software studeer en op weg ben naar mechatronica.',
+      intro: 'Ik ben Bob Chung, {age}. Geboren en getogen op Aruba, nu in Rotterdam. Ik studeer software, op weg naar mechatronica.',
       cta: 'Bekijk mijn projecten',
       seal: 'PROGRAMMEUR',
       treeAlt: 'Een door de wind gebogen Arubaanse boom waarvan de takken overgaan in gouden printsporen, boven een donkere, nevelige zee.',
@@ -19,7 +19,7 @@ export const nl: Dictionary = {
         title: ['Software', 'Engineering'],
         facts: [
           { label: 'Stack', value: 'Full-stack' },
-          { label: 'Gestudeerd', value: 'MBO 4, Rotterdam' },
+          { label: 'Opleiding', value: 'MBO 4, Rotterdam' },
           { label: 'Gebouwd', value: 'Webapps, mobiele apps en websites' }
         ],
         line: { lead: 'Het brein.', rest: 'De code die het laat denken.' },
@@ -44,11 +44,11 @@ export const nl: Dictionary = {
         titleBlock: 'Stage, nu · Blad 3 van 4 · Systems Builder'
       },
       {
-        title: ['Mechatronica', 'Engineering'],
+        title: ['Mechatronica'],
         facts: [
-          { label: 'Hierna', value: 'HBO' },
-          { label: 'Interesse en verkenning', value: 'Sensoren, motoren, circuits' },
-          { label: 'Doel', value: 'Een eigen bedrijf of een masterdiploma' }
+          { label: 'Volgende stap', value: 'HBO' },
+          { label: 'Interesse en oriëntatie', value: 'Sensoren, motoren, circuits' },
+          { label: 'Doel', value: 'Een eigen bedrijf of een master' }
         ],
         line: { lead: 'Het lichaam.', rest: 'Tandwielen, motoren en beweging.' },
         titleBlock: 'HBO, hierna · Blad 4 van 4 · Systems Builder'
@@ -56,7 +56,7 @@ export const nl: Dictionary = {
     ],
     stack: {
       title: 'Eén machine.',
-      text: 'Elk vakgebied dat ik leer, is er een laag van. Samen maken ze iets dat denkt, reageert, veilig blijft en beweegt.',
+      text: 'Elk vakgebied dat ik leer, is er een laag van. Samen maken ze iets wat denkt, reageert, veilig blijft en beweegt.',
       labels: {
         armour: { name: 'Pantser', field: 'Cybersecurity' },
         controls: { name: 'Besturing', field: 'Game Development' },
@@ -83,7 +83,7 @@ export const nl: Dictionary = {
       place: 'Rotterdam, geboren op Aruba',
       top: 'Terug naar het begin'
     },
-    rail: { label: 'Hoofdstukken', who: 'Wie', software: 'Software', games: 'Games', security: 'Beveiliging', mechatronics: 'Mechatronica', stack: 'Stapel', projects: 'Projecten', qa: 'Q&A', contact: 'Contact' },
+    rail: { label: 'Hoofdstukken', who: 'Wie', software: 'Software', games: 'Games', security: 'Beveiliging', mechatronics: 'Mechatronica', stack: 'Machine', projects: 'Projecten', qa: 'Q&A', contact: 'Contact' },
     sound: { on: 'Geluid aan', off: 'Geluid uit' },
     cursor: { open: 'OPEN' },
     loader: { withSound: 'Binnengaan met geluid', without: 'Binnengaan zonder' }

@@ -1179,6 +1179,31 @@ html[data-project-open] .j-bar {
     padding: 0 18px;
   }
 
+  .j-hero {
+    right: 18px;
+    width: auto;
+  }
+
+  .j-swap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* The Dutch words are longer than a phone's line: the rolling word takes one of its own. */
+  html[lang='nl'] .j-hero .j-to {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  html[lang='nl'] .j-swap {
+    flex: 0 0 100%;
+  }
+
+  .j-end h2 {
+    white-space: normal;
+    text-wrap: balance;
+  }
+
   .j-sheet h2,
   #j-sheet-2 h2,
   #j-sheet-3 h2 {

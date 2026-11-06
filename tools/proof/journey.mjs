@@ -244,6 +244,29 @@ async function langKeepsPlace(browser, step) {
 }
 
 /** The first view: its words, the word that rolls, the tree, the button, and the story's digits. */
+async function rollingWordsStayAway(page, step) {
+  const seen = await page.evaluate(() => new Promise((done) => {
+    const box = document.querySelector('.j-swap');
+    const started = performance.now();
+    let frames = 0, shown = 0, rolls = 0, last = box.children[0];
+    const tick = () => {
+      frames++;
+      const view = box.getBoundingClientRect();
+      for (const word of box.children) {
+        if (word.style.transform === 'none' && word !== last) {
+          last = word;
+          rolls++;
+        }
+        if (word.style.transform === 'translateY(110%)' && word.getBoundingClientRect().top < view.bottom - 1) shown++;
+      }
+      if (performance.now() - started < 6500) requestAnimationFrame(tick);
+      else done({ frames, shown, rolls });
+    };
+    tick();
+  }));
+  step.check(seen.rolls >= 2 && seen.shown === 0, `a word that has rolled away stays out of sight until its turn (${seen.shown} of ${seen.frames} frames show one, over ${seen.rolls} rolls)`);
+}
+
 async function firstView(browser, step) {
   const { context, page } = await openJourney(browser, step);
   const first = await page.evaluate(() => document.querySelector('.j-hero h1').innerText.replace(/\s+/g, ' '));
@@ -272,6 +295,7 @@ async function firstView(browser, step) {
   await page.locator('.j-go').click();
   await page.waitForFunction(() => Math.abs(window.__journeyDebug.frame() - 392) < 1, null, { timeout: 15_000 });
   step.check(true, 'the button goes to the flight');
+  await rollingWordsStayAway(page, step);
   await context.close();
   return '';
 }
@@ -318,11 +342,11 @@ async function coveredShare(page, word) {
 
 /** The long word on the last sheet reads, on the two common sizes. */
 async function engineeringReadable(browser, step) {
-  for (const viewport of [{ width: 1440, height: 810 }, { width: 1920, height: 1080 }]) {
-    const { context, page } = await openJourney(browser, step, viewport);
+  for (const [viewport, route, word] of [[{ width: 1440, height: 810 }, '/en/journey/', 'Engineering'], [{ width: 1920, height: 1080 }, '/en/journey/', 'Engineering'], [{ width: 1440, height: 810 }, '/journey/', 'Mechatronica'], [{ width: 1920, height: 1080 }, '/journey/', 'Mechatronica']]) {
+    const { context, page } = await openJourney(browser, step, viewport, { route });
     await goToFrame(page, 250);
-    const share = await coveredShare(page, 'Engineering');
-    step.check(share <= 0.3, `at ${viewport.width} the machine covers at most 30% of the word (${(share * 100).toFixed(0)}%)`);
+    const share = await coveredShare(page, word);
+    step.check(share <= 0.3, `at ${viewport.width} the machine covers at most 30% of ${word} (${(share * 100).toFixed(0)}%)`);
     await context.close();
   }
   return '';
@@ -1030,6 +1054,121 @@ const innerWidthOf = (viewport) => viewport.width + 1;
 const phoneStep = (browser, step) => smallScreen(browser, step, { width: 390, height: 844 }, 'phone');
 const tabletStep = (browser, step) => smallScreen(browser, step, { width: 820, height: 1180 }, 'tablet');
 
+/** What an element's words cover: as wide as the letters, as high as its box, as tight type runs past its own line boxes. */
+const inkBoxes = (page, selectors) => page.evaluate((list) => list.flatMap((sel) => [...document.querySelectorAll(sel)].filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').map((e) => {
+  const range = document.createRange();
+  range.selectNodeContents(e);
+  const ink = range.getBoundingClientRect(), box = e.getBoundingClientRect();
+  return { text: e.textContent.trim().replace(/\s+/g, ' ').slice(0, 44), left: ink.left, right: ink.right, top: box.top, bottom: box.bottom };
+})), selectors);
+
+/** These parts of a page: each inside it, and none over another. */
+async function partsFit(page, step, tag, selectors) {
+  const boxes = await inkBoxes(page, selectors);
+  step.check(boxes.length >= selectors.length, `${tag}: all its parts are there (${boxes.length})`);
+  const { width, height } = page.viewportSize();
+  const out = boxes.filter((b) => b.left < -1 || b.right > width + 1 || b.top < -1 || b.bottom > height + 1);
+  step.check(out.length === 0, `${tag}: stays on the page${out.map((b) => ` | "${b.text}" ${b.left.toFixed(0)},${b.top.toFixed(0)} to ${b.right.toFixed(0)},${b.bottom.toFixed(0)}`).join('')}`);
+  const over = [];
+  boxes.forEach((a, i) => boxes.slice(i + 1).forEach((b) => {
+    if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) over.push(`"${a.text}" and "${b.text}"`);
+  }));
+  step.check(over.length === 0, `${tag}: nothing lies over anything${over.map((o) => ` | ${o}`).join('')}`);
+}
+
+/**
+ * The English that stays in the Dutch page, as Dutch people in the trade use it, and the names. Every other sentence in English
+ * must be gone from it.
+ */
+const AGREED_ENGLISH = new Set(['Software', 'Engineering', 'Game', 'Development', 'Software Engineering', 'Game Development', 'Cybersecurity', 'Stack', 'Full-stack', 'Engine', 'Godot, Roblox Studio', 'games.', 'Games', 'machines.', 'Q&A', 'GitHub', 'Instagram', 'Contact', 'OPEN', 'HBO', 'MBO 4, Rotterdam', 'Aruba', 'Rotterdam']);
+
+/** Every sentence of an object of words, walked. */
+const sentencesIn = (value) => (typeof value === 'string' ? [value] : value && typeof value === 'object' ? Object.values(value).flatMap(sentencesIn) : []);
+
+/** Whether a sentence stands in a text as whole words: "Age" is not in "pagina". */
+const standsIn = (sentence, text) => {
+  const quoted = sentence.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^\\p{L}])${quoted}($|[^\\p{L}])`, 'u').test(text);
+};
+
+/** Everything a Dutch visitor reads: inside the page, over nothing, and none of it still in English. */
+async function dutchFit(browser, step) {
+  const { en } = await tsImport('../../src/i18n/en.ts', import.meta.url);
+  const { qaReadFrames } = await tsImport('../../src/journey/world/void/path.ts', import.meta.url);
+  const dated = projects.byDate();
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  const read = [];
+  for (const [viewport, tag, options] of [[{ width: 1440, height: 810 }, 'desktop', {}], [{ width: 390, height: 844 }, 'phone', { hasTouch: true, isMobile: true }]]) {
+    // The door, before anything else.
+    const door = await openPage(browser, step, viewport, options);
+    await door.page.goto(`${BASE}/journey/?proof`, { waitUntil: 'load' });
+    await door.page.waitForSelector('.j-door-on', { timeout: 60_000 });
+    await partsFit(door.page, step, `${tag}, the door`, ['.j-door-go', '.j-door-without']);
+    read.push(await door.page.evaluate(() => document.querySelector('.j-door').textContent));
+    await door.context.close();
+
+    const { context, page } = await openJourney(browser, step, viewport, { route: '/journey/', ...options });
+    await flightLoaded(page, dated.length);
+    await page.waitForFunction(() => window.__journeyDebug.stops()?.questions.every((q) => q.words.length > 0) && window.__journeyDebug.stops().end !== null, null, { timeout: 30_000 });
+    await page.waitForTimeout(600);
+    await partsFit(page, step, `${tag}, the first view`, ['.j-hero h1', '.j-hero p', '.j-go']);
+    const rolling = await page.evaluate(() => [...document.querySelectorAll('.j-swap > *')].map((e) => { const r = document.createRange(); r.selectNodeContents(e); const box = r.getBoundingClientRect(); return { word: e.textContent, right: box.right }; }));
+    step.check(rolling.length > 0 && rolling.every((w) => w.right <= viewport.width - 1), `${tag}: each rolling word fits (${rolling.map((w) => `${w.word} ${w.right.toFixed(0)}`).join(', ')})`);
+    writeFileSync(join(dir, `nl-${tag}-hero.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
+    await page.waitForFunction(() => { const [, second] = document.querySelectorAll('.j-swap > *'); return second && !second.style.transform.includes('110'); }, null, { timeout: 8_000 });
+    await page.waitForTimeout(800);
+    writeFileSync(join(dir, `nl-${tag}-hero-long.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
+    for (const [n, f] of [72, 124, 188, 250].entries()) {
+      await jumpTo(page, f);
+      await page.waitForTimeout(700);
+      writeFileSync(join(dir, `nl-${tag}-sheet-${n + 1}.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
+      await partsFit(page, step, `${tag}, sheet ${n + 1}`, [`#j-sheet-${n} .j-trio > div`, `#j-sheet-${n} h2`, `#j-sheet-${n} .j-line`, `#j-sheet-${n} .j-block`]);
+    }
+    await jumpTo(page, 304);
+    await page.waitForTimeout(600);
+    writeFileSync(join(dir, `nl-${tag}-stack.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
+    for (const [i, f] of timeline.reads.entries()) {
+      await jumpTo(page, f);
+      await page.waitForTimeout(1000);
+      writeFileSync(join(dir, `nl-${tag}-project-${i + 1}.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
+      const { stops } = await page.evaluate(() => window.__journeyDebug.stops());
+      const rect = stops[i].rect ?? [NaN, NaN, NaN, NaN];
+      const [l, t, r, b] = rect;
+      step.check(l >= -1 && t >= -1 && r <= viewport.width + 1 && b <= viewport.height + 1, `${tag}, ${dated[i].id}: its words stay on the page (${rect.map((v) => v.toFixed(0)).join(', ')})`);
+      const link = (await inkBoxes(page, ['.j-open.on']))[0];
+      step.check(link && link.top >= stops[i].foot - 2 && link.bottom <= viewport.height, `${tag}, ${dated[i].id}: its link stands under them (${link?.top.toFixed(0)} under ${stops[i].foot?.toFixed(0)})`);
+      read.push(stops[i].words.join(' '));
+    }
+    for (const [i, f] of qaReadFrames(timeline).entries()) {
+      await jumpTo(page, f);
+      await page.waitForTimeout(600);
+      if (tag === 'phone' || i === 0) writeFileSync(join(dir, `nl-${tag}-qa-${i + 1}.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
+      const { questions } = await page.evaluate(() => window.__journeyDebug.stops());
+      const [l, t, r, b] = questions[i].rect;
+      step.check(l >= -1 && t >= -1 && r <= viewport.width + 1 && b <= viewport.height + 1, `${tag}, question ${i + 1}: its words stay on the page (${[l, t, r, b].map((v) => v.toFixed(0)).join(', ')})`);
+      read.push(questions[i].words.join(' '));
+    }
+    await jumpTo(page, timeline.last);
+    await page.waitForTimeout(1500);
+    writeFileSync(join(dir, `nl-${tag}-end.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
+    await partsFit(page, step, `${tag}, the end page`, ['.j-end-hub h2', '.j-end-hub p', '.j-end nav', '.j-end-bar']);
+    read.push(await page.evaluate(() => [document.body.textContent, ...[...document.querySelectorAll('[aria-label], [alt], [title]')].flatMap((e) => [e.getAttribute('aria-label'), e.getAttribute('alt'), e.getAttribute('title')])].join(' ')));
+    await context.close();
+  }
+
+  // The English sentences, each looked for in what the Dutch visitor was given.
+  const text = read.join(' ').replace(/\s+/g, ' ').toLowerCase();
+  const english = [...new Set([
+    ...sentencesIn(en.journey).flatMap((sentence) => sentence.split(/\{\w+\}/)).map((sentence) => sentence.trim()),
+    ...en.end.questions.flatMap((q) => [q.question, q.answer]),
+    ...dated.flatMap((project) => [project.copy('en').flightKind, project.copy('en').flightLine]),
+  ])].filter((sentence) => sentence && !AGREED_ENGLISH.has(sentence));
+  const left = english.filter((sentence) => standsIn(sentence, text));
+  step.check(left.length === 0, `no English is left, of ${english.length} sentences compared${left.map((sentence) => ` | "${sentence}"`).join('')}`);
+  return `${english.length} English sentences compared`;
+}
+
 /** Turning a phone in the middle of the flight keeps the place. */
 async function rotateStep(browser, step) {
   const { context, page } = await openJourney(browser, step, { width: 390, height: 844 }, { route: '/en/journey/', hasTouch: true, isMobile: true });
@@ -1523,7 +1662,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

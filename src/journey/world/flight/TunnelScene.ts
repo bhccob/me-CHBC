@@ -67,6 +67,10 @@ export interface StopReport {
   screens: number;
   pieces: number;
   words: string[];
+  /** The box its words cover on the page: left, top, right, bottom. */
+  rect: [number, number, number, number];
+  /** How far down the page the left end of its last words comes. */
+  foot: number;
 }
 
 const GATE_URL = '/models/gate.glb';
@@ -384,7 +388,8 @@ export class TunnelScene {
   }
 
   report(): StopReport[] {
-    return this.stops.map((stop) => ({ id: stop.project.id, screens: stop.project.screens === 'phones' ? 3 : 1, pieces: stop.project.piece ? 1 : 0, words: stop.drawn }));
+    this.camera.updateMatrixWorld();
+    return this.stops.map((stop) => ({ id: stop.project.id, screens: stop.project.screens === 'phones' ? 3 : 1, pieces: stop.project.piece ? 1 : 0, words: stop.drawn, rect: stop.wordsRect(this.camera, this.width, this.height), foot: stop.wordsFoot(this.camera, this.height) }));
   }
 
   get wallCount(): number {

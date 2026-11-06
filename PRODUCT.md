@@ -12,72 +12,56 @@ A mixed audience with no single priority visitor; the owner confirmed it should 
 
 ## Product Purpose
 
-The personal portfolio of Bob Chung at bhccob.com. It introduces who he is, his current occupation (student software engineer at MBO 4 in Rotterdam), the projects he has built and the direction he is heading, and it lets visitors message him directly from the site.
+The personal portfolio of Bob Chung at bhccob.com. It introduces who he is, the fields he studies and is heading for, the projects he has built and what he wants to do next, and it lets visitors reach him directly from the site.
 
-**Success means the visitor remembers him.** The confirmed primary goal is a distinct, memorable personal impression, unlike a template student portfolio. Contact and project case studies are supporting capabilities, not the success measure.
+**Success means the visitor remembers him.** The confirmed primary goal is a distinct, memorable personal impression, unlike a template student portfolio. Contact and project pages are supporting capabilities, not the success measure.
 
 ## Positioning
 
-A student software engineer building toward systems and firmware security work, whose portfolio is itself the proof:
+A student who builds, from software and games toward security and machines, and whose portfolio is itself the proof:
 
-- The site is engineered across two languages, each in the role it suits: TypeScript/Astro for the site and a Python auditor that guards every deploy.
-- It pairs that with a story no neighbouring portfolio can copy: born and raised in Aruba, Chinese by heritage, living in Rotterdam since 18, and a former powerlifter and table tennis player.
+- The site is one immersive 3D journey that also works without 3D, in two languages, with its art made in code and Blender.
+- It pairs that with a story no neighbouring portfolio can copy: born and raised in Aruba, Hakka Chinese by heritage, and living in Rotterdam since 18.
 
 ## Operating Context
 
-- **Languages:** Dutch at `/` (the default, at the owner's request) and English at `/en/`, as separate crawlable pages. The old `/nl/` addresses redirect to the root.
-- **Contact:** a dedicated `/contact` page. Messages go through Web3Forms, and the form falls back to `mailto:` until an access key is configured. GitHub, Instagram and email (bhccob@gmail.com) are the visible channels.
-- **Hosting:** a static site on GitHub Pages under the custom domain bhccob.com (behind Cloudflare), built and deployed by GitHub Actions.
-- **Maintainer:** Bob edits content himself. Copy lives in `src/i18n/en.ts` and `src/i18n/nl.ts`, and projects, skills and profile data live in `src/data/`.
+- **Languages:** Dutch at `/` (the default, at the owner's request) and English at `/en/`, as separate crawlable pages.
+- **Contact:** the end page of the journey and a `/contact` page. Messages go through Web3Forms when its key is configured. GitHub, Instagram and email (bhccob@gmail.com) are the visible channels.
+- **Hosting:** a static site on GitHub Pages under the custom domain bhccob.com (behind Cloudflare), built and deployed by GitHub Actions from `main`.
+- **Maintainer:** Bob edits content himself. Copy lives in `src/i18n/en.ts` and `src/i18n/nl.ts`, and projects and profile data live in `src/data/`.
 
 ## Capabilities and Constraints
 
-- **Home page:**
-  - A name-first hero (chosen 2026-10-12): BOB CHUNG as giant outlined type with a yellow lens that follows the pointer, the ping-pong ball as the O in BOB, the motto and role line beneath.
-  - Work as category prints only: Web development (Jontai Energy, Cookies Clicker) and Game development (Cookies Clicker), plus an empty slot for a future "systems & security" category and a note that earlier work exists but is not listed. The home page never lists the projects themselves.
-  - About, with the route China → Aruba → Rotterdam.
-  - Toolkit.
-  - Off duty: hobbies, current and former, as departure rows.
-  - Current build & roadmap: MBO 4 now, an HBO degree in a technical field next (programme not chosen yet), then possible future roles, grouped by field, behind a dropdown, and finally the goal row: a technology company of his own (owner, 2026-10-14).
-  - Engine room ("this site is a project too").
-  - Final call to the contact page.
-- **Other pages and extras:** a page per category (`/projects/web-development/`, `/projects/game-development/`) that opens on its newest project and switches between the projects in that category with tabs, Previous / Next, arrow keys and swipes; a contact page; a 404 page; a `/` terminal easter egg. Every page has a share image rendered at build time.
+- **The journey (the home page):** a loader, a first view, his story, four field sheets that build a machine, the machine pulled apart, a portal into a flight past the projects, a void with his Q&A, and a big bang that becomes the "Let's talk" page. `DESIGN.md` describes each.
+- **Other pages:** a page per project (it opens in place over the flight; a direct visit gets a plain page), a contact page, a Lite page with everything as plain text, and a 404 page.
 - **Owner constraints:**
-  - The career section must **not** be the main focus.
-  - No collaboration wording for now.
-  - The site stays highly interactive, SEO-friendly and object-oriented in code.
-  - No playable game on the site itself (owner, 2026-10-13): the off-duty physics playground, its trick-shots mini-game, the C/WebAssembly engine behind it and the Konami code were removed at the owner's request. Game projects such as Cookies Clicker stay listed.
-  - Hidden-interaction easter eggs, with a `0/N` counter of those found, are allowed and are not a game (art direction, 2026-10-20).
-  - Scrolling should be fun and hold attention on each section (owner, 2026-10-13): sections answer the scroll position in both directions (crossing tapes under the hero, dealt prints and rows, the portrait swinging into its frame, receding sections). The project prints are a scroll-driven gallery (owner, 2026-10-14).
-    - The owner asked for GSAP ScrollTrigger, which the other scenes already use.
-    - The section holds still while the prints travel, and the page moves on only once the last print has arrived.
-    - The owner chose bigger landscape prints, two in view, so visitors spend longer in the gallery, sliding left so the cards keep their reading order.
-    - Only real categories plus the one "next category" slot are shown; no extra empty slots. New categories lengthen the gallery and the hold by themselves.
-    - This is the only pinned section. The portrait stays the real photo; an AI-generated video or 3D version was tried and dropped at the owner's request.
-  - Projects are grouped by software discipline (owner, 2026-10-12); a project may sit in more than one category (Cookies Clicker is both a web and a game project) and is indexed at its first category. The site states that more projects are coming and that earlier, unlisted projects exist.
-  - The site must feel smooth on ordinary laptops; heavy effects only animate transforms, opacity or clips.
-  - Future roles are presented as possible steps, not fixed plans. The destination is founding his own company (owner, 2026-10-14), shown as its own visible "Goal" row (layout chosen by the owner) rather than inside the dropdown.
-  - The "Why these directions?" text names the electrical and mechanical side of the work (sensors, motors and actuators, circuits and power) next to the software (owner, 2026-10-14).
-  - No heavy bordered boxes: rows, rules and tiles instead.
+  - Dark, calm and cinematic, with one focal point per scene; never too bright or too busy (owner, 2026-10-20).
+  - One world and one subject throughout, with smooth transitions. Introduce him through big field pages, and show the projects as a 3D experience rather than as a list (owner, 2026-11-05).
+  - Keep the information about him minimal (owner, 2026-11-05).
+  - Projects come oldest first, one at a time, with their dates; many more can be added (owner, 2026-11-05).
+  - The site should feel slightly techy (owner, 2026-11-05).
+  - No AI images and no AI video: the art stays code and Blender (owner, 2026-11-05). The portrait video was dropped earlier for the same reason (owner, 2026-10-13).
+  - No playable game on the site itself (owner, 2026-10-13).
+  - Sound is optional, chosen at the door. It belongs to the machine forming, the portal, its break, the Q&A and the end page (owner, 2026-11-05).
+  - The cursor is the "Lock" design, without a trail (owner, 2026-11-06).
+  - The end page says "Let's talk", as the owner asked. The earlier rule against collaboration wording does not apply to this page.
+  - The site must feel smooth on ordinary laptops.
 - **Terminology:**
-  - Current occupation: "Student Software Engineer".
-  - Next step: an HBO degree in technology after the MBO 4 ("HBO · Technologie"); the specific programme is open.
-  - Possible future careers (interests, never presented as plans), grouped by field (owner, 2026-10-14): Engineering ("Embedded Engineer", "Data Engineer"), Cybersecurity ("DevSecOps Engineer"), and "Firmware Security Automation Engineer" as the role that combines both. Fintech stays in the dropdown as one short line, a possible sector along the way; it is not the end goal and gets little emphasis (owner, 2026-10-14). The earlier Systems, Security, SRE and MLOps roles were dropped at the owner's request. On the site they sit behind one "Possible future roles" dropdown as labelled groups (layout chosen by the owner, 2026-10-14), so the roadmap stays uncluttered.
-  - Projects are labelled "Project #01", "#02", and so on.
-- **Technical:** static output only, so there is no server-side code. Security headers are impossible on GitHub Pages, so the Content-Security-Policy ships as a meta tag. Visitor statistics are cookie-free (Cloudflare Web Analytics) and only load when a token is configured. The local toolchain is Node only; the Python tooling runs in CI.
+  - The order of the fields, as he set it: Software Engineering and Game Development at MBO, Cybersecurity as an intern, Mechatronics Engineering at HBO.
+  - His wording on the sheets: "Stack: Full-stack", "Studied", "Built" in broad terms and without naming projects; "Engine: Godot, Roblox Studio"; "Possible direction" for security; "Interested and exploring" and "Goal: own company or a master's degree" for mechatronics.
+  - "Programmer" on the first view's seal and "Systems Builder" in the title blocks are his own calls. Do not add other titles.
+  - Possible future roles are interests, never plans.
+- **Technical:** static output only, so there is no server-side code. Security headers are impossible on GitHub Pages, so the Content-Security-Policy ships as a meta tag. Visitor statistics are cookie-free (Cloudflare Web Analytics) and only load when a token is configured.
 - **Open decisions:**
   - The school's name is not stated (only "MBO 4, Rotterdam").
-  - The Web3Forms key is not configured yet.
-  - The Cloudflare Web Analytics token is not configured yet.
-  - The exact HBO programme is not chosen yet (the site names example directions: HBO-ICT, Computer Science, Embedded Systems Engineering).
+  - The exact HBO route may change; his own answer in the Q&A names Mechatronica at Fontys Hogeschool.
   - Future projects are not yet chosen.
 
 ## Brand Commitments
 
-- **Identity:** the name Bob Chung, the handle `bhccob` and the domain bhccob.com.
-- **Colours:** purple and yellow are the main colours, with dark purple preferred. This is the owner's binding constraint.
-- **Motifs:** low-key maths, tech and sports objects around the site. They are present but never dominant: "minimalistic, yet fun, modern and unique".
-- **Voice:** first person, professional and formal, but personal. The owner asked for polished wording over casual phrasing.
+- **Identity:** the name Bob Chung, the handle `bhccob` and the domain bhccob.com. 客家 (Hakka) and the circuit tree from Aruba are the personal marks.
+- **Colours:** near-black ground and one gold accent, with purple in the machine and the loader's ink. Dark purple and yellow have been his colours from the start.
+- **Voice:** first person, professional and formal, but personal. The owner asked for polished wording over casual phrasing. Dutch uses "u" towards the visitor; his Q&A keeps his own "je", as those are questions put to him.
 - **Owner's own lines:**
   - "I build with curiosity and test with honesty."
   - "Home isn't one place for me. It's a blend of cultures and the questions I keep chasing."
@@ -85,30 +69,21 @@ A student software engineer building toward systems and firmware security work, 
 
 ## Evidence on Hand
 
-- **Cookies Clicker:** a web game built as a **school project** in 2025. Listed under game development (its home) and web development.
-  - Repo: https://github.com/bhccob/Cookies-Clicker. Screenshot: `src/assets/cookies.png`.
-  - Built with HTML, CSS and JavaScript: a reusable AutoClicker class, timed boosts, random bonus events and saved progress via localStorage.
-- **Jontai Energy:** a **personal project**: a practice website for a self-chosen solar-energy company, built in 2026. It is **not client work** and must never be described as such.
-  - Repo: https://github.com/bhccob/JE. Screenshot: `src/assets/jontai-energy.png`.
-  - Over 15 pages, built with HTML, Tailwind CSS and JavaScript, in English, Spanish and Chinese, with PowerShell scripts automating the translation markup.
-- **Portrait:** `src/assets/portrait.jpg`.
+- **Cookies Clicker (2025):** a browser game built as a **school project** with a classmate, who is never named. Repo: https://github.com/bhccob/Cookies-Clicker.
+- **Jontai Energy (2026):** a **concept** website for a store in Aruba, built as a personal project. It is **not client work** and must never be described as such. Repo: https://github.com/bhccob/JE.
+- **Steady (2026):** an Android app, a calm and private medication reminder.
+- **Portle (2026):** a web app in early access, a private archive for a portfolio, investment theses and trusted friends. Its pictures use example data.
 - **Personal facts:**
   - Born 27-04-2006 (the site calculates his age).
-  - Born and raised in Aruba, Chinese heritage, moved to the Netherlands at 18, lives in Rotterdam.
-  - MBO 4 student.
-  - Former powerlifter and table tennis player; now runs, goes to the gym and games.
-- **Skills** (owner's own framing, 2026-10-11):
-  - A solid full-stack foundation: core languages (HTML, CSS, JavaScript, PHP, C#), SQL, Godot and frameworks (Laravel, Tailwind CSS).
-  - Specialising toward the possible future roles (embedded systems, data pipelines, DevSecOps, firmware security automation).
-  - Currently learning to use AI as an advantage in their work.
-  - Curious about electronics and fintech.
-- **Personality** (owner, 2026-10-14): works best with deep, uninterrupted focus on complex technical problems, and prefers engineering-driven work to client-facing work. Name no other traits unless the owner states them.
-- **Absent, so never fabricate:** testimonials, clients, employers, internships, awards, certificates, grades, usage statistics, the school's name and sports records.
+  - Born and raised in Aruba, moved to the Netherlands at 18, lives in Rotterdam.
+  - MBO 4 student, and an intern at a cybersecurity company, which is never named.
+- **His Q&A:** six questions and answers in his own words, in both languages, in `src/i18n/`. They are not to be reworded.
+- **Absent, so never fabricate:** testimonials, clients, employers other than the unnamed internship, awards, certificates, grades, usage statistics, the school's name and sports records.
 
 ## Product Principles
 
-1. **Memorable over generic.** Every section should leave an impression of Bob as a specific person, not a template student.
-2. **Show, don't claim.** The working site (audited deploys, bilingual pages) is the proof of skill; experience is never inflated.
-3. **Label work honestly.** Personal and practice projects are called exactly that, and no proof is invented.
-4. **Person first, career second.** The career roadmap is present but never the headline.
-5. **Clear at a glance, rewarding up close.** The audience is mixed, so the first viewport must say who Bob is without prior context, and deeper sections reward the curious.
+1. **Memorable over generic.** Every moment should leave an impression of Bob as a specific person, not a template student.
+2. **Show, don't claim.** The working site is the proof of skill; experience is never inflated.
+3. **Label work honestly.** School, concept and personal projects are called exactly that, and no proof is invented.
+4. **Person first, career second.** The fields introduce him; they are not a CV.
+5. **Clear at a glance, rewarding up close.** The first view must say who Bob is without prior context, and the rest rewards those who keep scrolling.

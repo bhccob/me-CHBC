@@ -2,7 +2,12 @@
 
 `journey.mjs` is the proof harness of the new home (spec 2026-11-05-bob-machine-rebuild-design.md). Build with `JOURNEY=1`, then
 `STEPS=stills,smooth node tools/proof/journey.mjs`. It serves `dist/client` itself, reads the site through `?proof`, and takes
-`GPU=weak` for the low-power GPU with the CPU throttled 4x at 1080p. `needle.mjs`, below, proves the old home until the swap.
+`GPU=weak` for the low-power GPU with the CPU throttled 4x at 1080p. Its steps cover the speed ladder (`rungs`, `walk-down`,
+`jump-early`, `smooth`), phones and tablets (`phone`, `tablet`, `rotate`, `end-touch`), the fallbacks (`reduced-motion`, `no-webgl`,
+`context-lost`, `keyboard`, `no-script`) and the words: `dutch-fit` walks the Dutch page at 1440x810 and 390x844, checks that all its
+words stay on the page and over nothing, and compares every English sentence against what the Dutch visitor is given, apart from the
+names and the agreed English labels. `budget.mjs` walks the journey with a clean cache and sums what came over the wire: only the
+machine stage's files at the first view, and at most 15 MB for all of it. `needle.mjs`, below, proves the old home until the swap.
 
 
 `needle.mjs` is the proof harness of the Needle site (React Router and React

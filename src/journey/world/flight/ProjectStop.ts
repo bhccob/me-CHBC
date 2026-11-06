@@ -59,6 +59,8 @@ export class ProjectStop {
   main!: Mesh;
   /** What was last drawn, for those checking the words. */
   drawn: string[] = [];
+  /** How much of each plate its words really cover, from its top left, for those checking they stay on the page. */
+  private inks: { plate: TextPlate; width: number; height: number }[] = [];
   /** Where its link stands, in the words' own space. */
   private linkAt = new Vector3();
   private readonly end: number;
@@ -217,6 +219,17 @@ export class ProjectStop {
     place(meta, 0.03, below, 0.16, [0.68, 0.88], 4);
     place(sum, 0.03, below - 0.17, 0.16, [0.76, 0.98], 4);
     this.linkAt.set(0.04, below - 0.17 - (lines.length * SUM_LINE + 28) / PPU_SMALL - 0.05, 0.16);
+    ruler.font = `800 ${titleSize}px Barlow`;
+    const titleInk = Math.max(...titleLines.map((line) => ruler.measureText(line).width)) / PPU_BIG;
+    ruler.font = '500 56px Barlow';
+    const sumInk = Math.max(...lines.map((line) => ruler.measureText(line).width)) / PPU_SMALL;
+    ruler.font = '500 46px "IBM Plex Mono"';
+    const metaInk = (ruler.measureText(yearText).width + 26 + ruler.measureText(words.kind).width) / PPU_SMALL;
+    this.inks = [
+      { plate: title, width: titleInk, height: title.height },
+      { plate: meta, width: metaInk, height: meta.height },
+      { plate: sum, width: sumInk, height: (lines.length * SUM_LINE + 28) / PPU_SMALL },
+    ];
     this.drawn = [yearText, ...titleLines, words.kind, ...lines];
   }
 
@@ -308,6 +321,38 @@ export class ProjectStop {
   linkPoint(out: Vector3): Vector3 {
     this.wordSide.updateMatrixWorld();
     return out.copy(this.linkAt).applyMatrix4(this.wordSide.matrixWorld);
+  }
+
+  /** The box its words cover on a page of this size: left, top, right, bottom. */
+  wordsRect(camera: Camera, width: number, height: number): [number, number, number, number] {
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
+    for (const { plate, width: inkWidth, height: inkHeight } of this.inks) {
+      plate.mesh.updateWorldMatrix(true, false);
+      for (const x of [-plate.width / 2, -plate.width / 2 + inkWidth]) {
+        for (const y of [plate.height / 2, plate.height / 2 - inkHeight]) {
+          corner.set(x, y, 0).applyMatrix4(plate.mesh.matrixWorld).project(camera);
+          const px = (corner.x * 0.5 + 0.5) * width;
+          const py = (-corner.y * 0.5 + 0.5) * height;
+          left = Math.min(left, px);
+          right = Math.max(right, px);
+          top = Math.min(top, py);
+          bottom = Math.max(bottom, py);
+        }
+      }
+    }
+    return [left, top, right, bottom];
+  }
+
+  /** How far down a page of this height the left end of its last words comes: the link stands under that. */
+  wordsFoot(camera: Camera, height: number): number {
+    const last = this.inks[this.inks.length - 1];
+    if (!last) return 0;
+    last.plate.mesh.updateWorldMatrix(true, false);
+    corner.set(-last.plate.width / 2, last.plate.height / 2 - last.height, 0).applyMatrix4(last.plate.mesh.matrixWorld).project(camera);
+    return (-corner.y * 0.5 + 0.5) * height;
   }
 
   /** The box its screen covers on a page of this size: left, top, width, height. */

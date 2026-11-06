@@ -270,7 +270,7 @@ export const projects = new ProjectCatalog([
       },
       nl: {
         flightKind: 'Android-app',
-        flightLine: 'Een rustige, privé medicatieherinnering voor mensen die door moeilijke tijden gaan.',
+        flightLine: 'Een rustige, privacyvriendelijke medicatieherinnering voor mensen in een moeilijke periode.',
         type: 'Android-app · Eigen project',
         role: 'Enige ontwikkelaar',
         summary: 'Een rustige, privé medicatieherinnering voor mensen die door moeilijke dingen gaan.',
@@ -478,7 +478,7 @@ export const projects = new ProjectCatalog([
       },
       nl: {
         flightKind: 'Schoolproject',
-        flightLine: 'Een browsergame, samen met een klasgenoot gebouwd rond één bevredigende lus: klikken, verdienen, herinvesteren.',
+        flightLine: 'Een browsergame, samen met een klasgenoot gebouwd rond één spellus: klikken, verdienen, herinvesteren.',
         type: 'Schoolproject · Web Game Development',
         role: 'Samen met een klasgenoot',
         summary:

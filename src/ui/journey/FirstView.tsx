@@ -34,7 +34,12 @@ export function FirstView({ age }: FirstViewProps): JSX.Element {
       next.style.transform = 'none';
       const reset = window.setTimeout(() => {
         timers.delete(reset);
-        if (words[current] !== out) out.style.transform = 'translateY(110%)';
+        if (words[current] === out) return;
+        // Out of sight at the top, it goes back under at once: not down through the window.
+        out.style.transition = 'none';
+        out.style.transform = 'translateY(110%)';
+        void out.offsetWidth;
+        out.style.transition = '';
       }, ROLL_MS);
       timers.add(reset);
     }, ROLL_EVERY_MS);
