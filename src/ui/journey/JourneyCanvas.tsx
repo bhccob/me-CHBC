@@ -16,12 +16,14 @@ interface HostProps {
   reduce: boolean;
   /** What the canvas shows, in words. */
   label: string;
+  /** How much of the model has come. */
+  onProgress: (share: number) => void;
   onReady: (handle: CanvasHandle) => void;
   onFail: (error: unknown) => void;
 }
 
 /** Inside the canvas: makes the world on R3F's renderer and draws it when the journey's loop says so. */
-function Host({ locale, timeline, reduce, onReady, onFail }: HostProps): null {
+function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostProps): null {
   const gl = useThree((state) => state.gl);
   const size = useThree((state) => state.size);
   const world = useRef<World | null>(null);
@@ -30,7 +32,7 @@ function Host({ locale, timeline, reduce, onReady, onFail }: HostProps): null {
     let live = true;
     const made = new World(gl, { locale, timeline, reduce, codeScreenUrl });
     made
-      .load('machine')
+      .load('machine', onProgress)
       .then(() => {
         if (!live) return;
         world.current = made;
@@ -54,7 +56,7 @@ function Host({ locale, timeline, reduce, onReady, onFail }: HostProps): null {
     };
     // The language is left out on purpose: switching it keeps the world, and only its words change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gl, timeline, reduce, onReady, onFail]);
+  }, [gl, timeline, reduce, onProgress, onReady, onFail]);
 
   useEffect(() => {
     world.current?.resize(size.width, size.height);

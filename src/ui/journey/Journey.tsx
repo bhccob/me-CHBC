@@ -4,6 +4,7 @@ import { installJourneyDebug } from '~/debug/journeyDebug';
 import { useTranslator } from '~/i18n/useTranslator';
 import { frameForHash, frameOfChapter, glideTo, noteFrame, takePlace } from '~/journey/jump';
 import { layersAt, TAG_NAMES, tagPlace } from '~/journey/layers';
+import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } from '~/journey/loader/plan';
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
 import { buildTimeline, type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
@@ -12,6 +13,7 @@ import { type BandKind, paintBand } from './bands';
 import { ChapterRail, updateRail } from './ChapterRail';
 import { FieldSheet } from './FieldSheet';
 import { FirstView } from './FirstView';
+import { InkLoader } from './InkLoader';
 import type { CanvasHandle } from './JourneyCanvas';
 import type { WorldState } from '~/journey/world/World';
 import { createPaper, createSparks } from './paper';
@@ -29,6 +31,10 @@ export function Journey(): JSX.Element {
   const canvas = useRef<CanvasHandle | null>(null);
   const [started, setStarted] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [plan, setPlan] = useState<LoaderPlan>('full');
+  const [ready, setReady] = useState(false);
+  const [model, setModel] = useState(0);
+  const growTree = useRef<(() => void) | null>(null);
   const reduce = useRef(false);
   const words = useRef(t.journey);
   words.current = t.journey;
@@ -36,6 +42,8 @@ export function Journey(): JSX.Element {
 
   useEffect(() => {
     reduce.current = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    setPlan(loaderPlan({ seenThisTab: sessionStorage.getItem(SEEN_KEY) !== null, reload: navigation?.type === 'reload', reduced: reduce.current }));
     setStarted(true);
     const rail = document.getElementById('j-rail');
     const bar = document.getElementById('j-bar');
@@ -47,7 +55,7 @@ export function Journey(): JSX.Element {
     const paper = createPaper(paperEl, reduce.current);
     const sparks = createSparks(sparksEl);
     sparks.fit();
-    paper.grow(performance.now());
+    growTree.current = () => paper.grow(performance.now());
     const sheets = t.journey.sheets.map((_, n) => document.getElementById(`j-sheet-${n}`));
     const stack = document.getElementById('j-stack');
     const portal = document.getElementById('j-portal');
@@ -140,10 +148,16 @@ export function Journey(): JSX.Element {
 
   const onReady = useCallback((handle: CanvasHandle) => {
     canvas.current = handle;
+    setReady(true);
   }, []);
+  const onProgress = useCallback((share: number) => setModel(share), []);
+  const onEnter = useCallback((_choice: DoorChoice) => {}, []);
+  const onLand = useCallback(() => growTree.current?.(), []);
+  const onLoaderDone = useCallback(() => {}, []);
   const onFail = useCallback((error: unknown) => {
     console.error('the journey could not start', error);
     setFailed(true);
+    setReady(true);
   }, []);
 
   return (
@@ -161,9 +175,10 @@ export function Journey(): JSX.Element {
       <PortalWord />
       {started && !failed ? (
         <Suspense fallback={null}>
-          <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} label={t.journey.hero.machineAlt} onReady={onReady} onFail={onFail} />
+          <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} label={t.journey.hero.machineAlt} onProgress={onProgress} onReady={onReady} onFail={onFail} />
         </Suspense>
       ) : null}
+      <InkLoader plan={plan} ready={ready} progress={loadedShare({ scene: started ? 1 : 0, model, warm: ready ? 1 : 0 })} onEnter={onEnter} onLand={onLand} onDone={onLoaderDone} />
     </div>
   );
 }

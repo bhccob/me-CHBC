@@ -65,9 +65,9 @@ export class World {
   }
 
   /** Loads a stage of the journey. */
-  async load(stage: 'machine' | 'flight' | 'void' | 'end'): Promise<void> {
+  async load(stage: 'machine' | 'flight' | 'void' | 'end', onProgress?: (share: number) => void): Promise<void> {
     if (stage !== 'machine') return;
-    await this.machine.load();
+    await this.machine.load(onProgress);
     this.machine.update(0);
   }
 

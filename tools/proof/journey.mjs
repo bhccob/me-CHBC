@@ -68,6 +68,7 @@ async function openPage(browser, step, viewport = VIEW, options = {}) {
 /** The journey, loaded and drawing. */
 async function openJourney(browser, step, viewport, options) {
   const opened = await openPage(browser, step, viewport, options);
+  await opened.page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
   await opened.page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
   await opened.page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
   await opened.page.mouse.move(viewport?.width ? viewport.width / 2 : VIEW.width / 2, 300);
@@ -175,6 +176,7 @@ async function jumps(browser, step) {
 async function hash(browser, step) {
   for (const [name, want] of [['projects', 392], ['contact', timeline.last]]) {
     const { context, page } = await openPage(browser, step);
+    await page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
     await page.goto(`${BASE}${ROUTE}?proof#${name}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
     const first = await page.evaluate(() => window.__journeyDebug.first());
@@ -364,7 +366,122 @@ async function portal(browser, step) {
   return `the most ${worst.toFixed(1)}`;
 }
 
-const STEPS = { stills, smooth, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const doorShown = (page) => page.waitForFunction(() => document.querySelector('.j-door-on'), null, { timeout: 40_000 });
+const inkGone = (page) => page.waitForFunction(() => !document.getElementById('j-ld'), null, { timeout: 15_000 });
+
+/** The ink on a new tab: the two characters, the door, the characters on their way, and silence. */
+async function loader(browser, step) {
+  const { context, page } = await openPage(browser, step);
+  await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await page.waitForFunction(() => document.getElementById('j-ld'), null, { timeout: 10_000 });
+  await page.waitForTimeout(2400);
+  writeFileSync(join(dir, 'ink-writing.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  step.check(!(await page.evaluate(() => document.querySelector('.j-door-on'))), 'no door before the ink has spread');
+  await doorShown(page);
+  writeFileSync(join(dir, 'ink-door.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  const ready = await page.evaluate(() => window.__journeyDebug.ready());
+  step.check(ready, 'the door shows once the machine is ready');
+  step.check((await page.evaluate(() => document.activeElement?.className)) === 'j-door-go', 'the keyboard starts on the door');
+  step.check((await page.evaluate(() => document.documentElement.scrollHeight > innerHeight && getComputedStyle(document.documentElement).overflow === 'hidden')), 'the page holds still behind the door');
+  await page.locator('.j-door-without').click();
+  await page.waitForTimeout(900);
+  writeFileSync(join(dir, 'ink-landing.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  await inkGone(page);
+  await page.waitForTimeout(400);
+  writeFileSync(join(dir, 'ink-landed.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  const hero = await page.evaluate(() => ({ opacity: getComputedStyle(document.querySelector('.j-hero')).opacity, seen: sessionStorage.getItem('journey-seen') }));
+  step.check(hero.opacity === '1' && hero.seen === '1', `the first view stands, and the tab remembers (${JSON.stringify(hero)})`);
+  await context.close();
+  return '';
+}
+
+/** A reload and a second visit in the same tab are quick. */
+async function loaderQuick(browser, step) {
+  const { context, page } = await openPage(browser, step);
+  await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+  await doorShown(page);
+  await page.locator('.j-door-without').click();
+  await inkGone(page);
+  const started = Date.now();
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => !document.getElementById('j-ld') && window.__journeyDebug?.ready(), null, { timeout: 15_000 });
+  const took = Date.now() - started;
+  step.check(took < 4000, `a reload is quick (${took} ms)`);
+  step.check(!(await page.evaluate(() => document.querySelector('.j-door'))), 'with no door');
+  await context.close();
+  return `${took} ms`;
+}
+
+/** A new tab plays it in full again. */
+async function loaderNewTab(browser, step) {
+  const { context, page } = await openPage(browser, step);
+  await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+  await doorShown(page);
+  await page.locator('.j-door-without').click();
+  await inkGone(page);
+  const second = await context.newPage();
+  await second.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+  await doorShown(second);
+  step.check(true, 'a new tab has the ink and the door again');
+  await context.close();
+  return '';
+}
+
+/** Enter goes in, with sound; scrolling goes in, without. */
+async function loaderDoorKeys(browser, step) {
+  {
+    const { context, page } = await openPage(browser, step);
+    await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+    await doorShown(page);
+    await page.keyboard.press('Enter');
+    await inkGone(page);
+    step.check(true, 'Enter goes in');
+    await context.close();
+  }
+  {
+    const { context, page } = await openPage(browser, step);
+    await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+    await doorShown(page);
+    await page.mouse.move(700, 300);
+    await page.mouse.wheel(0, 120);
+    await inkGone(page);
+    step.check(true, 'scrolling goes in, so nobody is stuck at the door');
+    await context.close();
+  }
+  return '';
+}
+
+/** Reduced motion: no ink. */
+async function loaderReduced(browser, step) {
+  const { context, page } = await openPage(browser, step, VIEW, { reducedMotion: 'reduce' });
+  await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+  await page.waitForFunction(() => window.__journeyDebug, null, { timeout: 15_000 });
+  await page.waitForTimeout(300);
+  step.check(!(await page.evaluate(() => document.getElementById('j-ld'))), 'there is no ink');
+  await context.close();
+  return '';
+}
+
+/** A load that stalls: the door shows anyway, in time. */
+async function giveUp(browser, step) {
+  const { context, page } = await openPage(browser, step);
+  await page.route('**/models/machine.glb', () => {});
+  await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'domcontentloaded' });
+  const started = Date.now();
+  await doorShown(page);
+  const took = Date.now() - started;
+  step.check(took < 16_000, `the door shows though the machine never came (${took} ms)`);
+  await page.locator('.j-door-without').click();
+  await inkGone(page);
+  step.check(await page.evaluate(() => getComputedStyle(document.querySelector('.j-hero')).opacity === '1'), 'and the words are there');
+  step.errors.length = 0;
+  await context.close();
+  return `${took} ms`;
+}
+
+const STEPS = { stills, smooth, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

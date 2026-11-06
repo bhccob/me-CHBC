@@ -58,9 +58,11 @@ export class MachineScene {
   }
 
   /** Fetches the model and its code screen, and sets up the light. */
-  async load(): Promise<void> {
+  async load(onProgress?: (share: number) => void): Promise<void> {
     RectAreaLightUniformsLib.init();
-    const [gltf, code] = await Promise.all([new GLTFLoader().loadAsync(MODEL_URL), new TextureLoader().loadAsync(this.codeUrl)]);
+    const [gltf, code] = await Promise.all([new GLTFLoader().loadAsync(MODEL_URL, (event) => {
+        if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+      }), new TextureLoader().loadAsync(this.codeUrl)]);
     this.scene.add(gltf.scene);
     for (const name of PART_NAMES) {
       const part = gltf.scene.getObjectByName(name);
