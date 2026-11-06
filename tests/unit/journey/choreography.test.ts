@@ -100,6 +100,10 @@ describe('the lens', () => {
     expect(ndc.y).toBeCloseTo(-0.048, 5);
   });
 
+  it('stands smaller on the last sheet, so that its long words read', () => {
+    expect(pageFit(250, 16 / 9)).toBeCloseTo(0.76, 5);
+  });
+
   it('follows the page fit keys', () => {
     for (const [f, v] of [[0, 0.9], [34, 1], [64, 0.84], [184, 0.76], [292, 0.94], [344, 1], [700, 0.76]]) expect(pageFit(f, 16 / 9), `frame ${f}`).toBeCloseTo(v, 5);
   });

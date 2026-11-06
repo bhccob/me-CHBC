@@ -1,4 +1,4 @@
-import { band, ease } from './math';
+import { band, ease, ramp } from './math';
 import type { Timeline } from './timeline';
 
 /**
@@ -11,6 +11,27 @@ export interface Layer {
   y?: number;
 }
 
+/** A sheet: whether it is up at all, how far below the page it is (vh), its tilt (degrees), and how much of it and its words show. */
+export interface SheetLayer {
+  on: boolean;
+  y: number;
+  tilt: number;
+  opacity: number;
+  inner: number;
+}
+
+/** The frames each sheet slides up over. */
+export const sheetWindows: readonly (readonly [number, number])[] = [[44, 66], [98, 120], [152, 174], [204, 226]];
+
+function sheetAt(f: number, n: number): SheetLayer {
+  const [a, b] = sheetWindows[n];
+  const q = ease(f, a, b);
+  const last = n === sheetWindows.length - 1;
+  const covered = last ? 0 : ramp(f, sheetWindows[n + 1][1], sheetWindows[n + 1][1] + 2);
+  const gone = last ? ease(f, 326, 352) : 0;
+  return { on: q > 0 && covered < 1 && gone < 1, y: (1 - q) * 112, tilt: (1 - q) * -2.6, opacity: 1 - gone, inner: last ? 1 - ease(f, 272, 288) : 1 };
+}
+
 export interface LayerStates {
   hero: Layer;
   vert: Layer;
@@ -21,6 +42,7 @@ export interface LayerStates {
   paper: boolean;
   /** How much of the drifting sparks shows. */
   sparks: number;
+  sheets: SheetLayer[];
 }
 
 export function layersAt(f: number, _tl: Timeline, _tall: boolean): LayerStates {
@@ -32,5 +54,6 @@ export function layersAt(f: number, _tl: Timeline, _tall: boolean): LayerStates 
     age: ease(f, 22, 40),
     paper: f < 70,
     sparks: 1 - ease(f, 4, 26),
+    sheets: sheetWindows.map((_, n) => sheetAt(f, n)),
   };
 }

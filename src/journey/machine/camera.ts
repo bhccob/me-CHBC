@@ -106,7 +106,7 @@ export function fovFor(lens: number, aspect: number): number {
   return toDegrees(2 * Math.atan(across / Math.max(aspect, FRAME_ASPECT)));
 }
 
-const FIT: readonly (readonly [number, number])[] = [[0, 0.9], [34, 1], [48, 1], [64, 0.84], [168, 0.84], [184, 0.76], [208, 0.76], [228, 0.84], [270, 0.84], [292, 0.94], [314, 0.94], [344, 1], [502, 1]];
+const FIT: readonly (readonly [number, number])[] = [[0, 0.9], [34, 1], [48, 1], [64, 0.84], [168, 0.84], [184, 0.76], [208, 0.76], [270, 0.76], [292, 0.94], [314, 0.94], [344, 1], [502, 1]];
 
 /** How much smaller than the page's cover the machine stands at frame `f`, so that it leaves the words room. */
 export function pageFit(f: number, aspect: number): number {

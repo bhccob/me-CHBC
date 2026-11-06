@@ -6,8 +6,10 @@ import { frameForHash, frameOfChapter, glideTo, noteFrame, takePlace } from '~/j
 import { layersAt } from '~/journey/layers';
 import { startLoop } from '~/journey/loop';
 import { buildTimeline, type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
-import { applyLayer } from './applyLayers';
+import { applyLayer, applySheet } from './applyLayers';
+import { type BandKind, paintBand } from './bands';
 import { ChapterRail, updateRail } from './ChapterRail';
+import { FieldSheet } from './FieldSheet';
 import { FirstView } from './FirstView';
 import type { CanvasHandle } from './JourneyCanvas';
 import { createPaper, createSparks } from './paper';
@@ -42,9 +44,17 @@ export function Journey(): JSX.Element {
     const sparks = createSparks(sparksEl);
     sparks.fit();
     paper.grow(performance.now());
+    const sheets = t.journey.sheets.map((_, n) => document.getElementById(`j-sheet-${n}`));
+    const paintBands = (): void => {
+      for (const band of document.querySelectorAll<HTMLCanvasElement>('.j-band')) paintBand(band, band.dataset.kind as BandKind);
+    };
+    // The art uses the page's fonts, and is not needed for the first moments.
+    const painting = (document.fonts?.ready ?? Promise.resolve()).then(paintBands);
+    void painting;
     const onResize = (): void => {
       paper.fit();
       sparks.fit();
+      paintBands();
     };
     addEventListener('resize', onResize);
     const frames: number[] = [];
@@ -71,6 +81,7 @@ export function Journey(): JSX.Element {
         paperEl.style.visibility = layers.paper ? 'visible' : 'hidden';
         if (layers.paper) paper.draw(now);
         sparks.draw(reduce.current ? 0 : layers.sparks, dt, now);
+        layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet));
         noteFrame(f);
         first ??= f;
         if (before > 0) frames.push(now - before);
@@ -122,6 +133,9 @@ export function Journey(): JSX.Element {
       <ChapterRail timeline={timeline} labels={t.journey.rail} />
       <FirstView age={age} />
       <Story age={age} />
+      {t.journey.sheets.map((sheet, n) => (
+        <FieldSheet key={n} sheet={sheet} n={n} />
+      ))}
       <canvas id="j-sparks" className="j-sparks" aria-hidden="true" />
       {started && !failed ? (
         <Suspense fallback={null}>

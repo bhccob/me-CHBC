@@ -263,7 +263,59 @@ async function firstView(browser, step) {
   return '';
 }
 
-const STEPS = { stills, smooth, 'first-view': firstView, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+/** Each sheet at its reading frame: its word, its facts, and its title block, with the machine in front. */
+async function sheets(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  for (const [n, f] of [[0, 72], [1, 124], [2, 188], [3, 250]]) {
+    await goToFrame(page, f);
+    writeFileSync(join(dir, `sheet-${n}.jpg`), await page.screenshot({ type: 'jpeg', quality: 90 }));
+    const seen = await page.evaluate((n) => {
+      const el = document.getElementById(`j-sheet-${n}`), box = el.getBoundingClientRect(), style = getComputedStyle(el);
+      return { visible: style.visibility, top: box.top, word: el.querySelector('h2').innerText, facts: el.querySelectorAll('dt').length, block: el.querySelector('.j-block').innerText };
+    }, n);
+    step.check(seen.visible === 'visible' && Math.abs(seen.top + VIEW.height * 0.03) < 3, `sheet ${n + 1} lies flat over the page at frame ${f} (top ${seen.top.toFixed(0)})`);
+    step.check(seen.facts >= 2, `with its facts (${seen.facts})`);
+    step.check(new RegExp(`${n + 1} van 4`).test(seen.block), `and says which it is (${seen.block.replace(/\s+/g, ' ')})`);
+  }
+  await context.close();
+  return '';
+}
+
+/** How much of a word the machine covers: the pixels the canvas changes inside the word's box. */
+async function coveredShare(page, word) {
+  const box = await page.evaluate((word) => {
+    const span = [...document.querySelectorAll('.j-sheet h2 span')].find((s) => s.textContent === word && s.closest('.j-sheet').style.visibility === 'visible');
+    const range = document.createRange();
+    range.selectNodeContents(span);
+    const r = range.getBoundingClientRect();
+    return { left: Math.round(r.left), top: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height) };
+  }, word);
+  const shot = async () => sharp(await page.screenshot({ type: 'png', clip: { x: box.left, y: box.top, width: Math.min(box.width, page.viewportSize().width - box.left), height: box.height } })).raw().toBuffer({ resolveWithObject: true });
+  const on = await shot();
+  await page.evaluate(() => { document.querySelector('.journey-canvas').style.visibility = 'hidden'; });
+  await page.waitForTimeout(120);
+  const off = await shot();
+  await page.evaluate(() => { document.querySelector('.journey-canvas').style.visibility = ''; });
+  let changed = 0;
+  for (let i = 0; i < on.data.length; i += on.info.channels) if (Math.abs(on.data[i] - off.data[i]) + Math.abs(on.data[i + 1] - off.data[i + 1]) + Math.abs(on.data[i + 2] - off.data[i + 2]) > 24) changed++;
+  return changed / (on.data.length / on.info.channels);
+}
+
+/** The long word on the last sheet reads, on the two common sizes. */
+async function engineeringReadable(browser, step) {
+  for (const viewport of [{ width: 1440, height: 810 }, { width: 1920, height: 1080 }]) {
+    const { context, page } = await openJourney(browser, step, viewport);
+    await goToFrame(page, 250);
+    const share = await coveredShare(page, 'Engineering');
+    step.check(share <= 0.3, `at ${viewport.width} the machine covers at most 30% of the word (${(share * 100).toFixed(0)}%)`);
+    await context.close();
+  }
+  return '';
+}
+
+const STEPS = { stills, smooth, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

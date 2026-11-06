@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import type { Dictionary } from '~/i18n/en';
-import { railOpacity } from '~/journey/jump';
+import { railOpacity, railQuiet } from '~/journey/jump';
 import { chapterAt, type Timeline } from '~/journey/timeline';
 
 export interface ChapterRailProps {
@@ -27,6 +27,7 @@ export function updateRail(rail: HTMLElement, f: number, tl: Timeline): void {
   const opacity = railOpacity(f, tl);
   rail.style.opacity = opacity.toFixed(3);
   rail.style.visibility = opacity > 0.002 ? 'visible' : 'hidden';
+  rail.classList.toggle('j-rail-quiet', railQuiet(f));
   const current = chapterAt(f + 1, tl);
   for (const button of rail.querySelectorAll('button')) {
     const on = button.dataset.jump === current;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { frameForHash, frameOfChapter, glideTo, noteFrame, railOpacity, rememberPlace, takePlace } from '~/journey/jump';
+import { frameForHash, frameOfChapter, glideTo, noteFrame, railOpacity, railQuiet, rememberPlace, takePlace } from '~/journey/jump';
 import { buildTimeline, scrollFromFrame } from '~/journey/timeline';
 
 const tl = buildTimeline();
@@ -44,6 +44,10 @@ describe('the chapters', () => {
 describe('the rail', () => {
   it('fades in after the first view and out at the collapse', () => {
     expect([railOpacity(0, tl), railOpacity(22, tl), railOpacity(859, tl), railOpacity(870, tl)]).toEqual([0, 1, 1, 0]);
+  });
+
+  it('keeps only its current word while the machine stands up under it', () => {
+    expect([railQuiet(200), railQuiet(250), railQuiet(280)]).toEqual([false, true, false]);
   });
 
   it('fades out later when the flight is longer', () => {

@@ -32,6 +32,11 @@ export function railOpacity(f: number, tl: Timeline): number {
   return ease(f, 8, 22) * (1 - ease(f, out, out + 10));
 }
 
+/** While the machine stands up, its right leg comes under the rail: then the rail keeps only its current word. */
+export function railQuiet(f: number): boolean {
+  return f >= 232 && f < 276;
+}
+
 const PLACE_KEY = 'journey-place';
 type PlaceStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 let shownFrame: number | null = null;

@@ -126,8 +126,8 @@ export class MachineScene {
     this.spot.position.set(...key.position);
     this.spot.target.position.set(...key.target);
     this.spot.castShadow = true;
-    this.spot.shadow.mapSize.set(2048, 2048);
-    this.spot.shadow.radius = 14;
+    this.spot.shadow.mapSize.set(1024, 1024);
+    this.spot.shadow.radius = 18;
     this.spot.shadow.blurSamples = 20;
     this.spot.shadow.bias = -0.0004;
     this.spot.shadow.normalBias = 0.012;
