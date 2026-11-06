@@ -133,3 +133,181 @@ html[data-route='journey'] .header-cta {
   border-radius: 2px;
   padding: 7px 13px;
 }
+
+/* The page's layers, bottom to top: paper, sheets, the 3D canvas, the sparks, the front words. */
+.j-paper,
+.j-sparks {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: block;
+}
+
+.j-paper {
+  z-index: 0;
+}
+
+.j-sparks {
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* The first view. */
+.j-hero {
+  position: fixed;
+  left: 34px;
+  top: 0;
+  bottom: 0;
+  width: min(62vw, 960px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  will-change: opacity, translate;
+}
+
+.j-hero h1 {
+  margin: 0;
+  font: 800 clamp(58px, 9.4vw, 158px) / 0.9 var(--j-sans);
+  letter-spacing: -0.025em;
+  text-transform: uppercase;
+}
+
+.j-hero h1 > span {
+  display: block;
+}
+
+.j-hero .j-to {
+  display: flex;
+  gap: 0.24em;
+  align-items: baseline;
+}
+
+.j-swap {
+  display: inline-block;
+  position: relative;
+  height: 1.02em;
+  overflow: hidden;
+  min-width: 5.6em;
+  text-transform: none;
+  font-style: italic;
+  font-weight: 600;
+  color: var(--j-gold);
+  letter-spacing: -0.02em;
+  vertical-align: baseline;
+}
+
+.j-swap span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 1.02;
+  white-space: nowrap;
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
+}
+
+.j-hero p {
+  margin: 22px 0 26px;
+  max-width: 46ch;
+  font: 500 clamp(15px, 1.25vw, 19px) / 1.42 var(--j-sans);
+  color: var(--j-ink);
+  text-wrap: pretty;
+}
+
+.j-go {
+  align-self: flex-start;
+  display: inline-block;
+  background: var(--j-gold);
+  color: #17120a;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 13px 20px;
+  border-radius: 2px;
+  text-decoration: none;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.j-go:hover {
+  transform: translateY(-2px);
+}
+
+.j-go:active {
+  transform: scale(0.98);
+}
+
+.j-go:focus-visible {
+  outline: 2px solid var(--j-gold);
+  outline-offset: 3px;
+}
+
+.j-vert {
+  position: fixed;
+  left: min(46vw, 760px);
+  bottom: 34px;
+  z-index: 5;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  will-change: opacity;
+}
+
+.j-han {
+  writing-mode: vertical-rl;
+  font: 400 clamp(46px, 5vw, 76px) / 1 'Ma Shan Zheng', var(--j-sans);
+  color: var(--j-gold);
+  letter-spacing: 0.06em;
+}
+
+.j-seal {
+  position: absolute;
+  right: calc(100% + 14px);
+  bottom: 2px;
+  padding: 8px 11px;
+  white-space: nowrap;
+  border: 2px solid var(--j-gold);
+  color: var(--j-gold);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font: 500 12px / 1.15 var(--j-mono);
+  transform: rotate(-5deg);
+  border-radius: 3px;
+}
+
+/* The story. */
+.j-story {
+  position: fixed;
+  left: 34px;
+  bottom: 44px;
+  z-index: 5;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.j-num {
+  font: 700 clamp(120px, 19vw, 280px) / 0.84 var(--j-sans);
+  letter-spacing: -0.03em;
+  display: flex;
+  font-variant-numeric: tabular-nums;
+}
+
+.j-digit {
+  display: inline-block;
+  height: 0.84em;
+  overflow: hidden;
+}
+
+.j-digit span {
+  display: block;
+  height: 0.84em;
+  line-height: 0.84;
+  will-change: transform;
+}
+
+.j-place {
+  font: italic 600 clamp(28px, 3.4vw, 54px) / 1.1 var(--j-sans);
+  color: var(--j-gold);
+  margin-top: 14px;
+}

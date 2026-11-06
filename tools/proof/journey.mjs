@@ -25,6 +25,8 @@ import { tsImport } from 'tsx/esm/api';
 const require = createRequire(import.meta.url);
 const { chromium } = process.env.PLAYWRIGHT_CORE ? require(resolve(process.env.PLAYWRIGHT_CORE)) : require('playwright-core');
 const { buildTimeline, scrollFromFrame } = await tsImport('../../src/journey/timeline.ts', import.meta.url);
+const { profile } = await tsImport('../../src/data/profile.ts', import.meta.url);
+const profileAge = () => profile.ageOn();
 
 const ROUTE = process.env.ROUTE ?? '/journey/';
 const OUT = resolve(process.env.PROOF_DIR ?? './proof-out');
@@ -228,7 +230,40 @@ async function langKeepsPlace(browser, step) {
   return '';
 }
 
-const STEPS = { stills, smooth, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+/** The first view: its words, the word that rolls, the tree, the button, and the story's digits. */
+async function firstView(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  const first = await page.evaluate(() => document.querySelector('.j-hero h1').innerText.replace(/\s+/g, ' '));
+  step.check(/^VAN CODE NAAR/i.test(first), `the heading reads (${first})`);
+  const shown = () => page.evaluate(() => [...document.querySelectorAll('.j-swap span')].findIndex((s) => { const r = s.getBoundingClientRect(), box = s.parentElement.getBoundingClientRect(); return Math.abs(r.top - box.top) < 2; }));
+  const a = await shown();
+  await page.waitForTimeout(2600);
+  const b = await shown();
+  step.check(a !== b, `the word rolls every 2.4 s (${a} to ${b})`);
+  await page.waitForTimeout(2000);
+  const shot = await page.screenshot({ type: 'jpeg', quality: 90 });
+  mkdirSync(join(OUT, 'stills'), { recursive: true });
+  writeFileSync(join(OUT, 'stills', 'first-view.jpg'), shot);
+  const gold = await sharp(shot).extract({ left: Math.round(VIEW.width * 0.6), top: 0, width: Math.round(VIEW.width * 0.4), height: Math.round(VIEW.height * 0.25) }).stats();
+  step.check(gold.channels[0].max > 200, 'the tree has grown, with its gold traces');
+  await goToFrame(page, 40);
+  await page.waitForTimeout(200);
+  const story = await page.evaluate((age) => {
+    const reel = document.querySelectorAll('.j-digit');
+    const read = (r) => [...r.children].find((s) => { const c = s.getBoundingClientRect(), box = r.getBoundingClientRect(); return Math.abs(c.top - box.top) < 3; })?.textContent;
+    return { digits: `${read(reel[0])}${read(reel[1])}`, place: document.getElementById('j-place').textContent, age };
+  }, null);
+  step.check(story.digits === String(profileAge()), `the digits end on the real age (${story.digits})`);
+  step.check(story.place === 'Rotterdam', `the place ends on Rotterdam (${story.place})`);
+  await goToFrame(page, 0);
+  await page.locator('.j-go').click();
+  await page.waitForFunction(() => Math.abs(window.__journeyDebug.frame() - 392) < 1, null, { timeout: 15_000 });
+  step.check(true, 'the button goes to the flight');
+  await context.close();
+  return '';
+}
+
+const STEPS = { stills, smooth, 'first-view': firstView, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

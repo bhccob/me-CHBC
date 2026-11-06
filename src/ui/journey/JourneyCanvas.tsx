@@ -73,7 +73,7 @@ export default function JourneyCanvas(props: JourneyCanvasProps): JSX.Element {
       flat
       dpr={[1, 1.5]}
       gl={{ alpha: true, antialias: false, stencil: false, powerPreference: 'high-performance' }}
-      style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}
+      style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 3 }}
     >
       <Host {...props} />
     </Canvas>
