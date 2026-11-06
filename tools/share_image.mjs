@@ -19,7 +19,7 @@ await page.waitForTimeout(6000);
 const asPicture = (extra = '') =>
   page.evaluate((more) => {
     document.documentElement.style.setProperty('scrollbar-width', 'none');
-    for (const el of document.querySelectorAll(`.site-header, .j-rail, .j-bar, .lock-cursor${more}`)) el.style.setProperty('visibility', 'hidden', 'important');
+    for (const el of document.querySelectorAll(`.site-header, .j-rail, .j-bar, .lock-cursor${more}`)) el.style.setProperty('display', 'none', 'important');
   }, extra);
 await asPicture();
 await page.mouse.move(1199, 629);
@@ -35,7 +35,7 @@ await page.evaluate(() => {
   scrollTo({ top: (0.035 + (304 / 934) * 0.965) * max, behavior: 'auto' });
 });
 await page.waitForFunction(() => Math.abs(window.__journeyDebug.frame() - 304) < 0.4, null, { timeout: 15_000 });
-await asPicture(', #j-stack, [data-tag]');
+await asPicture(', #j-stack, .j-tag, .j-sheet');
 await page.waitForTimeout(900);
 await sharp(await page.screenshot({ type: 'png' })).webp({ quality: 82 }).toFile('src/assets/journey/machine-still.webp');
 await browser.close();

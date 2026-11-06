@@ -10,6 +10,20 @@ export function orbitAngles(mx: number, my: number): { yaw: number; pitch: numbe
   return { yaw: mx === 0 ? 0 : mx * 26 * DEG, pitch: my === 0 ? 0 : my * 15 * DEG };
 }
 
+/** What a finger means once it has moved: more sideways than down moves the view; the rest scrolls. */
+export function touchPlan(dx: number, dy: number): 'orbit' | 'scroll' {
+  return Math.abs(dx) > Math.abs(dy) ? 'orbit' : 'scroll';
+}
+
+/** With no cursor, a gentle slow drift in its place, at `t` seconds. */
+export function driftAngles(t: number): { yaw: number; pitch: number } {
+  return { yaw: 16 * DEG * Math.sin(t * 0.17), pitch: 8 * DEG * Math.sin(t * 0.11 + 1) };
+}
+
+/** How far a pointer's -1 to 1 swings each way: to turn an angle back into one. */
+export const ORBIT_YAW = 26 * DEG;
+export const ORBIT_PITCH = 15 * DEG;
+
 /** The most galaxies of your own the page keeps. */
 export const MAX_GALAXIES = 8;
 

@@ -931,6 +931,163 @@ async function noScript(browser, step) {
   return '';
 }
 
+const jumpTo = async (page, f) => {
+  await page.evaluate(([to, shape]) => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    scrollTo({ top: to <= 0 ? 0 : (0.035 + (to / shape) * 0.965) * max, behavior: 'auto' });
+  }, [f, timeline.last]);
+  await page.waitForFunction((want) => Math.abs(window.__journeyDebug.frame() - want) < 0.5, f, { timeout: 15_000 });
+};
+
+/** How much of an element's letters the canvas covers, 0 to 1. */
+const coveredBy3D = async (page, selector) => {
+  const box = await page.evaluate((sel) => {
+    const el = [...document.querySelectorAll(sel)].find((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden');
+    if (!el) return null;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const r = range.getBoundingClientRect();
+    return { x: Math.max(0, r.left), y: Math.max(0, r.top), width: Math.min(innerWidth, r.right) - Math.max(0, r.left), height: Math.min(innerHeight, r.bottom) - Math.max(0, r.top) };
+  }, selector);
+  if (!box || box.width <= 0 || box.height <= 0) return 0;
+  const shot = async () => sharp(await page.screenshot({ type: 'png', clip: box, scale: 'css' })).raw().toBuffer({ resolveWithObject: true });
+  const on = await shot();
+  await page.evaluate(() => { document.querySelector('.journey-canvas').style.visibility = 'hidden'; });
+  await page.waitForTimeout(150);
+  const off = await shot();
+  await page.evaluate(() => { document.querySelector('.journey-canvas').style.visibility = ''; });
+  let changed = 0;
+  for (let i = 0; i < on.data.length; i += on.info.channels) if (Math.abs(on.data[i] - off.data[i]) + Math.abs(on.data[i + 1] - off.data[i + 1]) + Math.abs(on.data[i + 2] - off.data[i + 2]) > 60) changed += 1;
+  return changed / (on.data.length / on.info.channels);
+};
+
+const inside = (page, selector) => page.evaluate((sel) => [...document.querySelectorAll(sel)].filter((e) => e.getClientRects().length).every((e) => {
+  const r = e.getBoundingClientRect();
+  return r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1;
+}), selector);
+
+/** One whole journey by touch, at one size. */
+async function smallScreen(browser, step, viewport, tag) {
+  const { context, page } = await openJourney(browser, step, viewport, { route: '/en/journey/', hasTouch: true, isMobile: true });
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await flightLoaded(page, projects.byDate().length);
+  await page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
+  step.check(await page.evaluate(() => getComputedStyle(document.getElementById('j-rail')).display === 'none'), `${tag}: the rail is hidden`);
+  const sheets = [72, 124, 188, 250];
+  for (let n = 0; n < sheets.length; n++) {
+    await jumpTo(page, sheets[n]);
+    await page.waitForTimeout(700);
+    writeFileSync(join(dir, `${tag}-sheet-${n + 1}.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
+    const sheet = `#j-sheet-${n}`;
+    step.check(await inside(page, `${sheet} h2 span`), `${tag}, sheet ${n + 1}: its title stays on the page`);
+    const title = await coveredBy3D(page, `${sheet} h2`);
+    const line = await coveredBy3D(page, `${sheet} .j-line`);
+    step.check(title < 0.04, `${tag}, sheet ${n + 1}: the machine leaves its title clear (${(title * 100).toFixed(1)}%)`);
+    step.check(line < 0.04, `${tag}, sheet ${n + 1}: and its line (${(line * 100).toFixed(1)}%)`);
+  }
+  await jumpTo(page, 304);
+  await page.waitForTimeout(600);
+  writeFileSync(join(dir, `${tag}-stack.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
+  step.check(await page.evaluate(() => { const r = document.querySelector('.journey-canvas').getBoundingClientRect(); return r.top <= 0 && r.bottom >= innerHeight - 1 && r.left <= 0 && r.right >= innerWidth - 1; }), `${tag}: the canvas fills the page, with no dark bands`);
+  await jumpTo(page, 352);
+  await page.waitForTimeout(500);
+  writeFileSync(join(dir, `${tag}-portal.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
+  for (const [i, f] of timeline.reads.entries()) {
+    await jumpTo(page, f);
+    await page.waitForTimeout(600);
+    if (i === 1) writeFileSync(join(dir, `${tag}-project.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
+    step.check(await inside(page, '.j-open.on'), `${tag}: project ${i + 1}'s link stays on the page`);
+  }
+  const { qaReadFrames } = await tsImport('../../src/journey/world/void/path.ts', import.meta.url);
+  for (const [i, f] of qaReadFrames(timeline).entries()) {
+    await jumpTo(page, f);
+    await page.waitForTimeout(500);
+    if (i === 0) writeFileSync(join(dir, `${tag}-qa.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
+    const { questions } = await page.evaluate(() => window.__journeyDebug.stops());
+    const [l, t, r, b] = questions[i].rect;
+    step.check(l >= 0 && r <= viewport.width && t >= 0 && b <= viewport.height, `${tag}: question ${i + 1}'s words stay on the page (${l.toFixed(0)} to ${r.toFixed(0)}, ${t.toFixed(0)} to ${b.toFixed(0)})`);
+  }
+  await jumpTo(page, timeline.last);
+  await page.waitForTimeout(1500);
+  writeFileSync(join(dir, `${tag}-end.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
+  step.check(await inside(page, '.j-end nav a'), `${tag}: the end page's links stay on the page`);
+  step.check(await inside(page, '.j-end-hub h2, .j-end-hub p'), `${tag}: and its words`);
+  const bar = await page.evaluate(() => [...document.querySelectorAll('.j-end-bar > *')].map((e) => { const r = e.getBoundingClientRect(); return { height: r.height, left: r.left, right: r.right }; }));
+  step.check(bar.every((b) => b.height < 24 && b.left >= 0 && b.right <= innerWidthOf(viewport)), `${tag}: its bottom line does not wrap (${bar.map((b) => b.height.toFixed(0)).join(', ')})`);
+  await context.close();
+  return '';
+}
+
+const innerWidthOf = (viewport) => viewport.width + 1;
+const phoneStep = (browser, step) => smallScreen(browser, step, { width: 390, height: 844 }, 'phone');
+const tabletStep = (browser, step) => smallScreen(browser, step, { width: 820, height: 1180 }, 'tablet');
+
+/** Turning a phone in the middle of the flight keeps the place. */
+async function rotateStep(browser, step) {
+  const { context, page } = await openJourney(browser, step, { width: 390, height: 844 }, { route: '/en/journey/', hasTouch: true, isMobile: true });
+  await flightLoaded(page, projects.byDate().length);
+  await jumpTo(page, 450);
+  await page.waitForTimeout(600);
+  const before = await atFrame(page);
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.waitForTimeout(1200);
+  const after = await atFrame(page);
+  step.check(Math.abs(after - before) <= 2, `portrait to landscape keeps its place (${before.toFixed(1)} to ${after.toFixed(1)})`);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(1200);
+  const back = await atFrame(page);
+  step.check(Math.abs(back - before) <= 2, `and back (${back.toFixed(1)})`);
+  await context.close();
+  return '';
+}
+
+/** The end page by touch: a drift in the cursor's place, and a long press that holds and nothing else. */
+async function endTouch(browser, step) {
+  const { context, page } = await openJourney(browser, step, { width: 390, height: 844 }, { route: '/en/journey/', hasTouch: true, isMobile: true });
+  await flightLoaded(page, projects.byDate().length);
+  await page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
+  await jumpTo(page, timeline.last);
+  await page.waitForTimeout(1500);
+  const small = async () => sharp(await page.screenshot({ type: 'png' })).greyscale().resize(160, 346).raw().toBuffer();
+  const first = await small();
+  await page.waitForTimeout(3000);
+  const later = await small();
+  let moved = 0;
+  for (let i = 0; i < first.length; i++) moved += Math.abs(first[i] - later[i]);
+  step.check(moved / first.length > 0.3, `with no cursor, the view drifts by itself (changed by ${(moved / first.length).toFixed(2)})`);
+  const cdp = await context.newCDPSession(page);
+  const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+  await page.evaluate(() => {
+    window.__menu = 0;
+    addEventListener('contextmenu', (event) => { if (!event.defaultPrevented) window.__menu += 1; });
+  });
+  const before = (await page.evaluate(() => window.__journeyDebug.stops().end)).fired;
+  await touch('touchStart', 195, 500);
+  await page.waitForTimeout(900);
+  step.check((await page.evaluate(() => window.__journeyDebug.stops().end)).charge > 0.2, 'a long press grows a light');
+  await touch('touchEnd');
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => ({ fired: window.__journeyDebug.stops().end.fired, selected: String(getSelection()), menu: window.__menu }));
+  step.check(after.fired === before + 1, `letting go leaves a galaxy (${before} to ${after.fired})`);
+  step.check(after.selected === '', 'it selects no text');
+  step.check(after.menu === 0, 'and opens no menu');
+  // A sideways drag moves the view and leaves no galaxy.
+  const y0 = await page.evaluate(() => scrollY);
+  await touch('touchStart', 80, 500);
+  for (let x = 90; x <= 300; x += 30) {
+    await touch('touchMove', x, 502);
+    await page.waitForTimeout(16);
+  }
+  await touch('touchEnd');
+  await page.waitForTimeout(250);
+  const dragged = await page.evaluate(() => ({ fired: window.__journeyDebug.stops().end.fired, y: scrollY }));
+  step.check(dragged.fired === after.fired, 'a sideways drag leaves no galaxy');
+  step.check(Math.abs(dragged.y - y0) < 4, 'and does not scroll');
+  await context.close();
+  return '';
+}
+
 const atFrame = (page) => page.evaluate(() => window.__journeyDebug.frame());
 const openAddress = (page) => page.evaluate(() => location.pathname);
 
@@ -1273,7 +1430,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

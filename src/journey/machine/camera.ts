@@ -106,14 +106,25 @@ export function fovFor(lens: number, aspect: number): number {
   return toDegrees(2 * Math.atan(across / Math.max(aspect, FRAME_ASPECT)));
 }
 
-const FIT: readonly (readonly [number, number])[] = [[0, 0.9], [34, 1], [48, 1], [64, 0.84], [168, 0.84], [184, 0.76], [208, 0.76], [270, 0.76], [292, 0.94], [314, 0.94], [344, 1], [502, 1]];
+/** On a tall page the words stand above and below the machine: it stands small enough to stay between them. */
+const TALL_FIT: readonly (readonly [number, number])[] = [[0, 1], [16, 1], [30, 0.74], [48, 0.74], [64, 0.8], [270, 0.8], [292, 0.7], [326, 0.7], [344, 1], [600, 1]];
+
+const WIDE_FIT: readonly (readonly [number, number])[] = [[0, 0.9], [34, 1], [48, 1], [64, 0.84], [168, 0.84], [184, 0.76], [208, 0.76], [270, 0.76], [292, 0.94], [314, 0.94], [344, 1], [502, 1]];
 
 /** How much smaller than the page's cover the machine stands at frame `f`, so that it leaves the words room. */
 export function pageFit(f: number, aspect: number): number {
-  if (aspect < 1) return 1;
-  if (f > 600) return 0.76;
-  for (let i = 1; i < FIT.length; i++) if (f <= FIT[i][0]) return mix(FIT[i - 1][1], FIT[i][1], ease(f, FIT[i - 1][0], FIT[i][0]));
-  return 1;
+  const FIT = aspect < 1 ? TALL_FIT : WIDE_FIT;
+  if (f > 600) return aspect < 1 ? 1 : 0.76;
+  let fit = 1;
+  for (let i = 1; i < FIT.length; i++) {
+    if (f <= FIT[i][0]) {
+      fit = mix(FIT[i - 1][1], FIT[i][1], ease(f, FIT[i - 1][0], FIT[i][0]));
+      break;
+    }
+  }
+  if (aspect >= 1) return fit;
+  // A tablet's page is wider for its height than a phone's, and the machine, fitted to its width, stands taller on it.
+  return fit * mix(1, Math.min(1, 0.58 / aspect), Math.min(1, (1 - fit) / 0.2));
 }
 
 /** The point the page fit scales about, in NDC: the right edge, 62% down. */
@@ -130,6 +141,7 @@ const TALL_Y = -0.2;
 export function fitProjection(m: number[], shift: number, scale: number, aspect: number): void {
   m[0] *= scale;
   m[5] *= scale;
-  m[8] = scale * 2 * shift - FIT_X * (1 - scale) - (aspect < 1 ? TALL_X : 0);
-  m[9] = -FIT_Y * (1 - scale) - (aspect < 1 ? TALL_Y : 0);
+  // A tall page scales about its own centre; a wide one keeps the right edge, to leave the left for the words.
+  m[8] = scale * 2 * shift - (aspect < 1 ? TALL_X : FIT_X * (1 - scale));
+  m[9] = aspect < 1 ? -TALL_Y : -FIT_Y * (1 - scale);
 }

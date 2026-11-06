@@ -15,6 +15,9 @@ export interface CanvasHandle {
   screenRect(id: string): [number, number, number, number] | null;
   /** What stands in the flight, for those checking it. */
   report(): { stops: StopReport[]; walls: number; questions: QuestionReport[]; end: UniverseReport | null };
+  /** Where a finger holds, and where the view drifts with no pointer on the page: each -1 to 1. */
+  pointer(x: number, y: number): void;
+  drift(x: number, y: number): void;
   /** A press on the end page, and letting go. */
   hold(on: boolean, cancelled?: boolean): void;
 }
@@ -55,6 +58,8 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
           },
           screenRect: (id) => made.screenRect(id),
           report: () => made.report(),
+          pointer: (x, y) => made.pointer(x, y),
+          drift: (x, y) => made.drift(x, y),
           hold: (on, cancelled) => made.hold(on, cancelled),
         });
         // What the flight needs comes after the first view. Without it the tunnel still runs, with nothing standing in it.

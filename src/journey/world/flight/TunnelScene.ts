@@ -254,7 +254,7 @@ export class TunnelScene {
     await nextFrame();
     for (const [i, words] of this.input.questions[this.locale].entries()) {
       if (this.gone) return;
-      questions.buildQuestion(i, words, this.phone, this.anisotropy);
+      questions.buildQuestion(i, words, this.phone, this.anisotropy, this.camera.aspect);
       await nextFrame();
     }
     if (this.gone) return;
@@ -324,7 +324,7 @@ export class TunnelScene {
     const { questions } = this;
     if (!questions) return;
     questions.buildWord(this.input.qaWord[this.locale], this.phone, this.anisotropy);
-    this.input.questions[this.locale].forEach((words, i) => questions.buildQuestion(i, words, this.phone, this.anisotropy));
+    this.input.questions[this.locale].forEach((words, i) => questions.buildQuestion(i, words, this.phone, this.anisotropy, this.camera.aspect));
   }
 
   questionReport(): QuestionReport[] {
@@ -352,6 +352,11 @@ export class TunnelScene {
   pointer(x: number, y: number): void {
     this.aim.set(x, y);
     this.pointerAt.set(x, y);
+  }
+
+  /** Where the view turns to with no pointer on the page: the stars are left as they are. */
+  drift(x: number, y: number): void {
+    this.aim.set(x, y);
   }
 
   update(f: number, dt: number, now: number): void {
@@ -473,12 +478,14 @@ export class TunnelScene {
 
   resize(width: number, height: number, pixelRatio: number): void {
     this.voidScene.setPixels(pixelRatio, height);
+    const narrowed = width !== this.width;
     this.width = width;
     this.height = height;
     this.camera.aspect = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
     const phone = this.camera.aspect < 0.8;
-    if (phone === this.phone) return;
+    // A phone's address bar changes only the height: that draws no words again.
+    if (phone === this.phone && !(phone && narrowed)) return;
     this.phone = phone;
     for (const stop of this.stops) stop.layout(phone);
     this.rebuildWords();

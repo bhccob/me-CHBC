@@ -200,6 +200,11 @@ export class World {
     return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, questions: this.tunnel.questionReport(), end: this.tunnel.endReport() };
   }
 
+  /** Where the view turns to with no pointer on the page. */
+  drift(x: number, y: number): void {
+    this.tunnel.drift(x, y);
+  }
+
   /** A press on the end page, and letting go; `cancelled` leaves nothing behind. */
   hold(on: boolean, cancelled = false): void {
     if (on) this.tunnel.press();

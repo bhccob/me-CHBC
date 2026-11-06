@@ -88,7 +88,14 @@ describe('the lens', () => {
 
   it('shows a tall page 1.5 times its width, as the mock did', () => {
     expect(fovFor(50, 0.5)).toBeCloseTo(51.3, 1);
-    expect(pageFit(100, 0.5)).toBe(1);
+  });
+
+  it('on a tall page, stands the machine small enough to leave its words clear, full size at the first view and the portal', () => {
+    expect(pageFit(0, 0.5)).toBe(1);
+    expect(pageFit(100, 0.5)).toBeCloseTo(0.8);
+    expect(pageFit(304, 0.5)).toBeCloseTo(0.7);
+    expect(pageFit(350, 0.5)).toBe(1);
+    expect(pageFit(700, 0.5)).toBe(1);
   });
 
   it('scales the machine about the right edge, 62% down, as the page did', () => {

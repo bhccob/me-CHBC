@@ -3,7 +3,7 @@ import { backOut, clamp, ease, mix, ramp } from '../../math';
 import { displayReferred } from '../displayOutput';
 import { type TextPlate, textPlate } from '../flight/textures';
 import { wrapLines } from '../flight/wrap';
-import { FLOOR, QA_WORD_DISTANCE, QREAD, QUESTION_DISTANCES, voidAt } from './path';
+import { endFov, FLOOR, QA_WORD_DISTANCE, QREAD, QUESTION_DISTANCES, voidAt, voidPose } from './path';
 
 /** Which side of the way a question's gear stands. Its words stand on the other. */
 export function questionSide(i: number): 1 | -1 {
@@ -139,6 +139,14 @@ export class Questions {
     const at = voidAt(QA_WORD_DISTANCE, new Vector3(), this.end);
     const forward = voidAt(QA_WORD_DISTANCE + 1, new Vector3(), this.end).sub(at).setY(0).normalize();
     word.mesh.position.copy(at).setY(EYE_HEIGHT + 1.6);
+    // A tall page sees little to the sides: there it stands where the camera is looking as it comes.
+    if (phone) {
+      const pose = voidPose(QA_WORD_DISTANCE - 15, this.end, { place: new Vector3(), look: new Vector3(), T: new Vector3(), R: new Vector3(), U: new Vector3(), roll: 0, arrive: 0, sway: 1, lens: 1 });
+      const ahead = pose.look.clone().sub(pose.place).setY(0).normalize();
+      const far = Math.hypot(at.x - pose.place.x, at.z - pose.place.z);
+      word.mesh.position.set(pose.place.x + ahead.x * far, EYE_HEIGHT + 1.6, pose.place.z + ahead.z * far);
+      forward.copy(ahead);
+    }
     word.mesh.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(forward.clone().cross(UP).normalize(), UP, forward.clone().negate()));
     word.mesh.scale.setScalar(phone ? 0.42 : 0.72);
     this.scene.add(word.mesh);
@@ -146,7 +154,7 @@ export class Questions {
   }
 
   /** Draws one question's words: on a new language, or when the page turns into a phone's. */
-  buildQuestion(i: number, words: QuestionWords, phone: boolean, anisotropy: number): void {
+  buildQuestion(i: number, words: QuestionWords, phone: boolean, anisotropy: number, aspect = 1): void {
     const stop = this.stops[i];
     for (const plate of stop.plates) disposeWords(stop.group, plate);
     stop.plates = [];
@@ -154,8 +162,10 @@ export class Questions {
     const big = phone ? 118 : 148;
     const small = phone ? 84 : 62;
     const line = phone ? 110 : 84;
-    const wrapQ = phone ? 3.3 : 3.6;
-    const wrapA = phone ? 3.25 : 3.1;
+    // On a phone they take the page's width at the reading distance, and no more.
+    const across = Math.min(3.3, 2 * QREAD * Math.tan((endFov(true) * Math.PI) / 360) * aspect - 0.32);
+    const wrapQ = phone ? across : 3.6;
+    const wrapA = phone ? across : 3.1;
     const ruler = document.createElement('canvas').getContext('2d')!;
     ruler.font = `800 ${big}px Barlow`;
     ruler.letterSpacing = '-3px';
@@ -200,11 +210,11 @@ export class Questions {
       stop.plates.push(plate);
     };
     const total = title.height + 0.14 + answer.height;
-    const left = phone ? -1.62 : side > 0 ? -3.55 : 0.05;
+    const left = phone ? -across / 2 : side > 0 ? -3.55 : 0.05;
     const top = phone ? total / 2 - 0.9 : total / 2 + 0.12;
     place(title, left, top, 0.2, [0.42, 0.74], 4);
     place(answer, left + 0.03, top - title.height - 0.14, 0.1, [0.62, 0.96], 4);
-    const gx = phone ? 0.9 : side * 2.05;
+    const gx = phone ? across / 2 - 0.62 : side * 2.05;
     const gy = phone ? top + 0.95 : -0.12;
     stop.gear.position.set(gx, gy, -0.3);
     place(hollow, gx - (phone ? 0.75 : 1.2), gy + (phone ? 0.95 : 1.66), -0.7, [0.24, 0.6], 2);

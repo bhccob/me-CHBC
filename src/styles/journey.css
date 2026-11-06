@@ -119,7 +119,7 @@ html[data-route='journey'] .poster {
   outline-offset: 3px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .j-rail {
     display: none;
   }
@@ -652,6 +652,14 @@ html[data-route='journey'] .site-header {
   color: var(--j-gold);
 }
 
+/* A press on the end page holds: it selects nothing and opens no menu; a sideways drag moves the view. */
+html[data-journey-end] body {
+  -webkit-touch-callout: none;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* The calm journey: the same words on the same colours, with nothing moving. */
 html[data-journey-calm] .j-sound {
   display: none;
@@ -1147,4 +1155,127 @@ html[data-project-open] .j-bar {
   opacity: 1;
   outline: 2px solid var(--j-ink, #f2efe8);
   outline-offset: 3px;
+}
+
+/* On a tall page wider than a phone: the same, with the words above the machine. */
+@media (max-aspect-ratio: 9/10) and (min-width: 761px) {
+  .j-sheet h2,
+  #j-sheet-3 h2 {
+    top: 14%;
+  }
+
+  .j-stack {
+    left: 34px;
+    right: 34px;
+    top: 76px;
+    width: min(70vw, 560px);
+    transform: none;
+  }
+}
+
+/* On a phone: the words above and below the machine, and nothing past the edge of the page. */
+@media (max-width: 760px) {
+  html[data-route='journey'] .site-header {
+    padding: 0 18px;
+  }
+
+  .j-sheet h2,
+  #j-sheet-2 h2,
+  #j-sheet-3 h2 {
+    left: 18px;
+    right: 18px;
+    top: 21%;
+    font-size: 10.4vw;
+  }
+
+  .j-sheet h2 span {
+    white-space: normal;
+  }
+
+  .j-trio {
+    left: 18px;
+    right: 18px;
+    top: 70px;
+    gap: 12px;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+
+  .j-trio dd {
+    font-size: 12.5px;
+  }
+
+  .j-line {
+    left: 18px;
+    bottom: 56px;
+    max-width: calc(100vw - 36px);
+    font-size: 21px;
+  }
+
+  .j-block {
+    left: 18px;
+    gap: 12px;
+    font-size: 11px;
+  }
+
+  .j-story {
+    left: 18px;
+    top: 84px;
+    bottom: auto;
+  }
+
+  .j-num {
+    font-size: 96px;
+  }
+
+  .j-stack {
+    left: 18px;
+    right: 18px;
+    top: 76px;
+    width: auto;
+    transform: none;
+  }
+
+  .j-tag {
+    display: none;
+  }
+
+  .j-hint {
+    width: 84vw;
+    font-size: 12px;
+    line-height: 1.35;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .j-end h2 {
+    font-size: 19vw;
+  }
+
+  .j-end-toy {
+    font-size: 12px;
+  }
+
+  .j-end nav {
+    bottom: 66px;
+    gap: 12px 26px;
+  }
+
+  .j-end nav b {
+    font-size: 17px;
+  }
+
+  .j-end-bar {
+    bottom: 12px;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  /* The two that belong on one line, with where he is from under them. */
+  .j-end-bar > :nth-child(2) {
+    order: 3;
+    width: 100%;
+    text-align: center;
+  }
 }

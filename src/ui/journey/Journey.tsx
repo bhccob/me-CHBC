@@ -13,7 +13,7 @@ import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } f
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
 import { lightWaiting, playBang } from '~/journey/bang';
-import { canHold, endWordsAt } from '~/journey/end';
+import { canHold, driftAngles, endWordsAt, ORBIT_PITCH, ORBIT_YAW, touchPlan } from '~/journey/end';
 import { Sound } from '~/journey/sound/music';
 import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet } from './applyLayers';
@@ -116,6 +116,12 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     let tiltX = 0;
     let tiltY = 0;
     let holding = false;
+    // With no cursor: a slow drift, a sideways drag on top of it, and a finger that may yet be scrolling.
+    const noCursor = matchMedia('(hover: none)').matches;
+    let dragX = 0;
+    let dragFrom = 0;
+    let finger: { x: number; y: number; plan: 'orbit' | 'scroll' | null } | null = null;
+    let holdSoon = 0;
     const openLinks = new Map(Array.from(document.querySelectorAll<HTMLElement>('.j-project')).map((el) => [el.dataset.project ?? '', el.querySelector<HTMLElement>('.j-open')]));
     let projectNow: string | null = null;
     let hotNow = false;
@@ -195,6 +201,13 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         if (end.rise !== risen) {
           risen = end.rise;
           endPage?.classList.toggle('on', risen);
+          document.documentElement.toggleAttribute('data-journey-end', risen);
+        }
+        if (noCursor && end.page > 0 && !holding) {
+          const { yaw, pitch } = driftAngles(now / 1000);
+          aimX = yaw / ORBIT_YAW + dragX;
+          aimY = -pitch / ORBIT_PITCH;
+          canvas.current?.drift(aimX, pitch / ORBIT_PITCH);
         }
         if (end.page > 0) {
           if (endWord) {
@@ -281,18 +294,53 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     document.addEventListener('visibilitychange', seen);
 
     // The end page: the cursor leans the words; hold anywhere but on a link to start a universe.
-    const aim = (event: PointerEvent): void => {
-      aimX = (event.clientX / innerWidth) * 2 - 1;
-      aimY = (event.clientY / innerHeight) * 2 - 1;
-    };
-    const press = (event: PointerEvent): void => {
-      if (event.button !== 0 || shown === null || reduce.current || !canHold(shown, timeline)) return;
-      if ((event.target as Partial<Pick<Element, 'closest'>> | null)?.closest?.('a, button')) return;
+    const startHold = (): void => {
       holding = true;
       canvas.current?.hold(true);
       Sound.hold(true);
     };
+    const toPage = (event: PointerEvent): [number, number] => [(event.clientX / innerWidth) * 2 - 1, 1 - (event.clientY / innerHeight) * 2];
+    const aim = (event: PointerEvent): void => {
+      if (event.pointerType !== 'touch') {
+        aimX = (event.clientX / innerWidth) * 2 - 1;
+        aimY = (event.clientY / innerHeight) * 2 - 1;
+        return;
+      }
+      if (!finger) return;
+      if (holding) {
+        const [x, y] = toPage(event);
+        canvas.current?.pointer(x, y);
+        return;
+      }
+      const dx = event.clientX - finger.x;
+      const dy = event.clientY - finger.y;
+      if (!finger.plan && Math.hypot(dx, dy) > 10) {
+        finger.plan = touchPlan(dx, dy);
+        clearTimeout(holdSoon);
+      }
+      if (finger.plan === 'orbit') dragX = Math.max(-0.6, Math.min(0.6, dragFrom + dx / (innerWidth / 2)));
+    };
+    const press = (event: PointerEvent): void => {
+      if (event.button !== 0 || shown === null || reduce.current || !canHold(shown, timeline)) return;
+      if ((event.target as Partial<Pick<Element, 'closest'>> | null)?.closest?.('a, button')) return;
+      if (event.pointerType !== 'touch') {
+        startHold();
+        return;
+      }
+      // A finger may be about to scroll or to drag: it holds only once it has stayed put a moment.
+      finger = { x: event.clientX, y: event.clientY, plan: null };
+      dragFrom = dragX;
+      const [x, y] = toPage(event);
+      holdSoon = window.setTimeout(() => {
+        canvas.current?.pointer(x, y);
+        startHold();
+      }, 220);
+    };
     const letGo = (cancelled: boolean): void => {
+      clearTimeout(holdSoon);
+      const tapped = finger !== null && finger.plan === null && !holding && !cancelled;
+      finger = null;
+      if (tapped) startHold();
       if (!holding) return;
       holding = false;
       canvas.current?.hold(false, cancelled);
@@ -300,6 +348,11 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     };
     const up = (): void => letGo(false);
     const given = (): void => letGo(true);
+    // A long press on the end page is a hold, not a menu.
+    const noMenu = (event: Event): void => {
+      if (document.documentElement.hasAttribute('data-journey-end') && !(event.target as Partial<Pick<Element, 'closest'>> | null)?.closest?.('a, button')) event.preventDefault();
+    };
+    addEventListener('contextmenu', noMenu);
     addEventListener('pointermove', aim, { passive: true });
     addEventListener('pointerdown', press);
     addEventListener('pointerup', up);
@@ -318,6 +371,9 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       document.removeEventListener('focusin', focused);
       document.removeEventListener('visibilitychange', seen);
       removeEventListener('pointermove', aim);
+      removeEventListener('contextmenu', noMenu);
+      clearTimeout(holdSoon);
+      document.documentElement.removeAttribute('data-journey-end');
       removeEventListener('pointerdown', press);
       removeEventListener('pointerup', up);
       removeEventListener('pointercancel', given);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addGalaxy, endWordsAt, MAX_GALAXIES, orbitAngles } from '~/journey/end';
+import { addGalaxy, driftAngles, endWordsAt, MAX_GALAXIES, orbitAngles, touchPlan } from '~/journey/end';
 import { EndWords } from '~/ui/journey/EndWords';
 import { escape, render } from './render';
 
@@ -13,6 +13,26 @@ describe('the cursor on the end page', () => {
 
   it('stays still at the middle', () => {
     expect(orbitAngles(0, 0)).toEqual({ yaw: 0, pitch: 0 });
+  });
+});
+
+describe('a finger on the end page', () => {
+  it('moves the view when it goes more sideways than down', () => {
+    expect(touchPlan(30, 4)).toBe('orbit');
+    expect(touchPlan(-30, 4)).toBe('orbit');
+  });
+
+  it('scrolls when it goes more down than sideways', () => {
+    expect(touchPlan(4, 30)).toBe('scroll');
+    expect(touchPlan(4, -30)).toBe('scroll');
+  });
+
+  it('with no cursor, a slow drift takes the cursor\'s place, inside its reach', () => {
+    for (let t = 0; t < 200; t += 0.7) {
+      expect(Math.abs(driftAngles(t).yaw)).toBeLessThan(26 * DEG);
+      expect(Math.abs(driftAngles(t).pitch)).toBeLessThan(15 * DEG);
+    }
+    expect(driftAngles(10).yaw).not.toBeCloseTo(driftAngles(0).yaw);
   });
 });
 
