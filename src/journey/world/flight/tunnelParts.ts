@@ -1,5 +1,6 @@
 import { AdditiveBlending, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, type IUniform, Mesh, ShaderMaterial } from 'three';
 import { clamp, seeded, TAU } from '../../math';
+import { FLOOR } from '../void/path';
 import { frameAt, type PathFrame } from './path';
 
 /** What every part of the tunnel reads, set once a frame. */
@@ -76,6 +77,16 @@ function glowing(uniforms: TunnelUniforms, gain: number, fragmentShader: string)
   });
 }
 
+/** The same strips, standing upside down under the void's floor: fainter, and shown only out there. */
+function mirrored(geometry: BufferGeometry, uniforms: TunnelUniforms, gain: number, shader: string): Mesh {
+  const mirror = new Mesh(geometry, glowing(uniforms, gain, shader));
+  mirror.frustumCulled = false;
+  mirror.scale.y = -1;
+  mirror.position.y = 2 * FLOOR;
+  mirror.visible = false;
+  return mirror;
+}
+
 const WIRE_SHADER = /* glsl */ `${COMMON} varying vec3 vD; varying float vL;
   float hash(float n){ return fract(sin(n)*43758.5453); }
   void main(){
@@ -101,7 +112,7 @@ const RING_SHADER = /* glsl */ `${COMMON} varying vec3 vD; varying float vL;
   }`;
 
 /** Gold traces on the walls: long wires that step sideways at 45 degrees, with light racing along them. */
-export function makeWires(end: number, uniforms: TunnelUniforms): Mesh {
+export function makeWires(end: number, uniforms: TunnelUniforms): { mesh: Mesh; mirror: Mesh } {
   const r = seeded(4242);
   const strips = new Strips();
   const frames: PathFrame[] = [];
@@ -136,13 +147,14 @@ export function makeWires(end: number, uniforms: TunnelUniforms): Mesh {
     });
     strips.add(rows);
   }
-  const mesh = new Mesh(strips.geometry(), glowing(uniforms, 1, WIRE_SHADER));
+  const geometry = strips.geometry();
+  const mesh = new Mesh(geometry, glowing(uniforms, 1, WIRE_SHADER));
   mesh.frustumCulled = false;
-  return mesh;
+  return { mesh, mirror: mirrored(geometry, uniforms, 0.34, WIRE_SHADER) };
 }
 
 /** Thin octagon rings of light between the gates. */
-export function makeRings(end: number, uniforms: TunnelUniforms): Mesh {
+export function makeRings(end: number, uniforms: TunnelUniforms): { mesh: Mesh; mirror: Mesh } {
   const r = seeded(777);
   const strips = new Strips();
   for (let s = 2; s <= end; s += 3.6) {
@@ -161,9 +173,10 @@ export function makeRings(end: number, uniforms: TunnelUniforms): Mesh {
     };
     strips.add([row(rad - 0.1, -1), row(rad, 0), row(rad + 0.1, 1)]);
   }
-  const mesh = new Mesh(strips.geometry(), glowing(uniforms, 1, RING_SHADER));
+  const geometry = strips.geometry();
+  const mesh = new Mesh(geometry, glowing(uniforms, 1, RING_SHADER));
   mesh.frustumCulled = false;
-  return mesh;
+  return { mesh, mirror: mirrored(geometry, uniforms, 0.3, RING_SHADER) };
 }
 
 export interface StreakUniforms {

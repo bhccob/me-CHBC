@@ -145,14 +145,15 @@ export class Gates {
     for (const item of this.items) item.group.visible = on;
   }
 
-  update(s: number, dissolve: number): void {
+  /** `opening`: out in the void the whole tunnel stands in view, so its gates stay however far they are. */
+  update(s: number, dissolve: number, opening: number): void {
     const opacity = 1 - ease(dissolve, 0.1, 0.72);
     this.materials.forEach((material) => {
       material.opacity = opacity;
     });
     for (const item of this.items) {
       const distance = item.s - s;
-      const on = distance > -3 && distance < SEEN_AHEAD && dissolve < 0.74;
+      const on = (opening > 0.3 || (distance > -3 && distance < SEEN_AHEAD)) && dissolve < 0.74;
       item.group.visible = on;
       if (!on) continue;
       item.gears.forEach((gear, i) => {

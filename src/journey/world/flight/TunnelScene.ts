@@ -2,8 +2,12 @@ import { AdditiveBlending, BackSide, Color, DoubleSide, FogExp2, Mesh, MeshBasic
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { Locale } from '~/i18n/Translator';
 import { distanceAt, type DistanceTable, distanceTable, type FlightLayout } from '../../flight/layout';
-import { clamp, ez, mix, ramp } from '../../math';
+import { clamp, ease, ez, mix, ramp } from '../../math';
+import type { Timeline } from '../../timeline';
 import { displayReferred, displayValue } from '../displayOutput';
+import { movingShare, starShare } from '../void/Dissolve';
+import { endFov, voidDistanceAt, voidOpening, type VoidPose, voidPose, wallReach } from '../void/path';
+import { VoidScene } from '../void/VoidScene';
 import { Gates } from './Gates';
 import { bankAt, center, fovAt, frameAt, nearestStop, type Rgb, tintAt, washAt } from './path';
 import { ProjectStop, type StopProject, type StopWords } from './ProjectStop';
@@ -23,8 +27,7 @@ export interface TunnelInput {
   layout: FlightLayout;
   projects: readonly FlightProject[];
   locale: Locale;
-  /** The frames the flight runs over. */
-  frames: readonly [number, number];
+  timeline: Timeline;
   reduce: boolean;
 }
 
@@ -42,6 +45,11 @@ export interface FlightState {
   screen: [number, number] | null;
   /** The project whose screen is under the pointer, if any. */
   hover: string | null;
+  /** How far along the way through the void. */
+  voidDistance: number;
+  /** The tunnel breaking: the share of its points on their way, and the share already stars. */
+  sparks: number;
+  stars: number;
 }
 
 /** What a stop holds, for those checking it. */
@@ -94,7 +102,7 @@ const look = new Vector3();
 export class TunnelScene {
   readonly scene = new Scene();
   readonly camera = new PerspectiveCamera(54, 16 / 9, 0.05, 900);
-  readonly state: FlightState = { s: 0, speed: 0, fov: 54, calm: 0, project: null, link: null, screen: null, hover: null };
+  readonly state: FlightState = { s: 0, speed: 0, fov: 54, calm: 0, project: null, link: null, screen: null, hover: null, voidDistance: 0, sparks: 0, stars: 0 };
   private readonly input: TunnelInput;
   private readonly table: DistanceTable;
   private readonly uniforms: TunnelUniforms = tunnelUniforms();
@@ -103,6 +111,8 @@ export class TunnelScene {
   private readonly orb: Sprite;
   private readonly glow = glowTexture();
   private readonly walls: WallScreens;
+  private readonly voidScene: VoidScene;
+  private readonly pose: VoidPose = { place: new Vector3(), look: new Vector3(), T: new Vector3(), R: new Vector3(), U: new Vector3(), roll: 0, arrive: 0, sway: 1, lens: 1 };
   private readonly ray = new Raycaster();
   private readonly pointerAt = new Vector2(9, 9);
   private stops: ProjectStop[] = [];
@@ -139,9 +149,10 @@ export class TunnelScene {
     const rings = makeRings(end, this.uniforms);
     const streaks = makeStreaks(this.uniforms);
     this.streaks = streaks.speed;
-    this.meshes = [wires, rings, streaks.mesh];
-    this.scene.add(wires, rings);
+    this.meshes = [wires.mesh, rings.mesh, wires.mirror, rings.mirror, streaks.mesh];
+    this.scene.add(wires.mesh, rings.mesh, wires.mirror, rings.mirror);
     this.camera.add(streaks.mesh);
+    this.voidScene = new VoidScene(this.scene, this.uniforms, end, input.timeline, [wires.mirror, rings.mirror]);
 
     this.orb = new Sprite(displayReferred(new SpriteMaterial({ map: this.glow, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending, toneMapped: false, fog: false }), false));
     this.orb.scale.setScalar(22);
@@ -211,6 +222,11 @@ export class TunnelScene {
     this.walls.show(true);
     draw();
     this.walls.show(false);
+    await nextFrame();
+    if (this.gone) return;
+    this.voidScene.show(true);
+    draw();
+    this.voidScene.show(false);
   }
 
   /** The words in another language: the world stays, only they change. */
@@ -247,32 +263,60 @@ export class TunnelScene {
   }
 
   update(f: number, dt: number, now: number): void {
-    const { layout, projects, frames, reduce } = this.input;
+    const { layout, projects, timeline, reduce } = this.input;
     const end = layout.end;
-    const s = distanceAt(ramp(f, frames[0], frames[1]), this.table);
-    const moved = this.last === null || dt <= 0 ? 0 : Math.abs(s - this.last) / dt;
-    this.last = s;
+    const s = distanceAt(ramp(f, timeline.flight[0], timeline.flight[1]), this.table);
+    const beyond = voidDistanceAt(f, timeline);
+    const total = s + beyond;
+    const moved = this.last === null || dt <= 0 ? 0 : Math.abs(total - this.last) / dt;
+    this.last = total;
     const state = this.state;
     state.s = s;
+    state.voidDistance = beyond;
+    const dissolve = ramp(f, timeline.dissolve[0], timeline.dissolve[1]);
+    const opening = voidOpening(f, timeline);
+    state.sparks = movingShare(dissolve);
+    state.stars = starShare(dissolve);
+    this.uniforms.uDis.value = dissolve;
+    this.uniforms.uVoid.value = opening;
+    this.uniforms.uFar.value = wallReach(opening);
     state.speed = reduce ? 0 : state.speed + (clamp(moved / FULL_SPEED, 0, 1.6) - state.speed) * (1 - Math.exp(-dt / 0.14));
     this.uniforms.uTime.value = reduce ? 0 : now / 1000;
 
     // The camera, leaning into bends, with a little of the pointer.
     this.mouse.lerp(this.aim, 1 - Math.exp(-dt / 0.28));
-    const m = reduce ? 0 : 1;
-    const frame = frameAt(s, end);
-    center(s, end, place)
-      .addScaledVector(frame.R, this.mouse.x * 0.24 * m)
-      .addScaledVector(frame.U, this.mouse.y * 0.14 * m);
-    center(s + LOOK_AHEAD, end, look)
-      .addScaledVector(frame.R, this.mouse.x * 0.62 * m)
-      .addScaledVector(frame.U, this.mouse.y * 0.36 * m);
+    let m = reduce ? 0 : 1;
+    let roll: number;
+    let wantFov: number;
+    let right: Vector3;
+    let up: Vector3;
     const camera = this.camera;
+    if (beyond > 0) {
+      const pose = voidPose(beyond, end, this.pose);
+      m *= pose.sway;
+      place.copy(pose.place);
+      look.copy(pose.look);
+      right = pose.R;
+      up = pose.U;
+      roll = pose.roll;
+      camera.up.set(0, 1, 0);
+      wantFov = fovAt(state.speed * pose.lens, this.phone) + (endFov(this.phone) - fovAt(0, this.phone)) * pose.arrive;
+    } else {
+      const frame = frameAt(s, end);
+      center(s, end, place);
+      center(s + LOOK_AHEAD, end, look);
+      right = frame.R;
+      up = frame.U;
+      roll = bankAt(frame.T);
+      camera.up.copy(frame.U);
+      wantFov = fovAt(state.speed, this.phone);
+    }
+    place.addScaledVector(right, this.mouse.x * 0.24 * m).addScaledVector(up, this.mouse.y * 0.14 * m);
+    look.addScaledVector(right, this.mouse.x * 0.62 * m).addScaledVector(up, this.mouse.y * 0.36 * m);
     camera.position.copy(place);
-    camera.up.copy(frame.U);
     camera.lookAt(look);
-    camera.rotateZ(bankAt(frame.T));
-    state.fov += (fovAt(state.speed, this.phone) - state.fov) * (dt > 0 ? 1 - Math.exp(-dt / 0.16) : 1);
+    camera.rotateZ(roll);
+    state.fov += (wantFov - state.fov) * (dt > 0 ? 1 - Math.exp(-dt / 0.16) : 1);
     camera.fov = state.fov;
     camera.updateProjectionMatrix();
     this.streaks.uTravel.value = s + (reduce ? 0 : now / 6000);
@@ -288,17 +332,20 @@ export class TunnelScene {
     const calm = ez(near);
     this.uniforms.uCalm.value = calm;
     state.calm = calm;
-    this.fog.density = mix(0.017, 0.085, calm);
+    this.fog.density = mix(mix(0.017, 0.085, calm), 0.0028, opening);
 
     center(Math.min(s + ORB_AHEAD, end + ORB_AHEAD), end, this.orb.position);
     this.orb.material.color.setRGB(tint[0] * 0.6, tint[1] * 0.6, tint[2] * 0.6);
-    this.gates?.update(s, 0);
-    this.walls.update(s, calm, 0);
+    this.orb.material.opacity = 1 - opening;
+    this.orb.visible = opening < 0.99;
+    this.gates?.update(s, dissolve, opening);
+    this.walls.update(s, calm, dissolve);
+    this.voidScene.update({ f, distance: beyond, dissolve, opening, camera: camera.position });
 
     // Each project swings out of the wall as you near it.
     let at: ProjectStop | null = null;
     for (const stop of this.stops) {
-      if (stop.update({ s, now: reduce ? 0 : now, mouse: this.mouse, sway: m, dissolve: 0 })) at = stop;
+      if (stop.update({ s, now: reduce ? 0 : now, mouse: this.mouse, sway: m, dissolve })) at = stop;
     }
     state.project = at ? at.project.id : null;
     state.link = null;
@@ -315,7 +362,8 @@ export class TunnelScene {
     }
   }
 
-  resize(width: number, height: number): void {
+  resize(width: number, height: number, pixelRatio: number): void {
+    this.voidScene.setPixels(pixelRatio, height);
     this.width = width;
     this.height = height;
     this.camera.aspect = width / Math.max(1, height);
@@ -331,6 +379,7 @@ export class TunnelScene {
     this.gone = true;
     this.gates?.dispose();
     this.walls.dispose();
+    this.voidScene.dispose();
     for (const stop of this.stops) stop.dispose();
     this.scene.environment?.dispose();
     for (const mesh of this.meshes) {

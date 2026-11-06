@@ -511,6 +511,61 @@ async function projectsStep(browser, step) {
   return '';
 }
 
+/** Out of the portal: the whole tunnel over its reflection, seen from outside. */
+async function lookBack(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await flightLoaded(page, projects.byDate().length);
+  await goToFrame(page, 372);
+  await goToFrame(page, timeline.lookBack, 220);
+  await page.waitForTimeout(1000);
+  const shot = await page.screenshot({ type: 'png' });
+  writeFileSync(join(dir, 'look-back.jpg'), await sharp(shot).jpeg({ quality: 88 }).toBuffer());
+  const upper = await sharp(shot).extract({ left: 300, top: 120, width: 840, height: 220 }).stats();
+  const lower = await sharp(shot).extract({ left: 300, top: 480, width: 840, height: 220 }).stats();
+  step.check(upper.channels[0].max > 120, `the tunnel hangs in the upper half (the brightest red ${upper.channels[0].max})`);
+  step.check(lower.channels[0].max > 60, `its reflection lies in the lower half (the brightest red ${lower.channels[0].max})`);
+  step.check(lower.channels[0].mean < upper.channels[0].mean + 6, `the reflection is no brighter than the tunnel (${lower.channels[0].mean.toFixed(1)} to ${upper.channels[0].mean.toFixed(1)})`);
+  const state = await page.evaluate(() => window.__journeyDebug.flight());
+  step.check(state.voidDistance > 40, `you are out in the void (${state.voidDistance.toFixed(0)} along)`);
+  await context.close();
+  return '';
+}
+
+/** The tunnel breaking: wires, then sparks, then only stars. */
+async function dissolveStep(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await flightLoaded(page, projects.byDate().length);
+  await goToFrame(page, 372);
+  const [from, to] = timeline.dissolve;
+  const read = () => page.evaluate(() => window.__journeyDebug.flight());
+  await goToFrame(page, from, 220);
+  await page.waitForTimeout(700);
+  writeFileSync(join(dir, `dissolve-${from}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  const start = await read();
+  step.check(start.stars === 0 && start.sparks < 0.05, `at ${from}, wires: no stars yet (${start.sparks.toFixed(2)} on their way)`);
+  await goToFrame(page, from + 30, 160);
+  await page.waitForTimeout(700);
+  writeFileSync(join(dir, `dissolve-${from + 30}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  const middle = await read();
+  step.check(middle.sparks > 0.5, `at ${from + 30}, sparks: ${middle.sparks.toFixed(2)} on their way`);
+  await goToFrame(page, to + 1, 160);
+  await page.waitForTimeout(700);
+  writeFileSync(join(dir, `dissolve-${to}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  const done = await read();
+  step.check(done.sparks === 0 && done.stars === 1, `at ${to}, only stars (${done.stars}), the sparks fall to none (${done.sparks})`);
+  const ground = await page.evaluate(() => {
+    const canvas = document.querySelector('.journey-canvas canvas');
+    return canvas ? getComputedStyle(canvas).opacity : null;
+  });
+  step.check(ground !== null, 'the canvas is there');
+  await context.close();
+  return '';
+}
+
 const atFrame = (page) => page.evaluate(() => window.__journeyDebug.frame());
 const openAddress = (page) => page.evaluate(() => location.pathname);
 
@@ -853,7 +908,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

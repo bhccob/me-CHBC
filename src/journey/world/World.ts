@@ -70,7 +70,7 @@ export class World {
         nl: { kind: project.copy('nl').flightKind, line: project.copy('nl').flightLine },
       },
     }));
-    this.tunnel = new TunnelScene({ layout: flightLayout(dated), projects: flying, locale: input.locale, frames: input.timeline.flight, reduce: input.reduce });
+    this.tunnel = new TunnelScene({ layout: flightLayout(dated), projects: flying, locale: input.locale, timeline: input.timeline, reduce: input.reduce });
     this.state = { anchors: { armour: [0, 0], controls: [0, 0], brain: [0, 0], body: [0, 0] }, hover: null, opaque: false, fired: 0, flight: this.tunnel.state };
     renderer.toneMapping = NoToneMapping;
     renderer.shadowMap.enabled = true;
@@ -168,7 +168,7 @@ export class World {
     this.width = width;
     this.height = height;
     this.machine.resize(width, height);
-    this.tunnel.resize(width, height);
+    this.tunnel.resize(width, height, this.renderer.getPixelRatio());
     this.composer.setSize(width, height);
     this.iris.resize(this.renderer);
     this.drawn = -1;
