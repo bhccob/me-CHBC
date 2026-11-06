@@ -32,7 +32,26 @@ export interface TestPoint {
   position: readonly [number, number, number];
 }
 
+/** What the flight needs of a project (spec 2026-11-05-bob-machine-rebuild-design.md, section 5.6). Its pictures are in public/flight. */
+export interface FlightInfo {
+  /** When it started, for the flight's order, oldest first. */
+  startedOn: string;
+  /** The colour the tunnel takes as you near it, in linear light. */
+  tint: readonly [number, number, number];
+  /** Its title, as it breaks over lines on the flight. */
+  titleLines: readonly string[];
+  screens: 'wide' | 'phones';
+  /** The piece that stands off its screen, if any. */
+  piece?: 'cookie' | 'sun' | 'ring';
+  pieceImage?: string;
+  images: readonly string[];
+}
+
 export interface ProjectCopy {
+  /** On the flight: the kind of work, beside its year. */
+  flightKind: string;
+  /** On the flight: its one line. */
+  flightLine: string;
   /** Kind of work and context, e.g. "Web game · School project". */
   type: string;
   role: string;
@@ -53,6 +72,7 @@ export interface ProjectData {
   categoryId: CategoryId;
   /** Position among the projects: the order of the void and of every list. */
   order: number;
+  flight: FlightInfo;
   /** What stands in the void; `fallbackGeometry` is built in three.js until a rendered plate or mesh replaces it. */
   object: { glb?: string; plate?: string; video?: string; fallbackGeometry: string };
   testPoints: TestPoint[];
@@ -89,6 +109,7 @@ export class Project {
   get title() { return this.data.title; }
   get year() { return this.data.year; }
   get order() { return this.data.order; }
+  get flight() { return this.data.flight; }
   get categoryId() { return this.data.categoryId; }
   get object() { return this.data.object; }
   get testPoints() { return this.data.testPoints; }
@@ -164,6 +185,11 @@ export class ProjectCatalog {
     return this.items.filter((project) => !on.has(project));
   }
 
+  /** The projects in the order they were started, oldest first: the flight's. */
+  byDate(): Project[] {
+    return [...this.items].sort((a, b) => a.flight.startedOn.localeCompare(b.flight.startedOn));
+  }
+
   byId(id: string): Project | undefined {
     return this.items.find((project) => project.id === id);
   }
@@ -199,6 +225,13 @@ export const projects = new ProjectCatalog([
     year: 2026,
     categoryId: 'app',
     order: 1,
+    flight: {
+      startedOn: '2026-10-25',
+      tint: [0.98, 0.86, 0.66],
+      titleLines: ['Steady'],
+      screens: 'phones',
+      images: ['steady-1.webp', 'steady-3.webp', 'steady-2.webp'],
+    },
     object: { fallbackGeometry: 'streak-path-7-blocks+trophy' },
     // Its README's own list (github.com/bhccob/steady), in that order.
     testPoints: [
@@ -226,6 +259,8 @@ export const projects = new ProjectCatalog([
     },
     copy: {
       en: {
+        flightKind: 'Android app',
+        flightLine: 'A calm, private medication reminder for people working through hard things.',
         type: 'Android app · Personal project',
         role: 'Sole developer',
         // Its README's first line.
@@ -234,6 +269,8 @@ export const projects = new ProjectCatalog([
           'Steady: a calm, private medication reminder for Android, with gentle reminders, a streak path, and everything kept on your phone.'
       },
       nl: {
+        flightKind: 'Android-app',
+        flightLine: 'Een rustige, privé medicatieherinnering voor mensen die door moeilijke tijden gaan.',
         type: 'Android-app · Eigen project',
         role: 'Enige ontwikkelaar',
         summary: 'Een rustige, privé medicatieherinnering voor mensen die door moeilijke dingen gaan.',
@@ -248,6 +285,15 @@ export const projects = new ProjectCatalog([
     year: 2026,
     categoryId: 'app',
     order: 2,
+    flight: {
+      startedOn: '2026-10-28',
+      tint: [0.58, 0.5, 1],
+      titleLines: ['Portle'],
+      screens: 'wide',
+      piece: 'ring',
+      pieceImage: 'ring-piece.webp',
+      images: ['portle.webp'],
+    },
     object: { fallbackGeometry: 'allocation-ring-5+relic' },
     // Its product spec's features (Porfael.md, before it was renamed Portle; Bob, 2026-10-28).
     testPoints: [
@@ -273,6 +319,8 @@ export const projects = new ProjectCatalog([
     pictureCaption: { nl: 'Portle in early access, met voorbeeldgegevens', en: 'Portle in early access, with example data' },
     copy: {
       en: {
+        flightKind: 'Web app, early access',
+        flightLine: 'A private archive for your portfolio, your investment theses and the friends you trust with them.',
         type: 'Web app · Personal project, in early access',
         role: 'Sole developer',
         // Its README's own words, nothing added.
@@ -281,6 +329,8 @@ export const projects = new ProjectCatalog([
         metaDescription: 'Portle: a private archive for your portfolio, your investment theses and the friends you trust with them.'
       },
       nl: {
+        flightKind: 'Webapp, vroege toegang',
+        flightLine: 'Een privéarchief voor uw portfolio, uw beleggingsthesen en de vrienden aan wie u ze toevertrouwt.',
         type: 'Webapp · Eigen project, in early access',
         role: 'Enige ontwikkelaar',
         summary:
@@ -295,6 +345,14 @@ export const projects = new ProjectCatalog([
     year: 2026,
     categoryId: 'website',
     order: 3,
+    flight: {
+      startedOn: '2026-01-19',
+      tint: [1, 0.78, 0.42],
+      titleLines: ['Jontai', 'Energy'],
+      screens: 'wide',
+      piece: 'sun',
+      images: ['jontai.webp'],
+    },
     object: { fallbackGeometry: 'pv-module-4x4+junction-box' },
     // What the redesign has (its design spec and PRODUCT.md): the day film, the product panels, the 3000 K to 6500 K bulb
     // slider and the quote request.
@@ -330,6 +388,8 @@ export const projects = new ProjectCatalog([
     pictureCaption: { nl: 'Het eerste scherm van het herontwerp', en: "The redesign's first screen" },
     copy: {
       en: {
+        flightKind: 'Concept website',
+        flightLine: 'A concept redesign for a store in Aruba, where the home page plays as one Aruban day.',
         type: 'Concept website redesign · Personal project',
         role: 'Design & front-end development',
         summary:
@@ -345,6 +405,8 @@ export const projects = new ProjectCatalog([
           'Jontai Energy: a concept redesign Bob Chung built for a solar, power and furniture store in Aruba, its home page one day of sun that plays as you scroll.'
       },
       nl: {
+        flightKind: 'Conceptwebsite',
+        flightLine: 'Een conceptherontwerp voor een winkel op Aruba, waarbij de homepagina verloopt als één Arubaanse dag.',
         type: 'Concept-herontwerp van een website · Eigen project',
         role: 'Ontwerp & front-end-ontwikkeling',
         summary:
@@ -367,6 +429,15 @@ export const projects = new ProjectCatalog([
     year: 2025,
     categoryId: 'game',
     order: 4,
+    flight: {
+      startedOn: '2025-01-01',
+      tint: [1, 0.6, 0.24],
+      titleLines: ['Cookies', 'Clicker'],
+      screens: 'wide',
+      piece: 'cookie',
+      pieceImage: 'cookie-piece.webp',
+      images: ['cookies.webp'],
+    },
     object: { fallbackGeometry: 'clockwork-movement-8-wheels' },
     testPoints: [
       { id: 'tp1', label: { en: 'CLICK LOOP', nl: 'KLIKLUS' }, position: [0.92, 0.0, 0.0] },
@@ -387,6 +458,8 @@ export const projects = new ProjectCatalog([
     pictureCaption: { nl: 'Cookies Clicker tijdens het spelen', en: 'Cookies Clicker being played' },
     copy: {
       en: {
+        flightKind: 'School project',
+        flightLine: 'A browser game built with a classmate around one satisfying loop: click, earn, reinvest.',
         // Made for the school subject Web Game Development, together with a classmate (never named).
         type: 'School project · Web Game Development',
         // Bob's own part in it is not known yet, so the role says only that he made it with a classmate.
@@ -404,6 +477,8 @@ export const projects = new ProjectCatalog([
           'Cookies Clicker, a browser-based incremental game Bob Chung built as a school project with HTML, CSS and JavaScript: producers, boosts and saved progress.'
       },
       nl: {
+        flightKind: 'Schoolproject',
+        flightLine: 'Een browsergame, samen met een klasgenoot gebouwd rond één bevredigende lus: klikken, verdienen, herinvesteren.',
         type: 'Schoolproject · Web Game Development',
         role: 'Samen met een klasgenoot',
         summary:
