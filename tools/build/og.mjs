@@ -1,5 +1,5 @@
-// The share image every page names in og:image and twitter:image: the compass
-// hero render, cropped to the 1200 x 630 that social cards use.
+// The share image every page names in og:image and twitter:image: the journey's first view, as
+// tools/share_image.mjs shot it, at the 1200 x 630 that social cards use.
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -7,7 +7,7 @@ import sharp from 'sharp';
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
 
-const SOURCE = fileURLToPath(new URL('../../src/assets/renders/compass-hero.webp', import.meta.url));
+const SOURCE = fileURLToPath(new URL('../../src/assets/journey/share.png', import.meta.url));
 
 /**
  * Writes og.jpg into `dist`.

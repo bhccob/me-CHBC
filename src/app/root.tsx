@@ -1,7 +1,9 @@
-import '@fontsource-variable/martian-mono';
-import '@fontsource-variable/montserrat';
-import '@fontsource-variable/unbounded';
-import montserratLatin from '@fontsource-variable/montserrat/files/montserrat-latin-wght-normal.woff2?url';
+import '@fontsource/barlow/latin-400.css';
+import '@fontsource/barlow/latin-500.css';
+import '@fontsource/barlow/latin-700.css';
+import '@fontsource/barlow/latin-800.css';
+import '@fontsource/ibm-plex-mono/latin-500.css';
+import barlowHeavy from '@fontsource/barlow/files/barlow-latin-800-normal.woff2?url';
 import { type ReactNode, useEffect } from 'react';
 import { Links, type LinksFunction, Meta, Outlet, Scripts, ScrollRestoration, useLocation } from 'react-router';
 import { localeFromPath } from '~/i18n/locale';
@@ -20,9 +22,8 @@ export const links: LinksFunction = () => [
   { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
   { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
   { rel: 'manifest', href: '/site.webmanifest' },
-  // The name is set in Montserrat's latin file, so the hero never swaps its font. (The poster is a CSS panel and
-  // loads nothing.)
-  { rel: 'preload', href: montserratLatin, as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
+  // The big words are set in Barlow's heaviest latin file, so they never swap their font.
+  { rel: 'preload', href: barlowHeavy, as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
 ];
 
 /** Cloudflare Web Analytics, when the build has a site token (PUBLIC_CF_ANALYTICS_TOKEN); without one, nothing. */

@@ -19,6 +19,7 @@ export function personLd(): Record<string, unknown> {
     familyName: profile.familyName,
     url: profile.site,
     image: `${profile.site}/og.jpg`,
+    description: 'Born and raised in Aruba, now in Rotterdam, studying software and heading for mechatronics.',
     jobTitle: 'Student Software Engineer',
     birthPlace: { '@type': 'Place', name: 'Aruba' },
     homeLocation: { '@type': 'Place', name: 'Rotterdam, Netherlands' },

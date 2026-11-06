@@ -338,7 +338,7 @@ main {
 
 /* ---------- type ---------- */
 
-/* Technical labels: Martian Mono, capitals, tracked. */
+/* Technical labels: the mono face, capitals, tracked. */
 .label,
 .header-control,
 .tags li,
@@ -1312,7 +1312,6 @@ html[data-3d='on'] .light-facts {
   margin: 16px 0 24px;
   font-family: var(--font-title);
   font-feature-settings: var(--font-title-features);
-  /* Unbounded 800 is wide (about 0.9 em a letter): a long title wraps in the 44rem column rather than overflowing it. */
   font-size: clamp(30px, 5.5vw, 64px);
   font-weight: 800;
   line-height: 1.05;
@@ -3159,4 +3158,35 @@ html[data-inside] .pv-controls::before {
   .pv-progress {
     bottom: 20px;
   }
+}
+
+/* The header, the same on every page. */
+.site-header .site-name {
+  font: 700 15px / 1 var(--font-name);
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.header-nav,
+.menu-links {
+  gap: 24px;
+  align-items: center;
+}
+
+.site-header .header-control {
+  font: 500 15px / 1 var(--font-name);
+  color: var(--ink-dim);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.site-header .header-control:hover {
+  color: var(--ink);
+}
+
+.site-header .header-cta {
+  border: 1px solid rgb(242 239 232 / 0.16);
+  border-radius: 2px;
+  padding: 7px 13px;
+  color: var(--ink);
 }

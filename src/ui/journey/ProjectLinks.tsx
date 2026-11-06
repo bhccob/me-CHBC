@@ -14,7 +14,7 @@ export function ProjectLinks(): JSX.Element {
       {projects.byDate().map((project) => {
         const copy = project.copy(locale);
         return (
-          <article key={project.id} className="j-project" data-project={project.id}>
+          <article key={project.id} id={`project-${project.id}`} className="j-project" data-project={project.id}>
             <h3>{project.title}</h3>
             <p>
               {project.year}, {copy.flightKind}

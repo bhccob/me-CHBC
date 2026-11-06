@@ -76,6 +76,10 @@ describe('the real links under the flight', () => {
     expect(render(ProjectLinks, undefined, '/')).toContain('href="/projects/jontai-energy/"');
   });
 
+  it('give each project the place its page closes to', () => {
+    expect(html).toContain('id="project-steady"');
+  });
+
   it('speak Dutch at the Dutch address', () => {
     expect(render(ProjectLinks, undefined, '/')).toContain('Schoolproject');
   });

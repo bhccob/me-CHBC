@@ -7,6 +7,7 @@ import { BackLink } from '~/ui/BackLink';
 import { LiteAbout } from '~/ui/lite/LiteAbout';
 import { LiteCareer } from '~/ui/lite/LiteCareer';
 import { LiteContact } from '~/ui/lite/LiteContact';
+import { LiteFields } from '~/ui/lite/LiteFields';
 import { LiteOffDuty } from '~/ui/lite/LiteOffDuty';
 import { LiteQa } from '~/ui/lite/LiteQa';
 import { LiteSkills } from '~/ui/lite/LiteSkills';
@@ -35,6 +36,7 @@ export default function Lite() {
       <h1 className="page-title">{t.needle.liteLink}</h1>
       <p className="lead">{t.meta.liteDescription}</p>
 
+      <LiteFields />
       <LiteWork />
       <LiteAbout />
       <LiteSkills />

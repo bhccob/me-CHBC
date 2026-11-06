@@ -8,7 +8,6 @@ import Contact from '../../src/app/routes/contact';
 import Lite from '../../src/app/routes/lite';
 import { profile } from '../../src/data/profile';
 import { projects } from '../../src/data/projects';
-import { qaEntries } from '../../src/data/qa';
 import { en } from '../../src/i18n/en';
 import { nl } from '../../src/i18n/nl';
 import { ContactForm } from '../../src/ui/ContactForm';
@@ -58,8 +57,8 @@ describe('the Lite page', () => {
         levels.slice(1).forEach((level, index) => expect(level - levels[index], `h${levels[index]} then h${level}`).toBeLessThanOrEqual(1));
       });
 
-      it('has the sections in order: the work, about, skills, career, off duty, the questions, the contact link, and no section of the countries', () => {
-        const ids = ['work', 'about', 'skills', 'career', 'off-duty', 'questions', 'contact'];
+      it('has the sections in order: the fields, the work, about, skills, career, off duty, the questions, the contact link, and no section of the countries', () => {
+        const ids = ['fields', 'work', 'about', 'skills', 'career', 'off-duty', 'questions', 'contact'];
         const places = ids.map((id) => html.indexOf(`<section id="${id}"`));
         expect(places.every((place) => place >= 0), ids.join()).toBe(true);
         expect([...places].sort((a, b) => a - b)).toEqual(places);
@@ -73,7 +72,7 @@ describe('the Lite page', () => {
       });
 
       it('shows each section\u2019s heading (the work section keeps its old heading, "Projects, one build at a time")', () => {
-        const headings = [t.work.title, t.about.title, t.skills.title, t.career.title, t.life.title, t.compass.qa.title, t.cta.title];
+        const headings = [t.journey.stack.title, t.work.title, t.about.title, t.skills.title, t.career.title, t.life.title, t.compass.qa.title, t.cta.title];
         const found = [...html.matchAll(/<h2[^>]*>(.*?)<\/h2>/g)].map((match) => textOf(match[1]));
         expect(found).toEqual(headings.map(stripMarkup));
       });
@@ -100,7 +99,7 @@ describe('the Lite page', () => {
           // Two are not visible text: the origin route's label (the list's accessible name) and the portrait's alt text.
           expect(text.includes(shown) || html.includes(`aria-label="${string}"`) || html.includes(`alt="${string}"`), `${path}: "${shown}"`).toBe(true);
         }
-        expect(text).toContain(t.compass.qa.items.at(-1));
+        expect(text).toContain(t.end.questions.at(-1)!.question);
       });
 
       it('carries the work section’s own copy around the projects, in the old order: the intro, the projects, the next slot, then what is held back', () => {
@@ -117,19 +116,29 @@ describe('the Lite page', () => {
         for (const string of [w.intro, w.nextText, w.heldText]) expect(textOf(work)).toContain(string);
       });
 
-      it('has the five questions as <details>, and the roles and the reasons folded the same way', () => {
-        expect(html.match(/<details[\s>]/g)?.length).toBe(qaEntries(t).length + 2);
-        // Each <summary> is read on its own (never a span across the page). The questions section holds the five, in order.
+      it('has his six questions as <details>, and the roles and the reasons folded the same way', () => {
+        expect(html.match(/<details[\s>]/g)?.length).toBe(t.end.questions.length + 2);
+        // Each <summary> is read on its own (never a span across the page). The questions section holds the six, in order.
         const summariesOf = (markup: string): string[] => [...markup.matchAll(/<summary[^>]*>(.*?)<\/summary>/g)].map((match) => textOf(match[1]));
-        expect(summariesOf(html)).toHaveLength(qaEntries(t).length + 2);
+        expect(summariesOf(html)).toHaveLength(t.end.questions.length + 2);
         const questions = html.slice(html.indexOf('<section id="questions"'), html.indexOf('<section id="contact"'));
-        expect(summariesOf(questions)).toEqual([...t.compass.qa.items]);
+        expect(summariesOf(questions)).toEqual(t.end.questions.map((q) => q.question));
         // The career section folds its roles and its reasons ("why these directions" is also the fourth question).
         const career = html.slice(html.indexOf('<section id="career"'), html.indexOf('<section id="off-duty"'));
         const folded = summariesOf(career);
         expect(folded).toHaveLength(2);
         expect(folded[0]).toContain(t.career.rolesToggle);
         expect(folded[1]).toContain(t.career.whyToggle);
+      });
+
+      it('carries the new field wording, every project and his six questions', () => {
+        for (const sheet of t.journey.sheets) {
+          for (const fact of sheet.facts) expect(text, fact.value).toContain(fact.value);
+          expect(text).toContain(sheet.line.lead);
+          expect(text).toContain(sheet.line.rest);
+        }
+        for (const project of projects.all()) expect(text).toContain(project.title);
+        for (const q of t.end.questions) expect(text).toContain(q.question);
       });
 
       it('shows the real portrait with its size and a meaningful alt text', () => {
