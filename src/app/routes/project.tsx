@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { type MetaFunction, useLocation } from 'react-router';
 import { PAGES } from '~/data/pages';
 import { profile } from '~/data/profile';
@@ -8,9 +7,9 @@ import { translatorFor, useTranslator } from '~/i18n/useTranslator';
 import { head } from '~/seo/head';
 import { notFoundMeta } from '~/seo/notFound';
 import { breadcrumbLd, projectLd } from '~/seo/structured';
-import { BackLink } from '~/ui/BackLink';
+import { closeHref } from '~/ui/journey/openProject';
 import { NotFoundPage } from '~/ui/NotFoundPage';
-import { usePageFadeOut } from '~/ui/pageLeave';
+import { ProjectSheet } from '~/ui/ProjectSheet';
 import { HANDLES, type RouteHandle } from '../handle';
 
 export const meta: MetaFunction = ({ location }) => {
@@ -39,89 +38,17 @@ export const meta: MetaFunction = ({ location }) => {
 
 export const handle: RouteHandle = HANDLES.project;
 
+// A direct visit: the same page as over the flight, on its own and with no 3D needed. Its close goes to its stop in the flight.
 export default function ProjectPage() {
-  const i18n = useTranslator();
-  const { t, locale } = i18n;
-  // Left for the home page (Back, Escape, the header's name), the page and its scrim fade out over the camera's flight
-  // out of the bead instead of vanishing at once, a cut that would read abrupt while the camera flies.
-  const article = useRef<HTMLElement>(null);
-  usePageFadeOut(article);
+  const { t, locale } = useTranslator();
   const project = projects.byRoute(routeFromPath(useLocation().pathname));
   if (!project) return <NotFoundPage />;
-  const copy = project.copy(locale);
-  const sections = [
-    { title: t.project.overview, text: copy.overview },
-    { title: t.project.build, text: copy.build },
-    { title: t.project.focus, text: copy.focus },
-  ];
-
   return (
-    <article className="page" ref={article}>
-      <BackLink />
-      <p className="label">{project.category.heading(locale)}</p>
-      <h1 className="page-title">{project.title}</h1>
-      <p className="lead">{copy.summary}</p>
-
-      <dl className="facts">
-        <div>
-          <dt className="label">{t.work.type}</dt>
-          <dd>{copy.type}</dd>
-        </div>
-        <div>
-          <dt className="label">{t.work.year}</dt>
-          <dd>{project.year}</dd>
-        </div>
-        <div>
-          <dt className="label">{t.work.role}</dt>
-          <dd>{copy.role}</dd>
-        </div>
-        {/* A project may have no stack given yet: no empty row for it. */}
-        {project.stack.length > 0 && (
-          <div>
-            <dt className="label">{t.work.stack}</dt>
-            <dd>
-              <ul className="tags">
-                {project.stack.map((tool) => (
-                  <li key={tool}>{tool}</li>
-                ))}
-              </ul>
-            </dd>
-          </div>
-        )}
-      </dl>
-
-      <ol className="test-points">
-        {project.testPoints.map((point) => {
-          const number = /^tp(\d+)$/.exec(point.id)?.[1];
-          const label = point.label[locale];
-          return <li key={point.id}>{number ? i18n.format(t.compass.tp, { n: number, label }) : label}</li>;
-        })}
-      </ol>
-
-      {(project.links.live || project.links.repo) && (
-        <ul className="links">
-          {project.links.live && (
-            <li>
-              <a href={project.links.live}>{t.needle.project.site}</a>
-            </li>
-          )}
-          {project.links.repo && (
-            <li>
-              <a href={project.links.repo}>{t.needle.project.code}</a>
-            </li>
-          )}
-        </ul>
-      )}
-
-      {sections.map(
-        ({ title, text }) =>
-          text && (
-            <section key={title} className="case">
-              <h2 className="case-title">{title}</h2>
-              <p>{text}</p>
-            </section>
-          ),
-      )}
+    <article className="ps-page">
+      <ProjectSheet id={project.id} headingId={`ps-${project.id}`} Heading="h1" />
+      <a className="ps-back" href={closeHref(project.id, locale)}>
+        <span aria-hidden="true">←</span> {t.journey.flight.back}
+      </a>
     </article>
   );
 }

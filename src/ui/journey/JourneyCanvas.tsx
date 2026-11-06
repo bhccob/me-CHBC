@@ -9,6 +9,8 @@ import { World, type WorldState } from '~/journey/world/World';
 export interface CanvasHandle {
   /** Moves the world to frame `f` and draws it. */
   frame(f: number, dt: number, now: number): WorldState;
+  /** Where a project's screen stands on the page: left, top, width, height. */
+  screenRect(id: string): [number, number, number, number] | null;
   /** What stands in the flight, for those checking it. */
   report(): { stops: StopReport[]; walls: number };
 }
@@ -47,6 +49,7 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
             advance(now);
             return state;
           },
+          screenRect: (id) => made.screenRect(id),
           report: () => made.report(),
         });
         // What the flight needs comes after the first view. Without it the tunnel still runs, with nothing standing in it.

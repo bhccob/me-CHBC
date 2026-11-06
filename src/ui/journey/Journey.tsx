@@ -1,7 +1,9 @@
 import { type JSX, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router';
 import { profile } from '~/data/profile';
 import { projects } from '~/data/projects';
 import { installJourneyDebug } from '~/debug/journeyDebug';
+import { Translator } from '~/i18n/Translator';
 import { useTranslator } from '~/i18n/useTranslator';
 import { flightLayout, timelineFor } from '~/journey/flight/layout';
 import { frameForHash, frameOfChapter, glideTo, noteFrame, takePlace } from '~/journey/jump';
@@ -14,6 +16,8 @@ import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeli
 import { applyLayer, applySheet } from './applyLayers';
 import { type BandKind, paintBand } from './bands';
 import { ChapterRail, updateRail } from './ChapterRail';
+import { closeProject, listenToHistory, openedProject, openProject } from './openProject';
+import { type PageRect, ProjectOverlay } from './ProjectOverlay';
 import { FieldSheet } from './FieldSheet';
 import { FirstView } from './FirstView';
 import { InkLoader } from './InkLoader';
@@ -32,6 +36,9 @@ const JourneyCanvas = lazy(() => import('./JourneyCanvas'));
 export function Journey(): JSX.Element {
   const { locale, t } = useTranslator();
   const timeline = useMemo(() => timelineFor(flightLayout(projects.byDate())), []);
+  const stopIds = useMemo(() => projects.byDate().map((project) => project.id), []);
+  const { pathname } = useLocation();
+  const homePath = useRef(pathname);
   const canvas = useRef<CanvasHandle | null>(null);
   const [started, setStarted] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -66,6 +73,7 @@ export function Journey(): JSX.Element {
     const openLinks = new Map(Array.from(document.querySelectorAll<HTMLElement>('.j-project')).map((el) => [el.dataset.project ?? '', el.querySelector<HTMLElement>('.j-open')]));
     let projectNow: string | null = null;
     let hotNow = false;
+    let hoverNow: string | null = null;
     // Only the project you are at shows its link, under its words; the cursor reads whether its screen is under the pointer.
     const showProject = (project: string | null, link: [number, number] | null, hover: string | null): void => {
       if (project !== projectNow) {
@@ -75,11 +83,18 @@ export function Journey(): JSX.Element {
       }
       const open = project ? openLinks.get(project) : null;
       if (open && link) open.style.transform = `translate(${link[0].toFixed(1)}px, ${link[1].toFixed(1)}px)`;
+      hoverNow = hover;
       const hot = hover !== null;
       if (hot !== hotNow) {
         document.documentElement.toggleAttribute('data-project-hot', hot);
         hotNow = hot;
       }
+    };
+    const cool = (): void => {
+      hoverNow = null;
+      if (!hotNow) return;
+      document.documentElement.removeAttribute('data-project-hot');
+      hotNow = false;
     };
     const tags = TAG_NAMES.map((name) => document.querySelector<HTMLElement>(`[data-tag="${name}"]`));
     const paintBands = (): void => {
@@ -105,7 +120,7 @@ export function Journey(): JSX.Element {
     const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null, sound: () => Sound.report(), flight: () => lastState?.flight ?? null, stops: () => canvas.current?.report() ?? null }));
 
     // A chapter a link names: there at once, on arrival.
-    const arrival = frameForHash(location.hash, timeline);
+    const arrival = frameForHash(location.hash, timeline, stopIds);
     if (arrival !== null) scrollTo({ top: scrollFromFrame(arrival, document.documentElement.scrollHeight - innerHeight, timeline), behavior: 'auto' });
 
     const stop = startLoop({
@@ -126,8 +141,11 @@ export function Journey(): JSX.Element {
         layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet));
         applyLayer(stack, { opacity: layers.stack });
         applyLayer(portal, { opacity: layers.portal });
-        const state = canvas.current?.frame(f, dt, now);
+        // While a project is open over it, the world waits.
+        const paused = openedProject() !== null;
+        const state = paused ? null : canvas.current?.frame(f, dt, now);
         if (state) showProject(state.flight.project, state.flight.link, state.hover);
+        else if (paused) cool();
         tags.forEach((tag, n) => {
           if (!tag) return;
           applyLayer(tag, { opacity: state ? layers.stack : 0 });
@@ -150,12 +168,29 @@ export function Journey(): JSX.Element {
     // The header's and the rail's links glide along the scroll.
     const onClick = (event: MouseEvent): void => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const link = (event.target as Partial<Pick<Element, 'closest'>> | null)?.closest?.('[data-jump]');
+      const target = event.target as Partial<Pick<Element, 'closest'>> | null;
+      // A project opens from its link, or from a click on its screen.
+      const open = target?.closest?.('.j-open');
+      if (open) {
+        const id = open.closest<HTMLElement>('.j-project')?.dataset.project;
+        if (!id) return;
+        event.preventDefault();
+        openProject(id, shown ?? 0);
+        return;
+      }
+      if (hoverNow && !target?.closest?.('a, button')) {
+        openProject(hoverNow, shown ?? 0);
+        return;
+      }
+      const link = target?.closest?.('[data-jump]');
       const chapter = link?.getAttribute('data-jump');
       if (!chapter) return;
       event.preventDefault();
-      glideTo(frameOfChapter(chapter as ChapterId, timeline), timeline, reduce.current);
+      const go = (): void => glideTo(frameOfChapter(chapter as ChapterId, timeline), timeline, reduce.current);
+      if (openedProject()) closeProject(go);
+      else go();
     };
+    const stopHistory = listenToHistory(() => shown ?? 0, () => homePath.current);
     document.addEventListener('click', onClick);
 
     return () => {
@@ -165,8 +200,26 @@ export function Journey(): JSX.Element {
       removeEventListener('resize', onResize);
       stopResume();
       document.removeEventListener('click', onClick);
+      stopHistory();
+      cool();
     };
-  }, [timeline]);
+  }, [timeline, stopIds]);
+
+  // In another language with a project open: the router has moved the page under it, so the address goes back to the project's.
+  useEffect(() => {
+    homePath.current = pathname;
+    const open = openedProject();
+    if (open) history.replaceState({ ...(history.state as object | null), journeyProject: open.id }, '', Translator.pathFor(locale, `/projects/${open.id}/`));
+  }, [pathname, locale]);
+
+  const screenRect = useCallback((id: string): PageRect | null => canvas.current?.screenRect(id) ?? null, []);
+  // If the page's size changed while it was open, you still come back to the same place.
+  const closed = useCallback(
+    (_id: string, f: number): void => {
+      scrollTo({ top: scrollFromFrame(f, document.documentElement.scrollHeight - innerHeight, timeline), behavior: 'auto' });
+    },
+    [timeline],
+  );
 
   // The language link keeps the page but the router scrolls it to the top: back to the place it kept, after that.
   useEffect(() => {
@@ -192,6 +245,7 @@ export function Journey(): JSX.Element {
   }, []);
 
   return (
+    <>
     <div className="journey" style={{ height: `calc(${trackHeightPx(timeline)}px + 100vh)` }}>
       <canvas id="j-paper" className="j-paper" role="img" aria-label={t.journey.hero.treeAlt} />
       <div id="j-bar" className="j-bar" />
@@ -212,5 +266,7 @@ export function Journey(): JSX.Element {
       ) : null}
       <InkLoader plan={plan} ready={ready} progress={loadedShare({ scene: started ? 1 : 0, model, warm: ready ? 1 : 0 })} onEnter={onEnter} onLand={onLand} onDone={onLoaderDone} />
     </div>
+    <ProjectOverlay rectFor={screenRect} onClosed={closed} />
+    </>
   );
 }

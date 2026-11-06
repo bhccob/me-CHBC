@@ -1,0 +1,232 @@
+/* A project's own page, over the flight and on a direct visit. Dark and readable with no 3D. */
+@import '@fontsource/barlow/latin-400.css';
+@import '@fontsource/barlow/latin-500.css';
+@import '@fontsource/barlow/latin-700.css';
+@import '@fontsource/barlow/latin-800.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+
+.ps {
+  --ps-tint: #e6b84a;
+  --ps-ink: #f2efe8;
+  --ps-soft: rgb(242 239 232 / 0.72);
+  --ps-line: rgb(242 239 232 / 0.14);
+  --ps-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(96px, 15vh, 160px) clamp(20px, 5vw, 72px) 132px;
+  color: var(--ps-ink);
+  font: 400 17px / 1.6 Barlow, system-ui, sans-serif;
+}
+
+.ps-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: clamp(24px, 5vw, 80px);
+  align-items: end;
+}
+
+.ps-kicker {
+  margin: 0 0 14px;
+  font: 500 14px / 1.3 var(--ps-mono);
+}
+
+.ps-kicker span {
+  color: var(--ps-tint);
+}
+
+.ps-title {
+  margin: 0;
+  font: 800 clamp(52px, 8.6vw, 128px) / 0.92 Barlow, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.ps-title span {
+  display: block;
+}
+
+.ps-lead {
+  margin: 0 0 24px;
+  font-size: clamp(19px, 1.55vw, 23px);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.ps-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px 24px;
+  margin: 0 0 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ps-line);
+}
+
+.ps-facts dt {
+  margin-bottom: 4px;
+  color: var(--ps-soft);
+  font: 500 12px / 1.3 var(--ps-mono);
+}
+
+.ps-facts dd {
+  margin: 0;
+}
+
+.ps-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ps-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+}
+
+.ps-link {
+  display: inline-block;
+  padding: 10px 15px;
+  border: 1px solid var(--ps-line);
+  border-radius: 2px;
+  color: var(--ps-ink);
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.ps-link:hover {
+  border-color: var(--ps-tint);
+}
+
+.ps-link.ps-first {
+  border-color: #e6b84a;
+  background: #e6b84a;
+  color: #17120a;
+}
+
+.ps-link:focus-visible {
+  outline: 2px solid var(--ps-ink);
+  outline-offset: 3px;
+}
+
+.ps-media {
+  margin-top: clamp(48px, 8vh, 96px);
+}
+
+.ps-media figure {
+  margin: 0;
+}
+
+.ps-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 3px;
+  outline: 1px solid color-mix(in srgb, var(--ps-tint) 50%, transparent);
+}
+
+.ps-phones {
+  display: flex;
+  gap: clamp(12px, 3vw, 40px);
+  justify-content: center;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.ps-phones figure {
+  flex: 0 1 300px;
+  min-width: min(62vw, 240px);
+  scroll-snap-align: center;
+}
+
+.ps-phones img {
+  border-radius: 18px;
+}
+
+.ps-caption {
+  margin: 14px 0 0;
+  color: var(--ps-soft);
+  font-size: 15px;
+}
+
+.ps-case {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(24px, 4vw, 56px);
+  margin-top: clamp(48px, 8vh, 96px);
+  padding-top: 24px;
+  border-top: 1px solid var(--ps-line);
+}
+
+.ps-case h3 {
+  margin: 0 0 10px;
+  color: var(--ps-tint);
+  font: 500 13px / 1.3 var(--ps-mono);
+}
+
+.ps-case p {
+  margin: 0;
+  color: var(--ps-soft);
+  max-width: 62ch;
+}
+
+@media (max-width: 760px) {
+  .ps-intro {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* The way back: pinned at the foot, as the old page had it. */
+.ps-back {
+  position: absolute;
+  left: clamp(20px, 5vw, 72px);
+  bottom: 24px;
+  z-index: 2;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 15px;
+  border: 1px solid rgb(242 239 232 / 0.22);
+  border-radius: 2px;
+  background: rgb(7 6 11 / 0.82);
+  color: #f2efe8;
+  font: 700 14.5px / 1.2 Barlow, system-ui, sans-serif;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.ps-back:hover {
+  border-color: #e6b84a;
+}
+
+.ps-back:focus-visible {
+  outline: 2px solid #f2efe8;
+  outline-offset: 3px;
+}
+
+.ps-back kbd {
+  color: rgb(242 239 232 / 0.6);
+  font: 500 12px / 1 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* On a direct visit it is the whole page. */
+.ps-page {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow-y: auto;
+  background: #07060b;
+}
+
+.ps-page .ps-back {
+  position: fixed;
+}

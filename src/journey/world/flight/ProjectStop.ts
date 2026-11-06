@@ -1,4 +1,4 @@
-import { Color, Group, Matrix4, Mesh, type MeshBasicMaterial, PlaneGeometry, Quaternion, Raycaster, type Scene, type ShaderMaterial, type Texture, Vector2, Vector3 } from 'three';
+import { type Camera, Color, Group, Matrix4, Mesh, type MeshBasicMaterial, PlaneGeometry, Quaternion, Raycaster, type Scene, type ShaderMaterial, type Texture, Vector2, Vector3 } from 'three';
 import type { FlightStop } from '../../flight/layout';
 import { READ } from '../../flight/layout';
 import { backOut, clamp, ease, mix, ramp } from '../../math';
@@ -48,6 +48,8 @@ const INK = '#f6f1e6';
 const PPU_BIG = 400;
 const PPU_SMALL = 560;
 const SUM_LINE = 74;
+
+const corner = new Vector3();
 
 /** The one place a project stands in the flight, in its own words and pictures. */
 export class ProjectStop {
@@ -306,6 +308,30 @@ export class ProjectStop {
   linkPoint(out: Vector3): Vector3 {
     this.wordSide.updateMatrixWorld();
     return out.copy(this.linkAt).applyMatrix4(this.wordSide.matrixWorld);
+  }
+
+  /** The box its screen covers on a page of this size: left, top, width, height. */
+  pageRect(camera: Camera, width: number, height: number): [number, number, number, number] {
+    const geometry = this.main.geometry;
+    if (!geometry.boundingBox) geometry.computeBoundingBox();
+    const box = geometry.boundingBox!;
+    this.main.updateWorldMatrix(true, false);
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
+    for (const x of [box.min.x, box.max.x]) {
+      for (const y of [box.min.y, box.max.y]) {
+        corner.set(x, y, 0).applyMatrix4(this.main.matrixWorld).project(camera);
+        const px = (corner.x * 0.5 + 0.5) * width;
+        const py = (-corner.y * 0.5 + 0.5) * height;
+        left = Math.min(left, px);
+        right = Math.max(right, px);
+        top = Math.min(top, py);
+        bottom = Math.max(bottom, py);
+      }
+    }
+    return [left, top, right - left, bottom - top];
   }
 
   /** Whether a ray from the pointer meets its screen. */

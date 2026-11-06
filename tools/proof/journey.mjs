@@ -26,6 +26,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = process.env.PLAYWRIGHT_CORE ? require(resolve(process.env.PLAYWRIGHT_CORE)) : require('playwright-core');
 const { buildTimeline, scrollFromFrame } = await tsImport('../../src/journey/timeline.ts', import.meta.url);
 const { projects } = await tsImport('../../src/data/projects.ts', import.meta.url);
+const { flightLayout, timelineFor } = await tsImport('../../src/journey/flight/layout.ts', import.meta.url);
 const { profile } = await tsImport('../../src/data/profile.ts', import.meta.url);
 const profileAge = () => profile.ageOn();
 const { HITS } = await tsImport('../../src/journey/sound/score.ts', import.meta.url);
@@ -36,7 +37,7 @@ const OUT = resolve(process.env.PROOF_DIR ?? './proof-out');
 const WEAK = process.env.GPU === 'weak';
 const ARGS = ['--use-angle=d3d11', '--enable-gpu', ...(WEAK ? ['--force_low_power_gpu'] : [])];
 const VIEW = WEAK ? { width: 1920, height: 1080 } : { width: 1440, height: 810 };
-const timeline = buildTimeline();
+const timeline = timelineFor(flightLayout(projects.byDate()));
 export const REVIEW_FRAMES = [0, 36, 112, 190, 262, 304, 345, 360];
 
 class Step {
@@ -452,17 +453,17 @@ async function projectsStep(browser, step) {
   const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
-  await page.waitForFunction(() => window.__journeyDebug.stops()?.stops.length === 4, null, { timeout: 30_000 });
+  const dated = projects.byDate();
+  await page.waitForFunction((n) => window.__journeyDebug.stops()?.stops.length === n, dated.length, { timeout: 30_000 });
   const report = await page.evaluate(() => window.__journeyDebug.stops());
-  step.check(report.walls === 16, `four screens on the walls for each project (${report.walls})`);
+  step.check(report.walls === 4 * dated.length, `four screens on the walls for each project (${report.walls})`);
   const byId = Object.fromEntries(report.stops.map((s) => [s.id, s]));
   step.check(byId['cookies-clicker'].pieces === 1, 'the cookie floats in front of Cookies Clicker');
   step.check(byId['jontai-energy'].pieces === 1, 'the sun glows behind Jontai Energy');
   step.check(byId.steady.screens === 3, 'Steady stands as three phones');
   step.check(byId.portle.pieces === 1, 'the ring floats off Portle');
 
-  const reads = timeline.reads.slice(0, 4);
-  const dated = projects.byDate();
+  const reads = timeline.reads;
   await goToFrame(page, 372);
   for (let i = 0; i < dated.length; i++) {
     const project = dated[i];
@@ -501,6 +502,127 @@ async function projectsStep(browser, step) {
   });
   writeFileSync(join(dir, 'project-nl.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
   await context.close();
+  return '';
+}
+
+const atFrame = (page) => page.evaluate(() => window.__journeyDebug.frame());
+const openAddress = (page) => page.evaluate(() => location.pathname);
+
+/** A project opens in place, and Back puts you where you were. */
+async function projectOpen(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  const dated = projects.byDate();
+  const index = dated.findIndex((p) => p.id === 'jontai-energy');
+  const read = timeline.reads[index];
+  await page.waitForFunction((n) => window.__journeyDebug.stops()?.stops.length === n, dated.length, { timeout: 30_000 });
+  await goToFrame(page, 372);
+  await goToFrame(page, read, 160);
+  await page.waitForTimeout(1000);
+  const before = await atFrame(page);
+  const { screen } = await page.evaluate(() => window.__journeyDebug.flight());
+  await page.mouse.move(screen[0], screen[1]);
+  await page.waitForTimeout(250);
+  await page.mouse.click(screen[0], screen[1]);
+  await page.waitForTimeout(170);
+  writeFileSync(join(dir, 'open-growing.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  await page.waitForTimeout(1100);
+  writeFileSync(join(dir, 'open-full.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  step.check((await openAddress(page)) === '/projects/jontai-energy/', `a click on the screen opens it at its own address (${await openAddress(page)})`);
+  const copy = dated[index].copy('nl');
+  const seen = await page.evaluate(() => {
+    const view = document.querySelector('.j-open-view');
+    const box = view?.getBoundingClientRect();
+    return {
+      covers: box?.width === innerWidth || box?.width >= innerWidth - 20,
+      top: document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest('.j-open-view') !== null,
+      text: view?.textContent ?? '',
+      links: [...(view?.querySelectorAll('.ps-link') ?? [])].map((a) => a.getAttribute('href')),
+      pictures: view?.querySelectorAll('.ps-media img').length ?? 0,
+      inert: document.querySelector('.journey').hasAttribute('inert'),
+      focus: document.activeElement?.closest('.j-open-view') !== null,
+      hot: document.documentElement.hasAttribute('data-project-hot'),
+    };
+  });
+  step.check(seen.covers && seen.top, 'it fills the view');
+  step.check(seen.text.includes(copy.summary), 'its words show');
+  step.check(!copy.overview || seen.text.includes(copy.overview), 'its case shows');
+  step.check(seen.pictures > 0, `its pictures show (${seen.pictures})`);
+  step.check(seen.links.length > 0, `its links show (${seen.links.join(', ')})`);
+  step.check(seen.inert, 'everything under it is out of reach');
+  step.check(seen.focus, 'the focus is in it');
+  step.check(!seen.hot, 'the cursor no longer says it is over a screen');
+  // Under it, nothing scrolls.
+  await page.mouse.move(720, 400);
+  await page.mouse.wheel(0, 600);
+  await page.waitForTimeout(500);
+  step.check(Math.abs((await atFrame(page)) - before) < 0.6, 'the wheel does not move the flight under it');
+  // Back.
+  await page.goBack();
+  await page.waitForTimeout(800);
+  step.check((await page.evaluate(() => document.querySelector('.j-open-view') === null)), 'Back closes it');
+  step.check((await openAddress(page)) === ROUTE, `and the address is the flight's again (${await openAddress(page)})`);
+  step.check(Math.abs((await atFrame(page)) - before) <= 2, `within 2 frames of the same place (${before.toFixed(1)} to ${(await atFrame(page)).toFixed(1)})`);
+  const focusBack = await page.evaluate(() => document.activeElement?.closest('.j-project')?.dataset.project);
+  step.check(focusBack === 'jontai-energy', `the focus is back on its link (${focusBack})`);
+  // Forward opens it again, and Escape and the link do the same as before.
+  await page.goForward();
+  await page.waitForTimeout(900);
+  step.check((await page.evaluate(() => document.querySelector('.j-open-view') !== null)) && (await openAddress(page)) === '/projects/jontai-energy/', 'Forward opens it again');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(800);
+  step.check((await page.evaluate(() => document.querySelector('.j-open-view') === null)) && (await openAddress(page)) === ROUTE, 'Escape closes it');
+  await page.locator('.j-project[data-project="jontai-energy"] .j-open').click();
+  await page.waitForTimeout(1100);
+  step.check((await openAddress(page)) === '/projects/jontai-energy/', 'its link opens it too');
+  // In another language, in place.
+  await page.locator('header a[hreflang]').click();
+  await page.waitForTimeout(700);
+  step.check((await openAddress(page)) === '/en/projects/jontai-energy/', `the language changes with it open, and the address follows (${await openAddress(page)})`);
+  const english = await page.evaluate(() => document.querySelector('.j-open-view')?.textContent ?? '');
+  step.check(english.includes(dated[index].copy('en').summary), 'and its words');
+  await page.goBack();
+  await page.waitForTimeout(800);
+  step.check((await page.evaluate(() => document.documentElement.lang)) === 'en' && (await openAddress(page)) === `/en${ROUTE}`, `Back leaves you in that language (${await openAddress(page)})`);
+  step.check(Math.abs((await atFrame(page)) - before) <= 2, `at the same place (${(await atFrame(page)).toFixed(1)})`);
+  await context.close();
+  return '';
+}
+
+/** A direct visit: the page on its own, with no WebGL at all. */
+async function projectDirect(browser, step) {
+  const { context, page } = await openPage(browser, step);
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (kind, ...rest) {
+      return /webgl/i.test(kind) ? null : original.call(this, kind, ...rest);
+    };
+  });
+  await page.goto(`${BASE}/projects/steady/`, { waitUntil: 'load' });
+  await page.waitForTimeout(800);
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'project-direct.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
+  const project = projects.byId('steady');
+  const seen = await page.evaluate(() => {
+    const sheet = document.querySelector('.ps-page');
+    return { text: sheet?.textContent ?? '', href: sheet?.querySelector('.ps-back')?.getAttribute('href'), covers: document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest('.ps-page') !== null, pictures: sheet?.querySelectorAll('.ps-media img').length ?? 0 };
+  });
+  step.check(seen.text.includes(project.copy('nl').summary), 'with WebGL off, its words show');
+  step.check(seen.pictures === 3, `its phones show (${seen.pictures})`);
+  step.check(seen.covers, 'it fills the view');
+  step.check(seen.href === '/#project-steady', `its close goes to its stop (${seen.href})`);
+  await context.close();
+  // That address at the review page, until the swap (Task 28): the hash lands at the stop.
+  const opened = await openPage(browser, step);
+  await opened.page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
+  await opened.page.goto(`${BASE}${ROUTE}?proof#project-steady`, { waitUntil: 'load' });
+  await opened.page.waitForFunction(() => window.__journeyDebug && window.__journeyDebug.first() !== null, null, { timeout: 60_000 });
+  const first = await opened.page.evaluate(() => window.__journeyDebug.first());
+  const want = timeline.reads[projects.byDate().findIndex((p) => p.id === 'steady')];
+  step.check(Math.abs(first - want) <= 2, `#project-steady lands at Steady's stop (${first.toFixed(1)}, its stop ${want})`);
+  await opened.context.close();
   return '';
 }
 
@@ -725,7 +847,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { flight, projects: projectsStep, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

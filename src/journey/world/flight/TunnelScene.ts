@@ -199,6 +199,14 @@ export class TunnelScene {
     this.stops.forEach((stop, i) => stop.buildWords(this.input.projects[i].words[this.locale], this.phone, this.anisotropy));
   }
 
+  /** Where a project's screen stands on the page: left, top, width, height. */
+  screenRect(id: string): [number, number, number, number] | null {
+    const stop = this.stops.find((candidate) => candidate.project.id === id);
+    if (!stop) return null;
+    this.camera.updateMatrixWorld();
+    return stop.pageRect(this.camera, this.width, this.height);
+  }
+
   report(): StopReport[] {
     return this.stops.map((stop) => ({ id: stop.project.id, screens: stop.project.screens === 'phones' ? 3 : 1, pieces: stop.project.piece ? 1 : 0, words: stop.drawn }));
   }

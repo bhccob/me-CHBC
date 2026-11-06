@@ -24,7 +24,7 @@ export interface RouteHandle {
 /** The one table of the kinds of page and their scenes. Every route module exports its own entry as its `handle`. */
 export const HANDLES = {
   home: { route: 'home', scene: 'home' },
-  project: { route: 'project', scene: 'project' },
+  project: { route: 'project', scene: null },
   lite: { route: 'lite', scene: null },
   contact: { route: 'contact', scene: null },
   'not-found': { route: 'not-found', scene: null },

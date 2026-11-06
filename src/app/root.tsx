@@ -8,7 +8,11 @@ import { localeFromPath } from '~/i18n/locale';
 import { cfBeacon } from '~/seo/analytics';
 import '~/styles/tokens.css';
 import '~/styles/base.css';
+import { gateHistory } from '~/ui/journey/openProject';
 import { Shell } from './Shell';
+
+// As this module loads, before the router is made: a project opened over the flight is a step the router never hears of.
+if (typeof window !== 'undefined') gateHistory();
 
 export const links: LinksFunction = () => [
   // Bob's logo, the chbc kit's: the .ico for browsers that ask for one, the SVG for the rest.

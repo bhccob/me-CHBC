@@ -181,6 +181,11 @@ export class World {
     this.tunnel.setLocale(locale);
   }
 
+  /** Where a project's screen stands on the page: left, top, width, height. */
+  screenRect(id: string): [number, number, number, number] | null {
+    return this.tunnel.screenRect(id);
+  }
+
   /** What stands in the flight, for those checking it. */
   report(): { stops: StopReport[]; walls: number } {
     return { stops: this.tunnel.report(), walls: this.tunnel.wallCount };

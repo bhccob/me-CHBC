@@ -65,7 +65,7 @@ export const nl: Dictionary = {
       }
     },
     portal: { word: 'Projecten' },
-    flight: { open: 'Project openen' },
+    flight: { open: 'Project openen', back: 'Terug' },
     qaWord: 'Q&A',
     collapse: { hint: 'Klik op het licht om het los te laten, of scrol verder' },
     end: {

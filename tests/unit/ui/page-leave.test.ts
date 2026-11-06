@@ -162,14 +162,6 @@ describe("pageFadeEffect: usePageFadeOut's effect, as a project page comes and g
   });
 });
 
-describe('the project page fades out by its route module', () => {
-  it('has the project page hand its article to usePageFadeOut', () => {
-    const source = readFileSync(fileURLToPath(new URL('../../../src/app/routes/project.tsx', import.meta.url)), 'utf8');
-    expect(source).toMatch(/usePageFadeOut\(\s*article\s*\)/);
-    expect(source).toMatch(/<article className="page" ref=\{article\}>/);
-  });
-});
-
 // ---------------------------------------------------------------- the stylesheet
 
 const base = readFileSync(fileURLToPath(new URL('../../../src/styles/base.css', import.meta.url)), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');

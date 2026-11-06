@@ -72,7 +72,7 @@ export const en = {
       }
     },
     portal: { word: 'Projects' },
-    flight: { open: 'Open project' },
+    flight: { open: 'Open project', back: 'Back' },
     qaWord: 'Q&A',
     collapse: { hint: 'Click the light to let it go, or keep scrolling' },
     end: {

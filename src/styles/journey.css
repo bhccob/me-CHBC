@@ -663,6 +663,46 @@ html[data-route='journey'] .header-cta {
   outline-offset: 3px;
 }
 
+/* A project open over the flight: its screen grows into its page. */
+html[data-project-open] {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+html[data-project-open] .j-bar {
+  opacity: 0;
+}
+
+.j-open-view {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  background: #07060b;
+}
+
+.j-open-view:focus {
+  outline: none;
+}
+
+.j-open-picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.j-open-body {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 /* The flight's projects: their words are drawn in the 3D, so these are for whoever reads the page another way. */
 .j-project h3,
 .j-project p {

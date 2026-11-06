@@ -47,7 +47,7 @@ describe('Portle', () => {
       ];
       expect(pages[1]).toContain('data-project="portle"');
       expect(pages[2]).toContain('Portle');
-      expect(pages[3]).toContain('<h1 class="page-title">Portle</h1>');
+      expect(pages[3]).toMatch(/<h1[^>]*><span>Portle <\/span><\/h1>/);
       expect(pages[3]).toContain(t === nl ? portle.copy('nl').summary : portle.copy('en').summary);
       for (const html of pages) expect(html).not.toMatch(/porfael/i);
     }
@@ -76,8 +76,10 @@ describe('Portle', () => {
     expect(portle.links).toEqual({ repo: 'https://github.com/bhccob/Portle', live: 'https://portle-azure.vercel.app' });
     for (const [, t, prefix] of LOCALES) {
       const page = render(`${prefix}/projects/portle/`, ProjectPage);
-      expect(page).toContain(`<a href="https://portle-azure.vercel.app">${t.needle.project.site}</a>`);
-      expect(page).toContain(`<a href="https://github.com/bhccob/Portle">${t.needle.project.code}</a>`);
+      expect(page).toContain('href="https://portle-azure.vercel.app"');
+      expect(page).toContain('href="https://github.com/bhccob/Portle"');
+      expect(page).toContain(t.needle.project.site);
+      expect(page).toContain(t.work.github);
       const view = viewOf(render(`${prefix}/`, ProjectViews));
       expect(view).toContain('href="https://portle-azure.vercel.app"');
       expect(view).toContain('href="https://github.com/bhccob/Portle"');
