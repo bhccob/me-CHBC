@@ -10,7 +10,7 @@ import { useTranslator } from '~/i18n/useTranslator';
 export function ProjectLinks(): JSX.Element {
   const { locale, t } = useTranslator();
   return (
-    <section id="j-projects" className="j-projects" aria-label={t.journey.rail.projects}>
+    <section id="projects" className="j-projects" aria-label={t.journey.rail.projects}>
       {projects.byDate().map((project) => {
         const copy = project.copy(locale);
         return (

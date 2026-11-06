@@ -29,7 +29,7 @@ export function EndWords(): JSX.Element {
           {words.toy}
         </p>
       </div>
-      <nav className="j-rise" aria-label={words.reach}>
+      <nav id="contact" className="j-rise" aria-label={words.reach}>
         <a href={`mailto:${profile.email}`}>
           <span>{words.email}</span>
           <b>
