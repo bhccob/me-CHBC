@@ -1,0 +1,15 @@
+/* The journey's page (spec 2026-11-05-bob-machine-rebuild-design.md, section 8). */
+:root {
+  --j-ink: #f2efe8;
+  --j-gold: #e6b84a;
+  --j-bg: #07060b;
+}
+
+html[data-route='journey'],
+html[data-route='journey'] body {
+  background: var(--j-bg);
+}
+
+html[data-route='journey'] .poster {
+  display: none;
+}

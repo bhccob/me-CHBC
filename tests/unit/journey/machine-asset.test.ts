@@ -15,6 +15,15 @@ describe('the machine from Blender', () => {
     for (const name of PART_NAMES) expect(names, name).toContain(name);
   });
 
+  it('keeps apart the materials the pose lights differently', () => {
+    const names = (gltf.materials ?? []).map((material) => material.name);
+    for (const name of ['led', 'key', 'pulse', 'code-screen']) expect(names, name).toContain(name);
+  });
+
+  it('holds no mesh on a part the pose drives, so that quantizing leaves its transform free', () => {
+    for (const name of PART_NAMES) expect(gltf.nodes.find((node) => node.name === name)?.mesh, name).toBeUndefined();
+  });
+
   it('needs no wasm decoder, which the CSP would block', () => {
     expect(gltf.extensionsUsed ?? []).not.toContain('KHR_draco_mesh_compression');
     expect(gltf.extensionsUsed ?? []).not.toContain('EXT_meshopt_compression');

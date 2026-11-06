@@ -8,6 +8,9 @@ import { join } from 'node:path';
 const BLENDER = process.env.BLENDER ?? 'C:/Program Files (x86)/Steam/steamapps/common/Blender/blender.exe';
 const temp = mkdtempSync(join(tmpdir(), 'models-'));
 
+// The parts of the machine that hold a mesh and that the pose moves: see tools/blender/pack.mjs.
+const DRIVEN_MESHES = String.raw`pulse-\d+|code-cover|floor|floor-cover|pinion-\d+`;
+
 const machine = join(temp, 'machine.glb');
 execFileSync(BLENDER, ['-b', '--factory-startup', '--python', 'tools/blender/machine.py', '--', machine, 'tests/fixtures/machine-pose.json', 'tests/fixtures/machine-anchors.json'], { stdio: 'ignore' });
-execFileSync(process.execPath, ['tools/blender/pack.mjs', machine, 'public/models/machine.glb'], { stdio: 'inherit' });
+execFileSync(process.execPath, ['tools/blender/pack.mjs', machine, 'public/models/machine.glb', DRIVEN_MESHES], { stdio: 'inherit' });

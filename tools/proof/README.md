@@ -1,5 +1,10 @@
 # Proof harness
 
+`journey.mjs` is the proof harness of the new home (spec 2026-11-05-bob-machine-rebuild-design.md). Build with `JOURNEY=1`, then
+`STEPS=stills,smooth node tools/proof/journey.mjs`. It serves `dist/client` itself, reads the site through `?proof`, and takes
+`GPU=weak` for the low-power GPU with the CPU throttled 4x at 1080p. `needle.mjs`, below, proves the old home until the swap.
+
+
 `needle.mjs` is the proof harness of the Needle site (React Router and React
 Three Fiber, `npm run build`). It drives a real headless Edge through the built
 site, served the way GitHub Pages serves it, and checks what the site promises:
