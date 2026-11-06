@@ -169,7 +169,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     let first: number | null = null;
     let before = 0;
     let lastState: WorldState | null = null;
-    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => 0, anchors: () => lastState?.anchors ?? null, sound: () => Sound.report(), flight: () => lastState?.flight ?? null, stops: () => canvas.current?.report() ?? null }));
+    const uninstall = installJourneyDebug(() => ({ frame: () => shown, first: () => first, frameTimes: () => frames.slice(), ready: () => canvas.current !== null, quality: () => canvas.current?.step() ?? 0, dpr: () => canvas.current?.dpr() ?? 1, anchors: () => lastState?.anchors ?? null, sound: () => Sound.report(), flight: () => lastState?.flight ?? null, stops: () => canvas.current?.report() ?? null }));
 
     // A chapter a link names: there at once, on arrival.
     const arrival = frameForHash(location.hash, timeline, stopIds);
@@ -197,7 +197,9 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         applyLayer(hint, { opacity: layers.hint });
         const end = endWordsAt(f, timeline.shift);
         // Its opacity alone: hidden, its links could not be reached by a keyboard.
-        if (endPage) endPage.style.opacity = String(end.page);
+        // And only once its stage has come: till then the page stays dark.
+        const endCame = canvas.current?.stageReady('end') ?? false;
+        if (endPage) endPage.style.opacity = endCame ? String(end.page) : '0';
         if (end.rise !== risen) {
           risen = end.rise;
           endPage?.classList.toggle('on', risen);

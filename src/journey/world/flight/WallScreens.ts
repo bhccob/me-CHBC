@@ -44,6 +44,7 @@ function bentOntoTheWall(aspect: number, s0: number, angle: number, end: number)
 export class WallScreens {
   private readonly screens: WallScreen[] = [];
   private readonly scene: Scene;
+  private share = 1;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -64,14 +65,20 @@ export class WallScreens {
     });
   }
 
+  /** How many of each stop's four are drawn, as a share: the ladder takes the far ones off first. */
+  setShare(share: number): void {
+    this.share = share;
+  }
+
   get count(): number {
     return this.screens.length;
   }
 
   update(s: number, calm: number, dissolve: number): void {
-    for (const { mesh, s: at, dim } of this.screens) {
+    const each = Math.round(SPOTS.length * this.share);
+    for (const [n, { mesh, s: at, dim }] of this.screens.entries()) {
       const distance = at - s;
-      const seen = distance > -3 && distance < SEEN_AHEAD && dissolve < 0.4;
+      const seen = n % SPOTS.length < each && distance > -3 && distance < SEEN_AHEAD && dissolve < 0.4;
       mesh.visible = seen;
       if (!seen) continue;
       mesh.material.uniforms.uA.value = ease(SEEN_AHEAD - distance, 0, 18) * ease(distance, -2.5, -0.5) * (1 - 0.9 * calm);

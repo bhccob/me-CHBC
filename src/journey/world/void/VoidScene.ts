@@ -1,5 +1,6 @@
 import { AdditiveBlending, BackSide, BufferGeometry, DoubleSide, Float32BufferAttribute, type IUniform, LineSegments, Mesh, type Object3D, PlaneGeometry, type Scene, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
 import { ease, mix, seeded, TAU } from '../../math';
+import type { JourneyQuality } from '../../quality';
 import type { Timeline } from '../../timeline';
 import { frameAt, type PathFrame } from '../flight/path';
 import type { TunnelUniforms } from '../flight/tunnelParts';
@@ -172,9 +173,10 @@ export class VoidScene {
     this.sparks.pixels.value = pixelRatio * Math.max(0.8, height / 800) * 1.15;
   }
 
-  /** The reflections, which the speed ladder can drop. */
-  allowMirrors(on: boolean): void {
-    this.mirrorsAllowed = on;
+  /** What the ladder asks of it: the reflections, and how many stars. */
+  setQuality(quality: JourneyQuality): void {
+    this.mirrorsAllowed = quality.mirror;
+    this.sparks.points.geometry.setDrawRange(0, Math.round(this.sparks.points.geometry.attributes.position.count * quality.stars));
   }
 
   /** What the fall, the bang and the end page do to the points. */

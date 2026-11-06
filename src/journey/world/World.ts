@@ -3,6 +3,7 @@ import { HalfFloatType, NoToneMapping, Vector3, VSMShadowMap, type WebGLRenderer
 import { projects } from '~/data/projects';
 import { translatorFor } from '~/i18n/useTranslator';
 import type { Locale } from '~/i18n/Translator';
+import type { JourneyQuality } from '../quality';
 import { flightLayout } from '../flight/layout';
 import type { TagName } from '../layers';
 import { cameraPose } from '../machine/camera';
@@ -48,6 +49,9 @@ export class World {
   private readonly composer: EffectComposer;
   private readonly depthOfField: DepthOfFieldEffect;
   private readonly bokehPass: EffectPass;
+  private readonly bloom: BloomEffect;
+  private dofAllowed = true;
+  private drewLast = false;
   private readonly state: WorldState;
   private readonly reduce: boolean;
   private width = 1;
@@ -91,20 +95,22 @@ export class World {
     this.depthOfField = new DepthOfFieldEffect(this.machine.camera, { focusDistance: 1, focusRange: 0.5, bokehScale: 4, resolutionScale: 0.5 });
     this.bokehPass = new EffectPass(this.machine.camera, this.depthOfField);
     this.composer.addPass(this.bokehPass);
-    const bloom = new BloomEffect({ intensity: 0.16, luminanceThreshold: 1.2, luminanceSmoothing: 0.25, mipmapBlur: true, radius: 0.55 });
-    this.composer.addPass(new EffectPass(this.machine.camera, bloom, new ToneMappingEffect({ mode: ToneMappingMode.AGX }), new LookEffect(), this.iris.effect));
+    this.bloom = new BloomEffect({ intensity: 0.16, luminanceThreshold: 1.2, luminanceSmoothing: 0.25, mipmapBlur: true, radius: 0.55 });
+    this.composer.addPass(new EffectPass(this.machine.camera, this.bloom, new ToneMappingEffect({ mode: ToneMappingMode.AGX }), new LookEffect(), this.iris.effect));
   }
 
   /** Loads a stage of the journey. */
   async load(stage: 'machine' | 'flight' | 'void' | 'end', onProgress?: (share: number) => void): Promise<void> {
-    if (stage === 'flight') {
-      await this.tunnel.load(this.renderer, () => this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera));
-      this.dirty = true;
+    const draw = (): void => this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
+    if (stage === 'machine') {
+      await this.machine.load(onProgress);
+      this.machine.update(0);
       return;
     }
-    if (stage !== 'machine') return;
-    await this.machine.load(onProgress);
-    this.machine.update(0);
+    if (stage === 'flight') await this.tunnel.loadFlight(this.renderer, draw);
+    else if (stage === 'void') await this.tunnel.loadVoid(this.renderer, draw);
+    else await this.tunnel.loadEnd(this.renderer, draw);
+    this.dirty = true;
   }
 
   /** Draws everything once before anything shows, so that no shader or shadow is compiled in the middle of the journey. */
@@ -148,7 +154,7 @@ export class World {
     this.machine.update(f);
     const cam = cameraPose(f);
     const blur = blurShare(cam.lens, cam.fstop, cam.focus);
-    this.bokehPass.enabled = blur > NO_BLUR_SHARE;
+    this.bokehPass.enabled = this.dofAllowed && blur > NO_BLUR_SHARE;
     if (this.bokehPass.enabled) {
       const material = this.depthOfField.cocMaterial;
       material.focusDistance = cam.focus;
@@ -166,6 +172,7 @@ export class World {
 
   /** Draws, only when something moved: a still page costs the GPU nothing. */
   render(): void {
+    this.drewLast = this.dirty;
     if (!this.dirty) return;
     const f = this.drawn;
     if (irisWindowOn(f) || canvasOpaque(f)) this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
@@ -183,6 +190,26 @@ export class World {
     this.iris.resize(this.renderer);
     this.drawn = -1;
     this.dirty = true;
+  }
+
+  /** What everything draws at this step of the speed ladder. The canvas's pixel ratio is its host's to set. */
+  setQuality(quality: JourneyQuality): void {
+    this.tunnel.setQuality(quality);
+    this.dofAllowed = quality.dof;
+    this.composer.multisampling = quality.samples;
+    this.iris.setSamples(quality.samples);
+    this.renderer.shadowMap.autoUpdate = quality.shadow;
+    this.bloom.intensity = quality.bloom;
+    const glowing = quality.bloom > 0;
+    this.bloom.luminancePass.enabled = glowing;
+    this.bloom.mipmapBlurPass.enabled = glowing;
+    this.drawn = -1;
+    this.dirty = true;
+  }
+
+  /** Whether the last `render` drew: a still page costs nothing, and says nothing of the GPU. */
+  get drew(): boolean {
+    return this.drewLast;
   }
 
   /** The words in another language: the world stays, only they change. */

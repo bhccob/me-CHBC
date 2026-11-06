@@ -82,6 +82,13 @@ export class IrisWindow {
     this.screen.add(this.triangle);
   }
 
+  /** The anti-aliasing of the tunnel's picture. */
+  setSamples(samples: number): void {
+    if (this.target.samples === samples) return;
+    this.target.dispose();
+    this.target.samples = samples;
+  }
+
   resize(renderer: WebGLRenderer): void {
     renderer.getDrawingBufferSize(this.size);
     this.target.setSize(this.size.x, this.size.y);

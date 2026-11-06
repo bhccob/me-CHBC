@@ -70,10 +70,10 @@ async function openPage(browser, step, viewport = VIEW, options = {}) {
 }
 
 /** The journey, loaded and drawing. */
-async function openJourney(browser, step, viewport, { route = ROUTE, ...options } = {}) {
+async function openJourney(browser, step, viewport, { route = ROUTE, stages = '&stages=all', ...options } = {}) {
   const opened = await openPage(browser, step, viewport, options);
   await opened.page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
-  await opened.page.goto(`${BASE}${route}?proof`, { waitUntil: 'load' });
+  await opened.page.goto(`${BASE}${route}?proof${stages}`, { waitUntil: 'load' });
   await opened.page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
   await opened.page.mouse.move(viewport?.width ? viewport.width / 2 : VIEW.width / 2, 300);
   return opened;
@@ -126,7 +126,8 @@ async function stills(browser, step) {
 
 /** A walk through the machine: how long the frames take, and how long any task holds up the page. */
 async function smooth(browser, step) {
-  const { context, page } = await openJourney(browser, step);
+  // As a visitor loads it: each stage as it comes near.
+  const { context, page } = await openJourney(browser, step, undefined, { stages: '' });
   if (WEAK) await (await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate: 4 });
   await page.evaluate(() => {
     window.__tasks = [];
@@ -148,6 +149,12 @@ async function smooth(browser, step) {
   step.check(walk.length > 100, `the walk drew frames all the way (${walk.length}: median ${median.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, worst ${worst.toFixed(1)} ms)`);
   const longest = tasks.reduce((a, b) => (b.ms > a.ms ? b : a), { ms: 0, frame: 0 });
   step.check(longest.ms < 200, `no main-thread task over 200 ms (the longest ${longest.ms.toFixed(0)}, near frame ${longest.frame.toFixed(0)})`);
+  if (WEAK) {
+    step.check(median < 33, `on the weak GPU the median frame is under 33 ms (${median.toFixed(1)})`);
+    step.check(worst < 100, `and no frame is over 100 ms (the worst ${worst.toFixed(1)})`);
+  }
+  const ladder = await page.evaluate(() => ({ step: window.__journeyDebug.quality(), dpr: window.__journeyDebug.dpr() }));
+  step.check(true, `the ladder stands at step ${ladder.step}, pixel ratio ${ladder.dpr}`);
   step.median = median;
   await context.close();
   return `median ${median.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, worst ${worst.toFixed(1)} ms, ${walk.length} frames`;
@@ -1088,6 +1095,92 @@ async function endTouch(browser, step) {
   return '';
 }
 
+/** Each step of the ladder by itself: it draws, and it draws what it says. */
+async function rungs(browser, step) {
+  const { journeyQuality, journeySteps } = await tsImport('../../src/journey/quality.ts', import.meta.url);
+  const summary = [];
+  for (let n = 0; n < journeySteps(true); n++) {
+    const opened = await openPage(browser, step, { width: 1280, height: 720 }, { deviceScaleFactor: 1.5 });
+    await opened.page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
+    await opened.page.goto(`${BASE}/en/journey/?proof&stages=all&step=${n}`, { waitUntil: 'load' });
+    await opened.page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
+    await flightLoaded(opened.page, projects.byDate().length);
+    await opened.page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
+    const want = journeyQuality(n, true);
+    const got = await opened.page.evaluate(() => ({ step: window.__journeyDebug.quality(), dpr: window.__journeyDebug.dpr() }));
+    step.check(got.step === n && Math.abs(got.dpr - Math.min(1.5, want.pixelRatio)) < 0.01, `step ${n}: pixel ratio ${got.dpr}, as it says (${want.pixelRatio})`);
+    for (const f of [0, 304, 448, 642, 793, timeline.last]) {
+      await jumpTo(opened.page, f);
+      await opened.page.waitForTimeout(f === timeline.last ? 1200 : 350);
+      const { channels } = await sharp(await opened.page.screenshot({ type: 'jpeg', quality: 80 })).stats();
+      step.check(channels[0].max > 40, `step ${n}, frame ${f}: it draws (brightest ${channels[0].max})`);
+    }
+    await opened.context.close();
+    summary.push(`${n}: ${want.pixelRatio}`);
+  }
+  return summary.join(', ');
+}
+
+/** Slow frames walk the ladder down, in place: nothing is built again on the way. */
+async function walkDown(browser, step) {
+  const opened = await openPage(browser, step, { width: 1280, height: 720 }, { deviceScaleFactor: 1.5 });
+  const { page, context } = opened;
+  await page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
+  await page.goto(`${BASE}/en/journey/?proof&stages=all&step=0&govern`, { waitUntil: 'load' });
+  await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
+  await flightLoaded(page, projects.byDate().length);
+  await goToFrame(page, 372);
+  await goToFrame(page, 430, 200);
+  await page.waitForTimeout(600);
+  const start = await page.evaluate(() => ({ step: window.__journeyDebug.quality(), dpr: window.__journeyDebug.dpr() }));
+  await page.evaluate(() => {
+    window.__tasks = [];
+    new PerformanceObserver((list) => window.__tasks.push(...list.getEntries().map((e) => e.duration))).observe({ type: 'longtask' });
+    // Each frame held 40 ms on the main thread: slow enough to ask for steps.
+    const hold = () => {
+      const until = performance.now() + 40;
+      while (performance.now() < until);
+      window.__holding = requestAnimationFrame(hold);
+    };
+    window.__holding = requestAnimationFrame(hold);
+  });
+  await page.waitForTimeout(6000);
+  await page.evaluate(() => cancelAnimationFrame(window.__holding));
+  await page.waitForTimeout(600);
+  const end = await page.evaluate(() => ({ step: window.__journeyDebug.quality(), dpr: window.__journeyDebug.dpr(), longest: Math.max(0, ...window.__tasks) }));
+  step.check(start.step === 0, `it starts at the top (${start.step})`);
+  step.check(end.step > start.step, `the ladder has walked down (step ${start.step} to ${end.step}, pixel ratio ${start.dpr} to ${end.dpr})`);
+  const { channels } = await sharp(await page.screenshot({ type: 'jpeg', quality: 80 })).stats();
+  step.check(channels[0].max > 40, `the tunnel is still drawn on the way down (brightest ${channels[0].max})`);
+  step.check(end.longest <= 250, `no main-thread task over 250 ms on the way (the longest ${end.longest.toFixed(0)} ms): nothing is built again`);
+  await context.close();
+  return `step ${start.step} to ${end.step}`;
+}
+
+/** Pressing End at the very start on a slow line: dark, with no error, until the end has come, and no pile of sounds. */
+async function jumpEarly(browser, step) {
+  const { context, page } = await openJourney(browser, step, undefined, { route: '/en/journey/', stages: '' });
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Network.enable');
+  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 300, downloadThroughput: (400 * 1024) / 8, uploadThroughput: (400 * 1024) / 8 });
+  await jumpTo(page, 10);
+  await page.waitForTimeout(400);
+  const hits = () => page.evaluate(() => Object.values(window.__journeyDebug.sound().counts).reduce((a, b) => a + b, 0));
+  const before = await hits();
+  await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' }));
+  await page.waitForFunction((last) => window.__journeyDebug.frame() > last - 1, timeline.last, { timeout: 15_000 });
+  const early = await page.evaluate(() => ({ came: window.__journeyDebug.stops()?.end !== null, opacity: getComputedStyle(document.getElementById('j-end')).opacity }));
+  step.check(early.came || Number(early.opacity) === 0, `while the end is on its way, its words wait (${early.opacity})`);
+  await page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 60_000 });
+  await page.waitForTimeout(800);
+  const end = await page.evaluate(() => ({ opacity: getComputedStyle(document.getElementById('j-end')).opacity, word: getComputedStyle(document.getElementById('j-end-word')).opacity }));
+  step.check(Number(end.opacity) === 1 && Number(end.word) === 1, 'then the end page shows');
+  const after = await hits();
+  step.check(after - before <= 6, `and the sounds of the jump do not pile up (${after - before})`);
+  await context.close();
+  return '';
+}
+
 const atFrame = (page) => page.evaluate(() => window.__journeyDebug.frame());
 const openAddress = (page) => page.evaluate(() => location.pathname);
 
@@ -1430,7 +1523,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

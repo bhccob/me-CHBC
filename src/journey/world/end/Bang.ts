@@ -39,6 +39,7 @@ export class Bang {
   private readonly rings: Ring[] = [];
   private readonly nebula: Mesh<PlaneGeometry, ShaderMaterial>;
   private readonly scene: Scene;
+  private gas = true;
 
   constructor(scene: Scene, uniforms: TunnelUniforms, point: Vector3, glow: Texture) {
     this.scene = scene;
@@ -112,7 +113,12 @@ export class Bang {
     const { uniforms } = this.nebula.material;
     uniforms.uGrow.value = 0.02 + 0.98 * (1 - Math.pow(1 - bang, 2.6));
     uniforms.uA.value = 0.2 * ease(bang, 0.04, 0.5);
-    this.nebula.visible = bang > 0;
+    this.nebula.visible = this.gas && bang > 0;
+  }
+
+  /** Whether the ladder leaves it the first gas, its dearest part. */
+  setClouds(share: number): void {
+    this.gas = share >= 0.5;
   }
 
   /** All of it or none, for drawing it once before anything shows. */

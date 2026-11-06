@@ -108,8 +108,8 @@ export const STRONG_MS = 1;
  * would draw, scaled by how the GPU timed (`benchMs`) against the one the costs were measured on. With no timing it is the
  * best step, and the governor judges it by its frames.
  */
-export function startStep(benchMs: number | null, finePointer: boolean, screen: { width: number; height: number }, devicePixelRatio: number): number {
-  const ladder = finePointer ? FINE : COARSE;
+export function startStep(benchMs: number | null, finePointer: boolean, screen: { width: number; height: number }, devicePixelRatio: number, costs?: readonly { cost: number; pixelRatio: number }[]): number {
+  const ladder = costs ?? (finePointer ? FINE : COARSE);
   if (benchMs === null || !Number.isFinite(benchMs) || benchMs < 0 || benchMs <= STRONG_MS) return 0;
   const speed = benchMs / BENCH_REFERENCE_MS;
   const steps = ladder.findIndex((q) => {

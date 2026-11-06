@@ -1,5 +1,6 @@
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, Group, type IUniform, Matrix4, Mesh, MeshBasicMaterial, type MeshStandardMaterial, NoColorSpace, type Object3D, type PerspectiveCamera, type PointLight, Points, Raycaster, RingGeometry, type Scene, ShaderMaterial, Sprite, type SpriteMaterial, type Texture, Vector2, Vector3 } from 'three';
 import { addGalaxy, MAX_GALAXIES } from '../../end';
+import type { JourneyQuality } from '../../quality';
 import { backOut, ease, seeded, TAU } from '../../math';
 import { displayReferred } from '../displayOutput';
 import type { SparkControls } from '../void/Dissolve';
@@ -166,6 +167,7 @@ export class Universe {
   private held = false;
   fired = 0;
   private lastNow = 0;
+  private starShare = 1;
 
   constructor(scene: Scene, model: Object3D, end: number, time: IUniform<number>, pixels: IUniform<number>, controls: SparkControls, point: Vector3, glow: Texture, light: PointLight) {
     this.scene = scene;
@@ -265,6 +267,16 @@ export class Universe {
   private readonly heading: Vector3;
   private readonly right: Vector3;
 
+  /** What the ladder asks of it: how many of the galaxies' stars, and how much of the gas. */
+  setQuality(quality: JourneyQuality): void {
+    this.starShare = quality.galaxies;
+    for (const { points } of [...this.fixed, ...this.yours]) points.geometry.setDrawRange(0, Math.round(points.geometry.attributes.position.count * quality.galaxies));
+    const keep = Math.round(this.puffs.length * quality.clouds);
+    this.puffs.forEach(({ sprite }, i) => {
+      sprite.visible = i < keep;
+    });
+  }
+
   /** A press: the stars pull in harder, and a light grows at the cursor. */
   press(): void {
     this.held = true;
@@ -301,6 +313,7 @@ export class Universe {
     const r = seeded(4001 + this.fired * 13);
     points.rotation.set(0.5 + r() * 0.9, 0, (r() - 0.5) * 1.1);
     points.material.uniforms.uBorn.value = reduce ? 0 : now / 1000;
+    points.geometry.setDrawRange(0, Math.round(points.geometry.attributes.position.count * this.starShare));
     this.group.add(points);
     const made: Yours = { points, born: now, size: 26 + power * 44 };
     const before = this.yours;

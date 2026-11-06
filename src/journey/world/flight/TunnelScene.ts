@@ -1,6 +1,7 @@
-import { AdditiveBlending, BackSide, BoxGeometry, type BufferGeometry, Color, DoubleSide, FogExp2, FrontSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, PointLight, type Points, Raycaster, Scene, type ShaderMaterial, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
+import { AdditiveBlending, BackSide, BoxGeometry, type BufferGeometry, Color, DoubleSide, FogExp2, FrontSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, type Object3D, PointLight, type Points, Raycaster, Scene, type ShaderMaterial, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { Locale } from '~/i18n/Translator';
+import { journeyQuality, type JourneyQuality } from '../../quality';
 import { distanceAt, type DistanceTable, distanceTable, type FlightLayout } from '../../flight/layout';
 import { clamp, ease, ez, mix, ramp } from '../../math';
 import type { Timeline } from '../../timeline';
@@ -127,6 +128,7 @@ export class TunnelScene {
   /** The end page's light. It stands from the start, since a lit material's shader depends on how many lights there are. */
   private readonly endLight = new PointLight(0xffd6a0, 0, 320, 1);
   private universe: Universe | null = null;
+  private quality = journeyQuality(0, true);
   private readonly pose: VoidPose = { place: new Vector3(), look: new Vector3(), T: new Vector3(), R: new Vector3(), U: new Vector3(), roll: 0, arrive: 0, sway: 1, lens: 1 };
   private readonly ray = new Raycaster();
   private readonly pointerAt = new Vector2(9, 9);
@@ -210,26 +212,44 @@ export class TunnelScene {
     for (const speck of this.specks) speck.visible = false;
   }
 
-  /** Loads what stands in the tunnel, and readies it to draw. `draw` draws the tunnel once, out of sight. */
-  async load(renderer: WebGLRenderer, draw: () => void): Promise<void> {
-    this.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  /** The gates' model, which every later stage stands on, and the gates themselves. It comes once. */
+  private gatesReady: Promise<Object3D> | null = null;
+
+  private standGates(renderer: WebGLRenderer, draw: () => void): Promise<Object3D> {
+    this.gatesReady ??= (async () => {
+      this.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      const [gltf] = await Promise.all([new GLTFLoader().loadAsync(GATE_URL), ...WORD_FONTS.map((font) => document.fonts.load(font))]);
+      if (this.gone) return gltf.scene;
+      // The first view is already moving: one thing a frame, so that none of this catches it.
+      this.prepare(renderer, draw);
+      const gates = new Gates(gltf.scene);
+      gates.place(this.input.layout);
+      this.scene.add(gates.group);
+      this.gates = gates;
+      await nextFrame();
+      gates.show(true);
+      await renderer.compileAsync(this.scene, this.camera);
+      draw();
+      gates.show(false);
+      return gltf.scene;
+    })();
+    return this.gatesReady;
+  }
+
+  /** The flight's stage: the gates, and each project with its pictures, its words and its screens on the walls. */
+  async loadFlight(renderer: WebGLRenderer, draw: () => void): Promise<void> {
     const { layout, projects } = this.input;
-    const [gltf, pictures] = await Promise.all([
-      new GLTFLoader().loadAsync(GATE_URL),
-      Promise.all(projects.map(async (project) => ({
-        images: await Promise.all(project.images.map((file) => loadPicture(`/flight/${file}`, this.anisotropy))),
-        piece: project.pieceImage ? await loadPicture(`/flight/${project.pieceImage}`, this.anisotropy) : null,
-      }))),
-      ...WORD_FONTS.map((font) => document.fonts.load(font)),
+    const [pictures] = await Promise.all([
+      Promise.all(projects.map(async (project) => {
+        const anisotropy = renderer.capabilities.getMaxAnisotropy();
+        return {
+          images: await Promise.all(project.images.map((file) => loadPicture(`/flight/${file}`, anisotropy))),
+          piece: project.pieceImage ? await loadPicture(`/flight/${project.pieceImage}`, anisotropy) : null,
+        };
+      })),
+      this.standGates(renderer, draw),
     ]);
     if (this.gone) return;
-    // The first view is already moving: one thing a frame, so that none of this catches it.
-    this.prepare(renderer, draw);
-    const gates = new Gates(gltf.scene);
-    gates.place(layout);
-    this.scene.add(gates.group);
-    this.gates = gates;
-    await nextFrame();
     for (const [i, project] of projects.entries()) {
       if (this.gone) return;
       const stop = new ProjectStop(this.scene, project, layout.stops[i], layout.end, pictures[i].images, pictures[i].piece, this.glow);
@@ -243,32 +263,15 @@ export class TunnelScene {
       this.walls.add(stop.wallPictures(), project.screens === 'phones', layout.stops[i], new Color(project.tint[0], project.tint[1], project.tint[2]), layout.end);
       await nextFrame();
     }
-    if (this.gone) return;
-    const questions = new Questions(this.scene, gltf.scene, layout.end);
-    questions.buildWord(this.input.qaWord[this.locale], this.phone, this.anisotropy);
-    this.questions = questions;
-    await nextFrame();
-    if (this.gone) return;
-    const universe = new Universe(this.scene, gltf.scene, layout.end, this.uniforms.uTime, this.voidScene.sparkPixels, this.voidScene.sparkControls, this.fallsTo, this.glow, this.endLight);
-    this.universe = universe;
-    await nextFrame();
-    for (const [i, words] of this.input.questions[this.locale].entries()) {
-      if (this.gone) return;
-      questions.buildQuestion(i, words, this.phone, this.anisotropy, this.camera.aspect);
-      await nextFrame();
-    }
+    this.walls.setShare(this.quality.wallScreens);
     if (this.gone) return;
     await renderer.compileAsync(this.scene, this.camera);
-    for (const texture of [...pictures.flatMap(({ images, piece }) => (piece ? [...images, piece] : images)), ...this.stops.flatMap((stop) => stop.textures()), ...(questions.textures() as Texture[])]) {
+    for (const texture of [...pictures.flatMap(({ images, piece }) => (piece ? [...images, piece] : images)), ...this.stops.flatMap((stop) => stop.textures())]) {
       if (this.gone) return;
       renderer.initTexture(texture);
       await nextFrame();
     }
     // Each part drawn once while nothing shows, so that the first time it is seen costs nothing.
-    if (this.gone) return;
-    gates.show(true);
-    draw();
-    gates.show(false);
     for (const stop of this.stops) {
       await nextFrame();
       if (this.gone) return;
@@ -281,16 +284,56 @@ export class TunnelScene {
     this.walls.show(true);
     draw();
     this.walls.show(false);
+  }
+
+  /** The void's stage: his questions along the gold line. */
+  async loadVoid(renderer: WebGLRenderer, draw: () => void): Promise<void> {
+    const model = await this.standGates(renderer, draw);
+    if (this.gone) return;
+    const questions = new Questions(this.scene, model, this.input.layout.end);
+    questions.buildWord(this.input.qaWord[this.locale], this.phone, this.anisotropy);
     await nextFrame();
+    for (const [i, words] of this.input.questions[this.locale].entries()) {
+      if (this.gone) return;
+      questions.buildQuestion(i, words, this.phone, this.anisotropy, this.camera.aspect);
+      await nextFrame();
+    }
+    if (this.gone) return;
+    await renderer.compileAsync(this.scene, this.camera);
+    for (const texture of questions.textures() as Texture[]) {
+      if (this.gone) return;
+      renderer.initTexture(texture);
+      await nextFrame();
+    }
     if (this.gone) return;
     questions.show(true);
     draw();
     questions.show(false);
+    this.questions = questions;
+  }
+
+  /** The end's stage: the universe behind the words. */
+  async loadEnd(renderer: WebGLRenderer, draw: () => void): Promise<void> {
+    const model = await this.standGates(renderer, draw);
+    if (this.gone) return;
+    const universe = new Universe(this.scene, model, this.input.layout.end, this.uniforms.uTime, this.voidScene.sparkPixels, this.voidScene.sparkControls, this.fallsTo, this.glow, this.endLight);
+    universe.setQuality(this.quality);
     await nextFrame();
     if (this.gone) return;
+    await renderer.compileAsync(this.scene, this.camera);
     universe.show(true);
     draw();
     universe.show(false);
+    this.universe = universe;
+  }
+
+  /** What every part draws at this step of the ladder. It all changes in place. */
+  setQuality(quality: JourneyQuality): void {
+    this.quality = quality;
+    this.voidScene.setQuality(quality);
+    this.bang.setClouds(quality.clouds);
+    this.walls.setShare(quality.wallScreens);
+    this.universe?.setQuality(quality);
   }
 
   /** A press on the end page: a light grows at the cursor. */

@@ -8,6 +8,8 @@ export interface JourneyDebug {
   /** Whether the world has loaded and is drawing. */
   ready(): boolean;
   quality(): number;
+  /** The pixel ratio the canvas draws at. */
+  dpr(): number;
   /** Where the stack's labels point, in CSS pixels. */
   anchors(): Record<string, [number, number]> | null;
   /** The sound: whether it is on, how loud, and which of its effects have played. */
