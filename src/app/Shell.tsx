@@ -6,6 +6,7 @@ import { SceneHost } from '~/scene/SceneHost';
 import { useRouteSync } from '~/state/routeSync';
 import { useLoadingAttribute, useThreeDAttribute } from '~/state/store';
 import { Poster } from '~/ui/Poster';
+import { LockCursor } from '~/ui/LockCursor';
 import { SiteHeader } from '~/ui/SiteHeader';
 import { useNavigationFocus } from './navigationFocus';
 import { useRouteAttribute, useRouteHandle } from './routeName';
@@ -39,6 +40,7 @@ export function Shell({ children }: { children: ReactNode }): JSX.Element {
         {children}
       </main>
       <SceneHost scene={scene} />
+      <LockCursor />
     </>
   );
 }

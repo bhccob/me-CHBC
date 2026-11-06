@@ -91,6 +91,7 @@ export const en = {
     },
     rail: { label: 'Chapters', who: 'Who', software: 'Software', games: 'Games', security: 'Security', mechatronics: 'Mechatronics', stack: 'Stack', projects: 'Projects', qa: 'Q&A', contact: 'Contact' },
     sound: { on: 'Sound on', off: 'Sound off' },
+    cursor: { open: 'OPEN' },
     loader: { withSound: 'Enter with sound', without: 'Enter without' }
   },
   /**

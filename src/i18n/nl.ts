@@ -84,6 +84,7 @@ export const nl: Dictionary = {
     },
     rail: { label: 'Hoofdstukken', who: 'Wie', software: 'Software', games: 'Games', security: 'Beveiliging', mechatronics: 'Mechatronica', stack: 'Stapel', projects: 'Projecten', qa: 'Q&A', contact: 'Contact' },
     sound: { on: 'Geluid aan', off: 'Geluid uit' },
+    cursor: { open: 'OPEN' },
     loader: { withSound: 'Binnengaan met geluid', without: 'Binnengaan zonder' }
   },
   meta: {

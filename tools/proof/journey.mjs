@@ -529,7 +529,67 @@ async function soundStep(browser, step) {
   return `the loudest ${peak.toFixed(3)}`;
 }
 
-const STEPS = { stills, smooth, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+/** The Lock cursor on a mouse: the corners close around a link, and take no click. */
+async function cursorStep(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  step.check(await page.evaluate(() => document.documentElement.classList.contains('has-lock-cursor')), 'it is on, on a mouse');
+  await page.mouse.move(300, 680);
+  await page.waitForTimeout(500);
+  const rest = await page.evaluate(() => window.__lockCursor.corners());
+  const width = rest[1][0] - rest[0][0];
+  step.check(Math.abs(width - 26) < 2, `at rest the corners stand about 26 px apart (${width.toFixed(1)})`);
+  mkdirSync(join(OUT, 'stills'), { recursive: true });
+  const box = await page.locator('.j-go').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 6 });
+  await page.waitForTimeout(450);
+  writeFileSync(join(OUT, 'stills', 'cursor-hover.jpg'), await page.screenshot({ type: 'jpeg', quality: 90 }));
+  const around = await page.evaluate(() => window.__lockCursor.corners());
+  const goal = [box.x - 9, box.y - 7];
+  step.check(Math.abs(around[0][0] - goal[0]) < 3 && Math.abs(around[0][1] - goal[1]) < 3, `within 450 ms the corners close around the button (${around[0].map((v) => v.toFixed(0))} against ${goal.map((v) => v.toFixed(0))})`);
+  step.check((await page.evaluate(() => getComputedStyle(document.querySelector('.lock-cursor')).pointerEvents)) === 'none', 'it takes no click');
+  await page.mouse.down();
+  await page.waitForTimeout(120);
+  const pressed = await page.evaluate(() => window.__lockCursor.corners());
+  step.check(pressed[0][0] > around[0][0] + 2, 'pressed, the corners pinch in');
+  await page.mouse.move(300, 680);
+  await page.mouse.up();
+  await context.close();
+  return '';
+}
+
+/** No custom cursor on touch, or with reduced motion. */
+async function noCursor(browser, step) {
+  {
+    const { context, page } = await openPage(browser, step, { width: 390, height: 844 }, { hasTouch: true, isMobile: true });
+    await page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
+    await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+    await page.waitForTimeout(600);
+    step.check(!(await page.evaluate(() => document.documentElement.classList.contains('has-lock-cursor'))), 'none on a touch screen');
+    await context.close();
+  }
+  {
+    const { context, page } = await openPage(browser, step, VIEW, { reducedMotion: 'reduce' });
+    await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
+    await page.waitForTimeout(600);
+    step.check(!(await page.evaluate(() => document.documentElement.classList.contains('has-lock-cursor'))), 'none with reduced motion');
+    await context.close();
+  }
+  return '';
+}
+
+/** A field keeps its text cursor. */
+async function cursorForm(browser, step) {
+  const { context, page } = await openPage(browser, step);
+  await page.goto(`${BASE}/en/contact/`, { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  const seen = await page.evaluate(() => ({ on: document.documentElement.classList.contains('has-lock-cursor'), input: getComputedStyle(document.querySelector('input[type=email], input[type=text], textarea')).cursor, body: getComputedStyle(document.body).cursor }));
+  step.check(seen.on && seen.body === 'none', `the cursor runs here too (${seen.body})`);
+  step.check(seen.input === 'text', `a field keeps its text cursor (${seen.input})`);
+  await context.close();
+  return '';
+}
+
+const STEPS = { stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

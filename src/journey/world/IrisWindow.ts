@@ -1,6 +1,5 @@
 import { BlendFunction, Effect } from 'postprocessing';
-import { HalfFloatType, type PerspectiveCamera, ShaderMaterial, Uniform, Vector2, Vector3, WebGLRenderTarget, type WebGLRenderer, type Scene } from 'three';
-import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js';
+import { BufferGeometry, Float32BufferAttribute, HalfFloatType, Mesh, OrthographicCamera, type PerspectiveCamera, Scene, ShaderMaterial, Uniform, Vector2, Vector3, WebGLRenderTarget, type WebGLRenderer } from 'three';
 
 /** The tunnel's picture from linear light to the screen's: ACES, as the approved mock drew it. */
 const ACES = /* glsl */ `
@@ -64,12 +63,18 @@ export function canvasPoint(at: readonly [number, number, number], camera: Persp
 export class IrisWindow {
   readonly effect = new WindowEffect();
   private readonly target = new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: 4 });
-  private readonly quad: FullScreenQuad;
+  private readonly screen = new Scene();
+  private readonly screenCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private readonly triangle: Mesh<BufferGeometry, ShaderMaterial>;
   private readonly size = new Vector2(1, 1);
 
   constructor() {
     this.effect.uniforms.get('tunnel')!.value = this.target.texture;
-    this.quad = new FullScreenQuad(
+    const cover = new BufferGeometry()
+      .setAttribute('position', new Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3))
+      .setAttribute('uv', new Float32BufferAttribute([0, 0, 2, 0, 0, 2], 2));
+    this.triangle = new Mesh(
+      cover,
       new ShaderMaterial({
         uniforms: { tunnel: new Uniform(this.target.texture) },
         vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
@@ -86,6 +91,8 @@ export class IrisWindow {
         depthWrite: false,
       }),
     );
+    this.triangle.frustumCulled = false;
+    this.screen.add(this.triangle);
   }
 
   resize(renderer: WebGLRenderer): void {
@@ -116,13 +123,13 @@ export class IrisWindow {
   /** The tunnel alone on the canvas. */
   present(renderer: WebGLRenderer): void {
     renderer.setRenderTarget(null);
-    this.quad.render(renderer);
+    renderer.render(this.screen, this.screenCamera);
   }
 
   dispose(): void {
     this.target.dispose();
-    this.quad.dispose();
-    this.quad.material.dispose();
+    this.triangle.geometry.dispose();
+    this.triangle.material.dispose();
     this.effect.dispose();
   }
 }
