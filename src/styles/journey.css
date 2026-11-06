@@ -194,7 +194,9 @@ html[data-route='journey'] .site-header {
 .j-swap {
   display: inline-block;
   position: relative;
-  height: 1.02em;
+  /* Tall enough for a g, and pulled in again below so that the tail does not push the next line. */
+  height: 1.16em;
+  margin-bottom: -0.2em;
   overflow: hidden;
   min-width: 5.6em;
   text-transform: none;
@@ -203,6 +205,12 @@ html[data-route='journey'] .site-header {
   color: var(--j-gold);
   letter-spacing: -0.02em;
   vertical-align: baseline;
+}
+
+/* An empty line to give the box a baseline: the word then stands on the line of the word before it. */
+.j-swap::before {
+  content: '\00a0';
+  line-height: 1.02;
 }
 
 .j-swap span {

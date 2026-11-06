@@ -244,6 +244,35 @@ async function langKeepsPlace(browser, step) {
 }
 
 /** The first view: its words, the word that rolls, the tree, the button, and the story's digits. */
+/** The rolling word stands on the same line as the word before it, with its tail whole. */
+async function rollingWordSits(page, step) {
+  const seen = await page.evaluate(() => {
+    const line = document.querySelector('.j-hero .j-to');
+    const box = line.querySelector('.j-swap');
+    const word = box.children[0];
+    const ruler = document.createElement('canvas').getContext('2d');
+    const baseline = (node, element) => {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      ruler.font = getComputedStyle(element).font;
+      return range.getBoundingClientRect().top + ruler.measureText('x').fontBoundingBoxAscent;
+    };
+    const first = baseline(line.firstChild, line);
+    // Measured at rest: it may have rolled away by now.
+    const { transform, transition } = word.style;
+    word.style.transition = "none";
+    word.style.transform = "none";
+    const rolling = baseline(word, word);
+    word.style.transform = transform;
+    void word.offsetWidth;
+    word.style.transition = transition;
+    ruler.font = getComputedStyle(word).font;
+    return { first, rolling, tail: rolling + ruler.measureText('g').actualBoundingBoxDescent, bottom: box.getBoundingClientRect().bottom };
+  });
+  step.check(Math.abs(seen.first - seen.rolling) < 2, `the rolling word sits on the line of the word before it (${seen.first.toFixed(1)} and ${seen.rolling.toFixed(1)})`);
+  step.check(seen.tail <= seen.bottom + 0.5, `and the tail of its g is whole (${seen.tail.toFixed(1)} inside ${seen.bottom.toFixed(1)})`);
+}
+
 async function rollingWordsStayAway(page, step) {
   const seen = await page.evaluate(() => new Promise((done) => {
     const box = document.querySelector('.j-swap');
@@ -257,7 +286,7 @@ async function rollingWordsStayAway(page, step) {
           last = word;
           rolls++;
         }
-        if (word.style.transform === 'translateY(110%)' && word.getBoundingClientRect().top < view.bottom - 1) shown++;
+        if (word.style.transform === 'translateY(120%)' && word.getBoundingClientRect().top < view.bottom - 1) shown++;
       }
       if (performance.now() - started < 6500) requestAnimationFrame(tick);
       else done({ frames, shown, rolls });
@@ -295,6 +324,7 @@ async function firstView(browser, step) {
   await page.locator('.j-go').click();
   await page.waitForFunction(() => Math.abs(window.__journeyDebug.frame() - 392) < 1, null, { timeout: 15_000 });
   step.check(true, 'the button goes to the flight');
+  await rollingWordSits(page, step);
   await rollingWordsStayAway(page, step);
   await context.close();
   return '';
@@ -1116,7 +1146,7 @@ async function dutchFit(browser, step) {
     const rolling = await page.evaluate(() => [...document.querySelectorAll('.j-swap > *')].map((e) => { const r = document.createRange(); r.selectNodeContents(e); const box = r.getBoundingClientRect(); return { word: e.textContent, right: box.right }; }));
     step.check(rolling.length > 0 && rolling.every((w) => w.right <= viewport.width - 1), `${tag}: each rolling word fits (${rolling.map((w) => `${w.word} ${w.right.toFixed(0)}`).join(', ')})`);
     writeFileSync(join(dir, `nl-${tag}-hero.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
-    await page.waitForFunction(() => { const [, second] = document.querySelectorAll('.j-swap > *'); return second && !second.style.transform.includes('110'); }, null, { timeout: 8_000 });
+    await page.waitForFunction(() => { const [, second] = document.querySelectorAll('.j-swap > *'); return second && !second.style.transform.includes('120'); }, null, { timeout: 8_000 });
     await page.waitForTimeout(800);
     writeFileSync(join(dir, `nl-${tag}-hero-long.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
     for (const [n, f] of [72, 124, 188, 250].entries()) {

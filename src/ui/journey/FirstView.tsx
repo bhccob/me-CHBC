@@ -26,9 +26,9 @@ export function FirstView({ age }: FirstViewProps): JSX.Element {
       const out = words[current];
       current = (current + 1) % words.length;
       const next = words[current];
-      out.style.transform = 'translateY(-110%)';
+      out.style.transform = 'translateY(-120%)';
       next.style.transition = 'none';
-      next.style.transform = 'translateY(110%)';
+      next.style.transform = 'translateY(120%)';
       void next.offsetWidth;
       next.style.transition = '';
       next.style.transform = 'none';
@@ -37,7 +37,7 @@ export function FirstView({ age }: FirstViewProps): JSX.Element {
         if (words[current] === out) return;
         // Out of sight at the top, it goes back under at once: not down through the window.
         out.style.transition = 'none';
-        out.style.transform = 'translateY(110%)';
+        out.style.transform = 'translateY(120%)';
         void out.offsetWidth;
         out.style.transition = '';
       }, ROLL_MS);
@@ -58,7 +58,7 @@ export function FirstView({ age }: FirstViewProps): JSX.Element {
             {hero.to}{' '}
             <span ref={swap} className="j-swap">
               {hero.words.map((word, i) => (
-                <span key={word} style={i === 0 ? undefined : { transform: 'translateY(110%)' }}>
+                <span key={word} style={i === 0 ? undefined : { transform: 'translateY(120%)' }}>
                   {word}
                 </span>
               ))}
