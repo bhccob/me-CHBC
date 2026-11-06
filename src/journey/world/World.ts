@@ -74,6 +74,13 @@ export class World {
 
   /** Loads a stage of the journey. */
   async load(stage: 'machine' | 'flight' | 'void' | 'end', onProgress?: (share: number) => void): Promise<void> {
+    if (stage === 'flight') {
+      await this.tunnel.load(this.renderer);
+      // Once while nothing shows, so that the first gate does not catch the page.
+      this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
+      this.dirty = true;
+      return;
+    }
     if (stage !== 'machine') return;
     await this.machine.load(onProgress);
     this.machine.update(0);

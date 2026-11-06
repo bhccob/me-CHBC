@@ -14,3 +14,7 @@ const DRIVEN_MESHES = String.raw`pulse-\d+|code-cover|floor|floor-cover|pinion-\
 const machine = join(temp, 'machine.glb');
 execFileSync(BLENDER, ['-b', '--factory-startup', '--python', 'tools/blender/machine.py', '--', machine, 'tests/fixtures/machine-pose.json', 'tests/fixtures/machine-anchors.json'], { stdio: 'ignore' });
 execFileSync(process.execPath, ['tools/blender/pack.mjs', machine, 'public/models/machine.glb', DRIVEN_MESHES], { stdio: 'inherit' });
+
+const gate = join(temp, 'gate.glb');
+execFileSync(BLENDER, ['-b', '--factory-startup', '--python', 'tools/blender/gate.py', '--', gate], { stdio: 'inherit' });
+execFileSync(process.execPath, ['tools/blender/pack.mjs', gate, 'public/models/gate.glb', String.raw`gear-\d|digit-\d`], { stdio: 'inherit' });

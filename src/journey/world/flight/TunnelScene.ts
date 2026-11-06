@@ -1,7 +1,9 @@
-import { AdditiveBlending, CanvasTexture, Color, FogExp2, type Mesh, NoColorSpace, PerspectiveCamera, Scene, Sprite, SpriteMaterial, Vector2, Vector3 } from 'three';
+import { AdditiveBlending, BackSide, CanvasTexture, Color, DoubleSide, FogExp2, Mesh, MeshBasicMaterial, NoColorSpace, PerspectiveCamera, PlaneGeometry, PMREMGenerator, PointLight, Scene, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { distanceAt, type DistanceTable, distanceTable, type FlightLayout } from '../../flight/layout';
 import { clamp, ez, mix, ramp } from '../../math';
 import { displayReferred, displayValue } from '../displayOutput';
+import { Gates } from './Gates';
 import { bankAt, center, fovAt, frameAt, nearestStop, type Rgb, tintAt, washAt } from './path';
 import { makeRings, makeStreaks, makeWires, type StreakUniforms, tunnelUniforms, type TunnelUniforms } from './tunnelParts';
 
@@ -20,6 +22,7 @@ export interface FlightState {
   fov: number;
 }
 
+const GATE_URL = '/models/gate.glb';
 const ORB_AHEAD = 58;
 const LOOK_AHEAD = 9;
 const FULL_SPEED = 15;
@@ -40,6 +43,32 @@ function glowTexture(): CanvasTexture {
   return texture;
 }
 
+/** The dark room the gates' metal reflects: a dim sphere, with long strips of warm light and one of cold. */
+function reflections(renderer: WebGLRenderer): Texture {
+  const room = new Scene();
+  const parts: Mesh[] = [new Mesh(new SphereGeometry(20, 16, 12), new MeshBasicMaterial({ color: new Color(0.012, 0.012, 0.02), side: BackSide }))];
+  const strip = (x: number, y: number, z: number, w: number, h: number, c: Rgb): void => {
+    const mesh = new Mesh(new PlaneGeometry(w, h), new MeshBasicMaterial({ color: new Color(c[0], c[1], c[2]), side: DoubleSide }));
+    mesh.position.set(x, y, z);
+    mesh.lookAt(0, 0, 0);
+    parts.push(mesh);
+  };
+  strip(0, 14, 2, 22, 2, [1.1, 0.8, 0.5]);
+  strip(0, -14, 4, 22, 1.2, [0.5, 0.36, 0.2]);
+  strip(14, 0, 6, 1.4, 16, [0.9, 0.62, 0.3]);
+  strip(-14, 0, 6, 1.4, 16, [0.5, 0.45, 0.7]);
+  strip(0, 0, 18, 8, 8, [0.22, 0.2, 0.26]);
+  room.add(...parts);
+  const generator = new PMREMGenerator(renderer);
+  const { texture } = generator.fromScene(room, 0.03);
+  generator.dispose();
+  for (const part of parts) {
+    part.geometry.dispose();
+    (part.material as MeshBasicMaterial).dispose();
+  }
+  return texture;
+}
+
 const place = new Vector3();
 const look = new Vector3();
 
@@ -54,6 +83,8 @@ export class TunnelScene {
   private readonly streaks: StreakUniforms;
   private readonly meshes: Mesh[];
   private readonly orb: Sprite;
+  private readonly headlamp = new PointLight(0xffffff, 22, 30, 1.4);
+  private gates: Gates | null = null;
   private readonly fog = new FogExp2(0x000000, 0.017);
   private readonly background = new Color();
   private readonly mouse = new Vector2();
@@ -69,6 +100,9 @@ export class TunnelScene {
     this.fog.color = this.background;
     this.scene.fog = this.fog;
     this.scene.add(this.camera);
+    this.scene.environmentIntensity = 1.5;
+    this.headlamp.position.set(0, 0.5, -1.5);
+    this.camera.add(this.headlamp);
 
     const end = input.layout.end;
     const wires = makeWires(end, this.uniforms);
@@ -83,6 +117,18 @@ export class TunnelScene {
     this.orb.scale.setScalar(22);
     this.orb.renderOrder = -5;
     this.scene.add(this.orb);
+  }
+
+  /** Loads what stands in the tunnel, and readies it to draw. */
+  async load(renderer: WebGLRenderer): Promise<void> {
+    const gltf = await new GLTFLoader().loadAsync(GATE_URL);
+    this.scene.environment = reflections(renderer);
+    const gates = new Gates(gltf.scene);
+    gates.place(this.input.layout);
+    this.scene.add(gates.group);
+    this.gates = gates;
+    gates.showAll();
+    await renderer.compileAsync(this.scene, this.camera);
   }
 
   /** Where the pointer aims, -1 to 1 each way. */
@@ -126,6 +172,7 @@ export class TunnelScene {
     const { near } = nearestStop(s, layout);
     const tint = tintAt(s, layout, tints);
     this.uniforms.uTint.value.setRGB(tint[0], tint[1], tint[2]);
+    this.headlamp.color.setRGB(tint[0], tint[1], tint[2]);
     const wash = washAt(tint, near);
     this.background.setRGB(displayValue(wash[0]), displayValue(wash[1]), displayValue(wash[2]));
     const calm = ez(near);
@@ -134,6 +181,7 @@ export class TunnelScene {
 
     center(Math.min(s + ORB_AHEAD, end + ORB_AHEAD), end, this.orb.position);
     this.orb.material.color.setRGB(tint[0] * 0.6, tint[1] * 0.6, tint[2] * 0.6);
+    this.gates?.update(s, 0);
   }
 
   resize(width: number, height: number): void {
@@ -143,6 +191,8 @@ export class TunnelScene {
   }
 
   dispose(): void {
+    this.gates?.dispose();
+    this.scene.environment?.dispose();
     for (const mesh of this.meshes) {
       mesh.geometry.dispose();
       (mesh.material as { dispose(): void }).dispose();

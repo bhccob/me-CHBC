@@ -45,6 +45,8 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
             return state;
           },
         });
+        // What the flight needs comes after the first view. Without it the tunnel still runs, with nothing standing in it.
+        return made.load('flight').catch((error: unknown) => console.error(error));
       })
       .catch((error: unknown) => {
         if (live) onFail(error);
