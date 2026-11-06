@@ -6,6 +6,94 @@
  */
 export const en = {
   /**
+   * The home's journey (spec 2026-11-05-bob-machine-rebuild-design.md, section 5). Bob's own wording is marked there, and is
+   * exact. In a sheet's `titleBlock`, the parts are split on " · ", the first in gold.
+   */
+  journey: {
+    hero: {
+      from: 'From code',
+      to: 'to',
+      words: ['games.', 'security.', 'machines.'],
+      intro: "I'm Bob Chung, {age}. Born and raised in Aruba, now in Rotterdam, studying software and heading for mechatronics.",
+      cta: 'See my projects',
+      seal: 'PROGRAMMER',
+      treeAlt: 'A wind-bent Aruban tree whose branches turn into gold circuit traces, over a dark, misty sea.',
+      machineAlt: 'One machine, built layer by layer: a board with code, a game controller, armour with a shield, then gears and legs.'
+    },
+    story: { age: 'Age', from: 'Aruba', to: 'Rotterdam' },
+    sheets: [
+      {
+        title: ['Software', 'Engineering'],
+        facts: [
+          { label: 'Stack', value: 'Full-stack' },
+          { label: 'Studied', value: 'MBO 4, Rotterdam' },
+          { label: 'Built', value: 'Web apps, mobile apps and websites' }
+        ],
+        line: { lead: 'The brain.', rest: 'The code that makes it think.' },
+        titleBlock: 'MBO, now · Sheet 1 of 4 · Systems Builder'
+      },
+      {
+        title: ['Game', 'Development'],
+        facts: [
+          { label: 'Engine', value: 'Godot, Roblox Studio' },
+          { label: 'Built', value: 'Browser, Roblox and platform games' }
+        ],
+        line: { lead: 'The controls.', rest: 'How a person plays with it.' },
+        titleBlock: 'MBO, now · Sheet 2 of 4 · Systems Builder'
+      },
+      {
+        title: ['Cybersecurity', 'Intern'],
+        facts: [
+          { label: 'Now', value: 'Intern at a cybersecurity company' },
+          { label: 'Possible direction', value: 'DevSecOps, firmware security' }
+        ],
+        line: { lead: 'The armour.', rest: 'What keeps it safe.' },
+        titleBlock: 'Internship, now · Sheet 3 of 4 · Systems Builder'
+      },
+      {
+        title: ['Mechatronics', 'Engineering'],
+        facts: [
+          { label: 'Next', value: 'HBO' },
+          { label: 'Interested and exploring', value: 'Sensors, motors, circuits' },
+          { label: 'Goal', value: "Own company or a master's degree" }
+        ],
+        line: { lead: 'The body.', rest: 'Gears, motors and movement.' },
+        titleBlock: 'HBO, next · Sheet 4 of 4 · Systems Builder'
+      }
+    ],
+    stack: {
+      title: 'One machine.',
+      text: 'Each field I learn is one layer of it. Together they make something that thinks, responds, stays safe and moves.',
+      labels: {
+        armour: { name: 'Armour', field: 'Cybersecurity' },
+        controls: { name: 'Controls', field: 'Game Development' },
+        brain: { name: 'Brain', field: 'Software Engineering' },
+        body: { name: 'Body', field: 'Mechatronics' }
+      }
+    },
+    portal: { word: 'Projects' },
+    flight: { open: 'Open project' },
+    qaWord: 'Q&A',
+    collapse: { hint: 'Click the light to let it go, or keep scrolling' },
+    end: {
+      kicker: 'End of portfolio',
+      title: "Let's talk.",
+      promise: 'Every universe starts small. So does every project.',
+      note: 'If any of this gave you an idea, a project or a question, I would like to hear it.',
+      toy: 'Move to pull the stars. Hold anywhere and let go to start your own universe.',
+      email: 'Email',
+      github: 'GitHub',
+      instagram: 'Instagram',
+      message: 'Send a message',
+      reach: 'Ways to reach Bob',
+      place: 'Rotterdam, born in Aruba',
+      top: 'Back to the start'
+    },
+    rail: { label: 'Chapters', who: 'Who', software: 'Software', games: 'Games', security: 'Security', mechatronics: 'Mechatronics', stack: 'Stack', projects: 'Projects', qa: 'Q&A', contact: 'Contact' },
+    sound: { on: 'Sound on', off: 'Sound off' },
+    loader: { withSound: 'Enter with sound', without: 'Enter without' }
+  },
+  /**
    * The head of each page. A title here is the page's own words: `head()`
    * (src/seo/head.ts) adds " | Bob Chung" after it. `homeTitle` is the one
    * complete title, used as it is.

@@ -1,6 +1,91 @@
 import type { Dictionary } from './en';
 
 export const nl: Dictionary = {
+  /** The home's journey, in formal Dutch (draft for Bob's review): see `en.ts`. */
+  journey: {
+    hero: {
+      from: 'Van code',
+      to: 'naar',
+      words: ['games.', 'beveiliging.', 'machines.'],
+      intro: 'Ik ben Bob Chung, {age}. Geboren en getogen op Aruba, nu in Rotterdam, waar ik software studeer en op weg ben naar mechatronica.',
+      cta: 'Bekijk mijn projecten',
+      seal: 'PROGRAMMEUR',
+      treeAlt: 'Een door de wind gebogen Arubaanse boom waarvan de takken overgaan in gouden printsporen, boven een donkere, nevelige zee.',
+      machineAlt: 'Eén machine, laag voor laag gebouwd: een printplaat met code, een gamecontroller, een pantser met een schild, daarna tandwielen en poten.'
+    },
+    story: { age: 'Leeftijd', from: 'Aruba', to: 'Rotterdam' },
+    sheets: [
+      {
+        title: ['Software', 'Engineering'],
+        facts: [
+          { label: 'Stack', value: 'Full-stack' },
+          { label: 'Gestudeerd', value: 'MBO 4, Rotterdam' },
+          { label: 'Gebouwd', value: 'Webapps, mobiele apps en websites' }
+        ],
+        line: { lead: 'Het brein.', rest: 'De code die het laat denken.' },
+        titleBlock: 'MBO, nu · Blad 1 van 4 · Systems Builder'
+      },
+      {
+        title: ['Game', 'Development'],
+        facts: [
+          { label: 'Engine', value: 'Godot, Roblox Studio' },
+          { label: 'Gebouwd', value: 'Browser-, Roblox- en platformgames' }
+        ],
+        line: { lead: 'De besturing.', rest: 'Hoe iemand ermee speelt.' },
+        titleBlock: 'MBO, nu · Blad 2 van 4 · Systems Builder'
+      },
+      {
+        title: ['Cybersecurity', 'Stagiair'],
+        facts: [
+          { label: 'Nu', value: 'Stagiair bij een cybersecuritybedrijf' },
+          { label: 'Mogelijke richting', value: 'DevSecOps, firmwarebeveiliging' }
+        ],
+        line: { lead: 'Het pantser.', rest: 'Wat het veilig houdt.' },
+        titleBlock: 'Stage, nu · Blad 3 van 4 · Systems Builder'
+      },
+      {
+        title: ['Mechatronica', 'Engineering'],
+        facts: [
+          { label: 'Hierna', value: 'HBO' },
+          { label: 'Interesse en verkenning', value: 'Sensoren, motoren, circuits' },
+          { label: 'Doel', value: 'Een eigen bedrijf of een masterdiploma' }
+        ],
+        line: { lead: 'Het lichaam.', rest: 'Tandwielen, motoren en beweging.' },
+        titleBlock: 'HBO, hierna · Blad 4 van 4 · Systems Builder'
+      }
+    ],
+    stack: {
+      title: 'Eén machine.',
+      text: 'Elk vakgebied dat ik leer, is er een laag van. Samen maken ze iets dat denkt, reageert, veilig blijft en beweegt.',
+      labels: {
+        armour: { name: 'Pantser', field: 'Cybersecurity' },
+        controls: { name: 'Besturing', field: 'Game Development' },
+        brain: { name: 'Brein', field: 'Software Engineering' },
+        body: { name: 'Lichaam', field: 'Mechatronica' }
+      }
+    },
+    portal: { word: 'Projecten' },
+    flight: { open: 'Project openen' },
+    qaWord: 'Q&A',
+    collapse: { hint: 'Klik op het licht om het los te laten, of scrol verder' },
+    end: {
+      kicker: 'Einde van het portfolio',
+      title: 'Laten we praten.',
+      promise: 'Elk universum begint klein. Elk project ook.',
+      note: 'Heeft iets hiervan u op een idee gebracht, of hebt u een project of een vraag? Ik hoor het graag.',
+      toy: 'Beweeg om de sterren aan te trekken. Houd ergens ingedrukt en laat los om uw eigen universum te starten.',
+      email: 'E-mail',
+      github: 'GitHub',
+      instagram: 'Instagram',
+      message: 'Stuur een bericht',
+      reach: 'Manieren om Bob te bereiken',
+      place: 'Rotterdam, geboren op Aruba',
+      top: 'Terug naar het begin'
+    },
+    rail: { label: 'Hoofdstukken', who: 'Wie', software: 'Software', games: 'Games', security: 'Beveiliging', mechatronics: 'Mechatronica', stack: 'Stapel', projects: 'Projecten', qa: 'Q&A', contact: 'Contact' },
+    sound: { on: 'Geluid aan', off: 'Geluid uit' },
+    loader: { withSound: 'Binnengaan met geluid', without: 'Binnengaan zonder' }
+  },
   meta: {
     homeTitle: 'Bob Chung | Software engineering-student in Rotterdam',
     homeDescription:

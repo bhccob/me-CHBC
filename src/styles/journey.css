@@ -1,13 +1,43 @@
 /* The journey's page (spec 2026-11-05-bob-machine-rebuild-design.md, section 8). */
+@import '@fontsource/barlow/latin-400.css';
+@import '@fontsource/barlow/latin-500.css';
+@import '@fontsource/barlow/latin-600.css';
+@import '@fontsource/barlow/latin-700.css';
+@import '@fontsource/barlow/latin-800.css';
+@import '@fontsource/barlow/latin-600-italic.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  font-display: swap;
+  src: url('/fonts/hakka.otf') format('opentype');
+  unicode-range: U+5BA2, U+5BB6;
+}
+
 :root {
   --j-ink: #f2efe8;
+  --j-muted: rgba(242, 239, 232, 0.66);
+  --j-line: rgba(242, 239, 232, 0.18);
   --j-gold: #e6b84a;
   --j-bg: #07060b;
+  --j-sans: 'Barlow', system-ui, sans-serif;
+  --j-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --j-sheet-0-paper: #0c0e1d;
+  --j-sheet-0-word: #d4dbff;
+  --j-sheet-1-paper: #150b1a;
+  --j-sheet-1-word: #f4cdec;
+  --j-sheet-2-paper: #07141a;
+  --j-sheet-2-word: #bdf0e2;
+  --j-sheet-3-paper: #17100a;
+  --j-sheet-3-word: #f5dcae;
 }
 
 html[data-route='journey'],
 html[data-route='journey'] body {
   background: var(--j-bg);
+  color: var(--j-ink);
+  font-family: var(--j-sans);
 }
 
 html[data-route='journey'] .poster {
