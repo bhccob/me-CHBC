@@ -119,7 +119,7 @@ describe('projects', () => {
   it('gives Steady and Portle their own words, in both languages', () => {
     // Steady's README: "A calm, private medication reminder for people working through hard things."
     expect(project('steady').copy('en').summary).toBe('A calm, private medication reminder for people working through hard things.');
-    expect(project('steady').copy('nl').summary).toBe('Een rustige, privé medicatieherinnering voor mensen die door moeilijke dingen gaan.');
+    expect(project('steady').copy('nl').summary).toBe('Een rustige, privacyvriendelijke medicatieherinnering voor mensen in een moeilijke periode.');
     // Portle is in early access (its README): it says so.
     expect(project('portle').copy('en').summary).toMatch(/In early access\.$/);
     expect(project('portle').copy('nl').summary).toMatch(/In early access\.$/);

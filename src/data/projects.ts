@@ -273,9 +273,9 @@ export const projects = new ProjectCatalog([
         flightLine: 'Een rustige, privacyvriendelijke medicatieherinnering voor mensen in een moeilijke periode.',
         type: 'Android-app · Eigen project',
         role: 'Enige ontwikkelaar',
-        summary: 'Een rustige, privé medicatieherinnering voor mensen die door moeilijke dingen gaan.',
+        summary: 'Een rustige, privacyvriendelijke medicatieherinnering voor mensen in een moeilijke periode.',
         metaDescription:
-          'Steady: een rustige, privé medicatieherinnering voor Android, met zachte herinneringen, een streakpad en alles op je telefoon.'
+          'Steady: een rustige, privacyvriendelijke medicatieherinnering voor Android, met zachte herinneringen, een streakpad en alles op uw telefoon.'
       }
     }
   },
@@ -334,8 +334,8 @@ export const projects = new ProjectCatalog([
         type: 'Webapp · Eigen project, in early access',
         role: 'Enige ontwikkelaar',
         summary:
-          'Een privé archief voor je portefeuille, je beleggingstheses en de vrienden die je ermee vertrouwt: één portefeuille over je rekeningen heen, theses met hun revisies, een oefenlab voor trades, een dagboek, en Gildes en Relics. In early access.',
-        metaDescription: 'Portle: een privé archief voor je portefeuille, je beleggingstheses en de vrienden die je ermee vertrouwt.'
+          'Een privéarchief voor uw portfolio, uw beleggingsthesen en de vrienden aan wie u ze toevertrouwt: één portefeuille over uw rekeningen heen, theses met hun revisies, een oefenlab voor trades, een dagboek, en Gildes en Relics. In early access.',
+        metaDescription: 'Portle: een privéarchief voor uw portfolio, uw beleggingsthesen en de vrienden aan wie u ze toevertrouwt.'
       }
     }
   },
@@ -410,16 +410,16 @@ export const projects = new ProjectCatalog([
         type: 'Concept-herontwerp van een website · Eigen project',
         role: 'Ontwerp & front-end-ontwikkeling',
         summary:
-          'Een concept-herontwerp van de website van Jontai Energy, een winkel in Oranjestad, Aruba, voor zonne-energie, stroom, verlichting en meubels: de homepagina is één Arubaanse dag die meespeelt terwijl je scrolt.',
+          'Een concept-herontwerp van de website van Jontai Energy, een winkel in Oranjestad, Aruba, voor zonne-energie, stroom, verlichting en meubels: de homepagina is één Arubaanse dag die meespeelt terwijl u scrolt.',
         overview:
           'Eén doorlopende film van één dag op één gestucte muur: scrollen beweegt de zon, en elk product doet zijn werk op zijn eigen uur, van het zonnepaneel dat het eerste licht vangt tot de generator die het overneemt bij een stroomstoring in de nacht en de meubels boven, de ochtend erna. Producten openen een paneel dat ze volledig toelicht, met cijfers alleen uit de documenten van hun fabrikant; een schuif toont een lamp van 3000 K tot 6500 K, en een offerteaanvraag noemt het gekozen product.',
         build:
-          'Gebouwd met Next.js, React en TypeScript. De film is in Blender Cycles gerenderd uit een set die in Python is opgebouwd, als losse beelden gepubliceerd en op één canvas afgespeeld terwijl je scrolt, met GSAP ScrollTrigger en Lenis. Wie minder beweging wil, Save-Data gebruikt of geen JavaScript heeft, krijgt per hoofdstuk één stilstaand beeld met de tekst.',
+          'Gebouwd met Next.js, React en TypeScript. De film is in Blender Cycles gerenderd uit een set die in Python is opgebouwd, als losse beelden gepubliceerd en op één canvas afgespeeld terwijl u scrolt, met GSAP ScrollTrigger en Lenis. Wie minder beweging wil, Save-Data gebruikt of geen JavaScript heeft, krijgt per hoofdstuk één stilstaand beeld met de tekst.',
         focus:
           'Eerlijkheid en tempo: elk cijfer herleid tot een document van de fabrikant, geen verzonnen prijzen of voorraad, de renders nooit gepresenteerd als de echte winkel, en de scroll die bij elk product lang genoeg stilstaat om het te lezen.',
         imageAlt: 'Homepagina van Jontai Energy met de kop “Power Your Future” boven een veld met zonnepanelen',
         metaDescription:
-          'Jontai Energy: een concept-herontwerp dat Bob Chung bouwde voor een winkel in zonne-energie, stroom en meubels op Aruba, met één dag zon die meespeelt als je scrolt.'
+          'Jontai Energy: een concept-herontwerp dat Bob Chung bouwde voor een winkel in zonne-energie, stroom en meubels op Aruba, met één dag zon die meespeelt als u scrolt.'
       }
     }
   },

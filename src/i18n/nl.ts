@@ -351,33 +351,33 @@ export const nl: Dictionary = {
   },
   contact: {
     title: 'Stuur een <em>bericht.</em>',
-    intro: 'Heb je een vraag, een kans of wil je gewoon hallo zeggen? Schrijf het hieronder en het komt in mijn inbox terecht.',
+    intro: 'Hebt u een vraag of een kans, of wilt u gewoon hallo zeggen? Schrijf het hieronder en het komt in mijn inbox terecht.',
     direct: 'Of bereik mij direct',
-    formTitle: 'Jouw bericht',
+    formTitle: 'Uw bericht',
     name: 'Naam',
-    namePlaceholder: 'Je naam',
+    namePlaceholder: 'Uw naam',
     email: 'E-mail',
-    emailPlaceholder: 'jij@voorbeeld.nl',
+    emailPlaceholder: 'u@voorbeeld.nl',
     subject: 'Onderwerp',
     subjectPlaceholder: 'Waar gaat het over?',
     optional: 'optioneel',
     message: 'Bericht',
-    messagePlaceholder: 'Schrijf je bericht…',
+    messagePlaceholder: 'Schrijf uw bericht…',
     send: 'Bericht versturen',
     sending: 'Versturen…',
-    privacy: 'Je gegevens worden alleen gebruikt om op je bericht te reageren.',
+    privacy: 'Uw gegevens worden alleen gebruikt om op uw bericht te reageren.',
     errors: {
-      name: 'Vul je naam in.',
+      name: 'Vul uw naam in.',
       email: 'Vul een geldig e-mailadres in.',
-      message: 'Je bericht moet minstens 10 tekens bevatten.',
+      message: 'Uw bericht moet minstens 10 tekens bevatten.',
       generic: 'Er ging iets mis bij het versturen. Probeer het opnieuw, of mail mij direct op bhccob@gmail.com.',
-      cooldown: 'Je bericht is net verstuurd. Wacht een minuut voordat je een volgend bericht stuurt.'
+      cooldown: 'Uw bericht is net verstuurd. Wacht een minuut voordat u een volgend bericht stuurt.'
     },
     successTitle: 'Bericht verzonden.',
-    successText: 'Bedankt voor je bericht. Ik reageer zo snel mogelijk.',
+    successText: 'Bedankt voor uw bericht. Ik reageer zo snel mogelijk.',
     again: 'Nog een bericht sturen',
     mailtoTitle: 'Bijna klaar.',
-    mailtoText: 'Je e-mailprogramma zou nu moeten openen met het bericht klaar om te versturen.'
+    mailtoText: 'Uw e-mailprogramma zou nu moeten openen met het bericht klaar om te versturen.'
   },
   end: {
     head: 'Q&A',
@@ -420,7 +420,7 @@ export const nl: Dictionary = {
     ring: {
       count: 'Q&A · {n} / {total}',
       endKicker: 'Einde van de site',
-      endLine: 'Dit is het einde van de site. Staat je vraag er niet tussen, of wil je iets anders vragen? Stuur me een bericht.',
+      endLine: 'Dit is het einde van de site. Staat uw vraag er niet tussen, of wilt u iets anders vragen? Stuur me een bericht.',
       toContact: 'Naar contact',
       toStart: 'Terug naar het begin',
       marks: 'De vragen op de ring'
@@ -449,7 +449,7 @@ export const nl: Dictionary = {
   notFound: {
     status: 'Vervallen',
     title: 'Deze pagina is <em>vervallen.</em>',
-    text: 'De pagina die je zoekt bestaat niet (meer). De site is opnieuw gebouwd, dus sommige oude links zijn verplaatst.',
+    text: 'De pagina die u zoekt bestaat niet (meer). De site is opnieuw gebouwd, dus sommige oude links zijn verplaatst.',
     home: 'Terug naar het vertrekbord'
   },
   terminal: {

@@ -861,6 +861,8 @@ async function reducedMotion(browser, step) {
   mkdirSync(dir, { recursive: true });
   const seen = await page.evaluate(() => ({ canvases: document.querySelectorAll('.journey-canvas, #j-paper, #j-end').length, text: document.querySelector('.j-calm').innerText, tall: document.documentElement.scrollHeight > innerHeight * 2, links: document.querySelectorAll('.j-calm a').length, sound: getComputedStyle(document.querySelector('.j-sound') ?? document.body).display }));
   step.check(seen.canvases === 0, 'no flight, no bang, no canvas');
+  const header = await page.evaluate(() => getComputedStyle(document.querySelector('.site-header')).backgroundColor);
+  step.check(header === 'rgb(7, 6, 11)', `the words scroll under a solid header (${header})`);
   step.check(seen.tall, 'it scrolls as a normal page');
   for (const words of ['Software Engineering', 'Cookies Clicker', 'Jontai Energy', 'What is your plan after MBO?', "Let's talk.", 'bhccob@gmail.com']) step.check(seen.text.toLowerCase().includes(words.toLowerCase()), `"${words}" reads there`);
   step.check(seen.links >= 10, `its links are there (${seen.links})`);

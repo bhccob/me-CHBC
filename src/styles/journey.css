@@ -673,6 +673,11 @@ html[data-journey-calm] .j-sound {
   display: none;
 }
 
+/* This page scrolls under the header: the words must not run through it. */
+html[data-journey-calm] .site-header {
+  background: var(--j-bg);
+}
+
 .j-calm {
   color: var(--j-ink);
   font: 400 18px / 1.6 var(--j-sans);

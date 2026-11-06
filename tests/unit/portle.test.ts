@@ -64,10 +64,10 @@ describe('Portle', () => {
       type: 'Webapp · Eigen project, in early access',
       role: 'Enige ontwikkelaar',
       summary:
-        'Een privé archief voor je portefeuille, je beleggingstheses en de vrienden die je ermee vertrouwt: één portefeuille over je rekeningen heen, theses met hun revisies, een oefenlab voor trades, een dagboek, en Gildes en Relics. In early access.'
+        'Een privéarchief voor uw portfolio, uw beleggingsthesen en de vrienden aan wie u ze toevertrouwt: één portefeuille over uw rekeningen heen, theses met hun revisies, een oefenlab voor trades, een dagboek, en Gildes en Relics. In early access.'
     });
     expect(portle.copy('en').metaDescription).toMatch(/^Portle: a private archive for your portfolio, your investment theses and the friends you trust with them/);
-    expect(portle.copy('nl').metaDescription).toMatch(/^Portle: een privé archief voor je portefeuille, je beleggingstheses en de vrienden die je ermee vertrouwt/);
+    expect(portle.copy('nl').metaDescription).toMatch(/^Portle: een privéarchief voor uw portfolio, uw beleggingsthesen en de vrienden aan wie u ze toevertrouwt/);
     expect(portle.stack).toEqual(['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'Drizzle', 'PostgreSQL', 'Better Auth']);
     expect([portle.year, portle.categoryId, portle.order]).toEqual([2026, 'app', 2]);
   });

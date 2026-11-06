@@ -72,7 +72,7 @@ describe('the header', () => {
       Translator.pathFor(other, routeFromPath(path)),
     ]);
     // ... and by the labels the components render.
-    expect(controls.map((control) => control.text)).toEqual([t.nav.skip, t.needle.hero.name, t.nav.menu + t.nav.close, t.nav.contact, other.toUpperCase()]);
+    expect(controls.map((control) => control.text)).toEqual([t.nav.skip, 'Bob Chung', t.nav.menu + t.nav.close, t.nav.contact, other.toUpperCase()]);
 
     // The name is a link home that says so, on the home page as on any other; the nav holds two links.
     expect(controls[1].attrs.class).toBe('site-name');

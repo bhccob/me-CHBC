@@ -71,7 +71,7 @@ export function SiteHeader(): JSX.Element {
           </a>
         ) : (
           <Link className="site-name" to={i18n.path(PAGES.home)} aria-label={t.nav.home} onClick={(event) => nameToTop(event, pathname)}>
-            {t.needle.hero.name}
+            Bob Chung
           </Link>
         )}
         <button type="button" className="menu-toggle" popoverTarget={MENU_ID}>

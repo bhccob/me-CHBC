@@ -86,7 +86,7 @@ describe("the Q&A's words", () => {
   });
 
   it('renders the end with its line, word for word, in both languages', () => {
-    expect(nl.end.ring.endLine).toBe('Dit is het einde van de site. Staat je vraag er niet tussen, of wil je iets anders vragen? Stuur me een bericht.');
+    expect(nl.end.ring.endLine).toBe('Dit is het einde van de site. Staat uw vraag er niet tussen, of wilt u iets anders vragen? Stuur me een bericht.');
     expect(en.end.ring.endLine).toBe('This is the end of the site. Is your question not among them, or would you like to ask something else? Send me a message.');
     for (const [path, t] of LOCALES) {
       const html = parts(path, t);

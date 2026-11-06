@@ -56,7 +56,7 @@ describe('Jontai Energy, the concept redesign', () => {
       'A concept redesign of the website for Jontai Energy, a store in Oranjestad, Aruba, for solar, power, lighting and furniture: its home page is one Aruban day that plays as you scroll.'
     );
     expect(jontai.copy('nl').summary).toBe(
-      'Een concept-herontwerp van de website van Jontai Energy, een winkel in Oranjestad, Aruba, voor zonne-energie, stroom, verlichting en meubels: de homepagina is één Arubaanse dag die meespeelt terwijl je scrolt.'
+      'Een concept-herontwerp van de website van Jontai Energy, een winkel in Oranjestad, Aruba, voor zonne-energie, stroom, verlichting en meubels: de homepagina is één Arubaanse dag die meespeelt terwijl u scrolt.'
     );
   });
 
