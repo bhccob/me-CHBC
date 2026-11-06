@@ -140,9 +140,9 @@ export class Gates {
     }
   }
 
-  /** For drawing everything once before anything shows. */
-  showAll(): void {
-    for (const item of this.items) item.group.visible = true;
+  /** All of them or none, for drawing everything once before anything shows. */
+  show(on: boolean): void {
+    for (const item of this.items) item.group.visible = on;
   }
 
   update(s: number, dissolve: number): void {

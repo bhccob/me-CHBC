@@ -89,9 +89,7 @@ export class World {
   /** Loads a stage of the journey. */
   async load(stage: 'machine' | 'flight' | 'void' | 'end', onProgress?: (share: number) => void): Promise<void> {
     if (stage === 'flight') {
-      await this.tunnel.load(this.renderer);
-      // Once while nothing shows, so that the first gate does not catch the page.
-      this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
+      await this.tunnel.load(this.renderer, () => this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera));
       this.dirty = true;
       return;
     }
@@ -104,6 +102,7 @@ export class World {
   warm(f: number): void {
     this.machine.showAll();
     this.renderer.compile(this.machine.scene, this.machine.camera);
+    this.tunnel.prepare(this.renderer);
     this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
     this.iris.close();
     this.composer.render();

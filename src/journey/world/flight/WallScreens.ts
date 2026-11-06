@@ -79,8 +79,9 @@ export class WallScreens {
     }
   }
 
-  showAll(): void {
-    for (const { mesh } of this.screens) mesh.visible = true;
+  /** All of them or none, for drawing everything once before anything shows. */
+  show(on: boolean): void {
+    for (const { mesh } of this.screens) mesh.visible = on;
   }
 
   dispose(): void {

@@ -149,8 +149,13 @@ export class TunnelScene {
     this.scene.add(this.orb);
   }
 
-  /** Loads what stands in the tunnel, and readies it to draw. */
-  async load(renderer: WebGLRenderer): Promise<void> {
+  /** What cannot be spread over frames, done behind the loader: the room the metal reflects takes a third of a second to make. */
+  prepare(renderer: WebGLRenderer): void {
+    this.scene.environment ??= reflections(renderer);
+  }
+
+  /** Loads what stands in the tunnel, and readies it to draw. `draw` draws the tunnel once, out of sight. */
+  async load(renderer: WebGLRenderer, draw: () => void): Promise<void> {
     this.anisotropy = renderer.capabilities.getMaxAnisotropy();
     const { layout, projects } = this.input;
     const [gltf, pictures] = await Promise.all([
@@ -162,30 +167,50 @@ export class TunnelScene {
       ...WORD_FONTS.map((font) => document.fonts.load(font)),
     ]);
     if (this.gone) return;
-    this.scene.environment = reflections(renderer);
+    // The first view is already moving: one thing a frame, so that none of this catches it.
+    this.prepare(renderer);
     const gates = new Gates(gltf.scene);
     gates.place(layout);
     this.scene.add(gates.group);
     this.gates = gates;
-    gates.showAll();
-
-    this.stops = projects.map((project, i) => {
+    await nextFrame();
+    for (const [i, project] of projects.entries()) {
+      if (this.gone) return;
       const stop = new ProjectStop(this.scene, project, layout.stops[i], layout.end, pictures[i].images, pictures[i].piece, this.glow);
       stop.layout(this.phone);
+      this.stops.push(stop);
+      await nextFrame();
+      if (this.gone) return;
       stop.buildWords(project.words[this.locale], this.phone, this.anisotropy);
-      stop.showAll();
+      await nextFrame();
+      if (this.gone) return;
       this.walls.add(stop.wallPictures(), project.screens === 'phones', layout.stops[i], new Color(project.tint[0], project.tint[1], project.tint[2]), layout.end);
-      return stop;
-    });
-    this.walls.showAll();
+      await nextFrame();
+    }
+    if (this.gone) return;
     await renderer.compileAsync(this.scene, this.camera);
-
-    // One picture a frame, so that taking them all in does not catch the page.
     for (const texture of [...pictures.flatMap(({ images, piece }) => (piece ? [...images, piece] : images)), ...this.stops.flatMap((stop) => stop.textures())]) {
       if (this.gone) return;
       renderer.initTexture(texture);
       await nextFrame();
     }
+    // Each part drawn once while nothing shows, so that the first time it is seen costs nothing.
+    if (this.gone) return;
+    gates.show(true);
+    draw();
+    gates.show(false);
+    for (const stop of this.stops) {
+      await nextFrame();
+      if (this.gone) return;
+      stop.show(true);
+      draw();
+      stop.show(false);
+    }
+    await nextFrame();
+    if (this.gone) return;
+    this.walls.show(true);
+    draw();
+    this.walls.show(false);
   }
 
   /** The words in another language: the world stays, only they change. */

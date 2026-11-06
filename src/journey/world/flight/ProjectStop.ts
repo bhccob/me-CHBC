@@ -351,9 +351,9 @@ export class ProjectStop {
     return this.plates.map((plate) => plate.mesh.material.uniforms.map.value as Texture);
   }
 
-  /** Stands it up in full, to be drawn once before anything shows. */
-  showAll(): void {
-    this.screenSide.visible = this.wordSide.visible = this.hush.visible = true;
+  /** All of it or none, for drawing it once before anything shows. */
+  show(on: boolean): void {
+    this.screenSide.visible = this.wordSide.visible = this.hush.visible = on;
   }
 
   private clearWords(): void {
