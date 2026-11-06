@@ -45,7 +45,7 @@ export function shadowOpacity(floorZ: number): number {
 
 /** How much the sleeve's own lights show on its wall, which Cycles lit by itself. */
 export function sleeveGlow(f: number): number {
-  return Math.min(1, Math.max(0, (f - 334) / 18));
+  return Math.min(1, Math.max(0, (f - 346) / 12));
 }
 
 /** How wide the blur of the far background is, as a share of the page's width, for a lens, an f-stop and a focus distance (m). */

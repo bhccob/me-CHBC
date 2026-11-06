@@ -31,7 +31,7 @@ export class MachineScene {
     vertexShader: /* glsl */ `
       varying vec3 vPlace;
       void main() {
-        vPlace = position;
+        vPlace = (modelMatrix * vec4(position, 1.0)).xyz;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
@@ -40,10 +40,10 @@ export class MachineScene {
       uniform float glow;
       uniform vec3 color;
       varying vec3 vPlace;
-      float halo(float z) { float d = (vPlace.z - z) / 0.11; return exp(-d * d); }
+      float halo(float z) { float d = (vPlace.z - z) / 0.05; return exp(-d * d); }
       void main() {
         float light = halo(0.05) + halo(-0.3) + halo(-0.65) + halo(-1.0);
-        gl_FragColor = vec4(color * (0.012 + light * 0.34) * glow, 1.0);
+        gl_FragColor = vec4(color * (0.003 + light * 0.11) * glow, 1.0);
       }
     `,
   });
@@ -75,6 +75,8 @@ export class MachineScene {
     this.dressFloor();
     this.parts.get('sleeve')?.traverse((object) => {
       const mesh = object as Mesh;
+      // The rings themselves burn brighter than Blender's number, since nothing here adds the light they cast on each other.
+      if (mesh.isMesh && (mesh.material as Material).name === 'ledsleeve') (mesh.material as MeshStandardMaterial).emissiveIntensity = 3;
       if (mesh.isMesh && (mesh.material as Material).name === 'wall') {
         (mesh.material as Material).dispose();
         mesh.material = this.sleeveWall;

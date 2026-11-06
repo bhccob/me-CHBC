@@ -22,7 +22,7 @@ describe('the machine light', () => {
   });
 
   it('lights the sleeve only once it is there, and more as the camera drops through it', () => {
-    expect(sleeveGlow(333)).toBe(0);
+    expect(sleeveGlow(345)).toBe(0);
     expect(sleeveGlow(360)).toBe(1);
   });
 
