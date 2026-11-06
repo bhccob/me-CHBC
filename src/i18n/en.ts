@@ -73,6 +73,7 @@ export const en = {
     },
     portal: { word: 'Projects' },
     flight: { open: 'Open project', back: 'Back' },
+    calm: { fallback: 'The 3D could not start here, so this is the plain version.', lite: 'Open the Lite version', noScript: 'This page moves with script on. Without it, the Lite version has everything.' },
     qaWord: 'Q&A',
     collapse: { hint: 'Click the light to let it go, or keep scrolling' },
     end: {

@@ -263,6 +263,14 @@ class Music {
     }
   }
 
+  /** A tab nobody is looking at keeps quiet, and comes back as it was, with nothing saved up. */
+  watchVisibility(hidden: boolean): void {
+    const a = currentAudio();
+    if (!a) return;
+    if (hidden) void a.ctx.suspend();
+    else this.resumeIfWanted();
+  }
+
   /** Holding on the end page makes a rising tone; letting go, a low thump. */
   hold(on: boolean): void {
     const a = currentAudio();

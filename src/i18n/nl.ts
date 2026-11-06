@@ -66,6 +66,7 @@ export const nl: Dictionary = {
     },
     portal: { word: 'Projecten' },
     flight: { open: 'Project openen', back: 'Terug' },
+    calm: { fallback: 'De 3D kon hier niet starten, dus dit is de eenvoudige versie.', lite: 'Open de lichte versie', noScript: 'Deze pagina beweegt met script aan. Zonder script staat alles in de lichte versie.' },
     qaWord: 'Q&A',
     collapse: { hint: 'Klik op het licht om het los te laten, of scrol verder' },
     end: {

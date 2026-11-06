@@ -26,7 +26,8 @@ export function ChapterRail({ timeline, labels }: ChapterRailProps): JSX.Element
 export function updateRail(rail: HTMLElement, f: number, tl: Timeline): void {
   const opacity = railOpacity(f, tl);
   rail.style.opacity = opacity.toFixed(3);
-  rail.style.visibility = opacity > 0.002 ? 'visible' : 'hidden';
+  // Not hidden when it has faded: a keyboard must still reach it. It comes back while it has the focus.
+  rail.style.pointerEvents = opacity > 0.002 ? '' : 'none';
   rail.classList.toggle('j-rail-quiet', railQuiet(f));
   const current = chapterAt(f + 1, tl);
   for (const button of rail.querySelectorAll('button')) {

@@ -790,6 +790,147 @@ async function endHold(browser, step) {
   return '';
 }
 
+/** Less motion asked for: the same words and links on a page that simply scrolls. */
+async function reducedMotion(browser, step) {
+  const { context, page } = await openPage(browser, step, VIEW, { reducedMotion: 'reduce' });
+  await page.goto(`${BASE}/en/journey/`, { waitUntil: 'load' });
+  await page.waitForSelector('.j-calm', { timeout: 15_000 });
+  await page.waitForTimeout(500);
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  const seen = await page.evaluate(() => ({ canvases: document.querySelectorAll('.journey-canvas, #j-paper, #j-end').length, text: document.querySelector('.j-calm').innerText, tall: document.documentElement.scrollHeight > innerHeight * 2, links: document.querySelectorAll('.j-calm a').length, sound: getComputedStyle(document.querySelector('.j-sound') ?? document.body).display }));
+  step.check(seen.canvases === 0, 'no flight, no bang, no canvas');
+  step.check(seen.tall, 'it scrolls as a normal page');
+  for (const words of ['Software Engineering', 'Cookies Clicker', 'Jontai Energy', 'What is your plan after MBO?', "Let's talk.", 'bhccob@gmail.com']) step.check(seen.text.toLowerCase().includes(words.toLowerCase()), `"${words}" reads there`);
+  step.check(seen.links >= 10, `its links are there (${seen.links})`);
+  // Its pictures come as they are reached.
+  const whole = await page.evaluate(() => document.documentElement.scrollHeight);
+  for (let at = 0; at < whole; at += 500) {
+    await page.evaluate((top) => scrollTo({ top, behavior: 'auto' }), at);
+    await page.waitForTimeout(80);
+  }
+  await page.waitForTimeout(400);
+  const pictures = await page.evaluate(() => [...document.querySelectorAll('.j-calm img')].map((img) => img.complete && img.naturalWidth > 0));
+  step.check(pictures.length >= 6 && pictures.every(Boolean), `its stills are all there (${pictures.filter(Boolean).length} of ${pictures.length})`);
+  writeFileSync(join(dir, 'calm.jpg'), await page.screenshot({ type: 'jpeg', quality: 86, fullPage: true }));
+  await page.evaluate(() => scrollTo({ top: 0, behavior: 'auto' }));
+  const y = await page.evaluate(() => scrollY);
+  await page.locator('header a[href="#contact"]').click();
+  await page.waitForTimeout(400);
+  step.check((await page.evaluate(() => scrollY)) > y, "the header's Contact goes to its place");
+  await context.close();
+  return '';
+}
+
+/** Without WebGL: never blank, and Lite one link away. */
+async function noWebgl(browser, step) {
+  const { context, page } = await openPage(browser, step);
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (kind, ...rest) {
+      return /webgl/i.test(kind) ? null : original.call(this, kind, ...rest);
+    };
+  });
+  await page.goto(`${BASE}/en/journey/`, { waitUntil: 'load' });
+  await page.waitForSelector('.j-calm', { timeout: 15_000 });
+  await page.waitForTimeout(400);
+  const link = page.locator('.j-calm-note a');
+  step.check((await link.getAttribute('href')) === '/en/lite/', 'Lite is one link away');
+  step.check((await page.evaluate(() => document.querySelector('.j-calm').innerText)).toLowerCase().includes('software engineering'), 'and the words are there, never a blank page');
+  await link.click();
+  await page.waitForFunction(() => location.pathname === '/en/lite/', null, { timeout: 8_000 });
+  await context.close();
+  return '';
+}
+
+/** The GPU takes the drawing away in the middle of the flight: the words stay, Lite is one link away. */
+async function contextLost(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  await flightLoaded(page, projects.byDate().length);
+  await goToFrame(page, 372);
+  await goToFrame(page, 450, 200);
+  await page.evaluate(() => {
+    const gl = document.querySelector('.journey-canvas canvas').getContext('webgl2');
+    gl.getExtension('WEBGL_lose_context').loseContext();
+  });
+  await page.waitForSelector('.j-calm', { timeout: 10_000 });
+  await page.waitForTimeout(300);
+  step.check((await page.locator('.j-calm-note a').getAttribute('href')) === '/en/lite/', 'it ends on the fallback, with Lite one link away');
+  step.check((await page.evaluate(() => document.querySelector('.j-calm').innerText)).includes('Jontai Energy'.toUpperCase()) || (await page.evaluate(() => document.querySelector('.j-calm').textContent)).includes('Jontai Energy'), 'and the words are reachable');
+  // Losing it is the one error this step expects.
+  step.errors.length = 0;
+  await context.close();
+  return '';
+}
+
+/** Every link reachable by Tab, the focus visible, and a link bringing its chapter into place. */
+async function keyboard(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  await flightLoaded(page, projects.byDate().length);
+  const reached = [];
+  let unseen = 0;
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press('Tab');
+    const now = await page.evaluate(() => {
+      const el = document.activeElement;
+      if (!el || el === document.body) return null;
+      const style = getComputedStyle(el);
+      const seen = style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0;
+      const again = el.hasAttribute('data-proof-seen');
+      el.setAttribute('data-proof-seen', '');
+      return { again, key: el.getAttribute('href') ?? el.getAttribute('data-jump') ?? el.textContent.trim().slice(0, 30), seen, project: el.closest('.j-project')?.dataset.project ?? null, end: Boolean(el.closest('#j-end')), tag: el.tagName };
+    });
+    if (!now || now.again) break;
+    if (!now.seen) unseen += 1;
+    reached.push(now);
+    if (now.project === 'steady') {
+      await page.waitForFunction((want) => Math.abs(window.__journeyDebug.frame() - want) < 2, timeline.reads[projects.byDate().findIndex((p) => p.id === 'steady')], { timeout: 20_000 });
+      step.check(true, "reaching Steady's link brings its stop into place");
+    }
+  }
+  const keys = reached.map((r) => r.key);
+  for (const chapter of ['who', 'software', 'games', 'security', 'mechatronics', 'stack', 'projects', 'qa', 'contact']) step.check(keys.includes(chapter), `the rail's ${chapter} can be reached`);
+  for (const project of projects.byDate()) step.check(reached.some((r) => r.project === project.id), `${project.id}'s link can be reached`);
+  for (const href of ['mailto:bhccob@gmail.com', 'https://github.com/bhccob', 'https://www.instagram.com/bhccob/', '/en/contact/']) step.check(keys.includes(href), `${href} can be reached`);
+  step.check(unseen === 0, `the focus is visible on every one (${unseen} of ${reached.length} not)`);
+  await page.waitForFunction((last) => window.__journeyDebug.frame() > last - 2, timeline.last, { timeout: 25_000 });
+  step.check(true, 'reaching the end page\'s links brings it into place');
+  await context.close();
+  return `${reached.length} stops`;
+}
+
+/** A tab nobody looks at for 30 s: it keeps its place and comes back with no burst of sound. */
+async function backgroundTab(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  await goToFrame(page, 372);
+  await goToFrame(page, 450, 200);
+  await page.waitForTimeout(600);
+  const before = await page.evaluate(() => window.__journeyDebug.frame());
+  const other = await context.newPage();
+  await other.goto('about:blank');
+  await other.bringToFront();
+  await other.waitForTimeout(Number(process.env.HIDE_MS ?? 30_000));
+  await page.bringToFront();
+  await other.close();
+  await page.waitForTimeout(500);
+  const after = await page.evaluate(() => ({ f: window.__journeyDebug.frame(), level: window.__journeyDebug.sound().level, on: window.__journeyDebug.sound().on }));
+  step.check(Math.abs(after.f - before) <= 2, `its place is unchanged (${before.toFixed(1)} to ${after.f.toFixed(1)})`);
+  step.check(after.level <= 0.6, `and no burst of sound (${after.level.toFixed(2)})`);
+  await context.close();
+  return '';
+}
+
+/** With no script at all the words are in the page, and it says where to go. */
+async function noScript(browser, step) {
+  const { context, page } = await openPage(browser, step, VIEW, { javaScriptEnabled: false });
+  await page.goto(`${BASE}/en/journey/`, { waitUntil: 'load' });
+  const text = await page.content();
+  for (const words of ['Software', 'Cookies Clicker', 'What is your plan after MBO?', 'bhccob@gmail.com']) step.check(text.includes(words), `"${words}" is in the HTML`);
+  step.check((await page.locator('.j-noscript a').getAttribute('href')) === '/en/lite/', 'and it points to Lite');
+  await context.close();
+  return '';
+}
+
 const atFrame = (page) => page.evaluate(() => window.__journeyDebug.frame());
 const openAddress = (page) => page.evaluate(() => location.pathname);
 
@@ -1002,7 +1143,7 @@ async function loaderDoorKeys(browser, step) {
 async function loaderReduced(browser, step) {
   const { context, page } = await openPage(browser, step, VIEW, { reducedMotion: 'reduce' });
   await page.goto(`${BASE}${ROUTE}?proof`, { waitUntil: 'load' });
-  await page.waitForFunction(() => window.__journeyDebug, null, { timeout: 15_000 });
+  await page.waitForSelector('.j-calm', { timeout: 15_000 });
   await page.waitForTimeout(300);
   step.check(!(await page.evaluate(() => document.getElementById('j-ld'))), 'there is no ink');
   await context.close();
@@ -1132,7 +1273,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

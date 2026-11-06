@@ -72,6 +72,17 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail }: HostPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gl, timeline, reduce, onProgress, onReady, onFail]);
 
+  // The GPU can take the drawing away at any time: the words are still there, without the 3D.
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const lost = (event: Event): void => {
+      event.preventDefault();
+      onFail(new Error('the WebGL context was lost'));
+    };
+    canvas.addEventListener('webglcontextlost', lost);
+    return () => canvas.removeEventListener('webglcontextlost', lost);
+  }, [gl, onFail]);
+
   useEffect(() => {
     world.current?.setLocale(locale);
   }, [locale]);

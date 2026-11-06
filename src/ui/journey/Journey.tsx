@@ -1,5 +1,6 @@
 import { type JSX, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
+import { PAGES } from '~/data/pages';
 import { profile } from '~/data/profile';
 import { projects } from '~/data/projects';
 import { installJourneyDebug } from '~/debug/journeyDebug';
@@ -17,6 +18,9 @@ import { Sound } from '~/journey/sound/music';
 import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet } from './applyLayers';
 import { type BandKind, paintBand } from './bands';
+import { journeyMode, type JourneyMode } from '~/journey/mode';
+import { webglSupport } from '~/scene/webgl';
+import { CalmJourney } from './CalmJourney';
 import { ChapterRail, updateRail } from './ChapterRail';
 import { EndWords } from './EndWords';
 import { closeProject, listenToHistory, openedProject, openProject } from './openProject';
@@ -36,16 +40,42 @@ import { Story, updateStory } from './Story';
 // three.js and R3F load after hydration, in their own chunk; the prerendered page holds the words alone.
 const JourneyCanvas = lazy(() => import('./JourneyCanvas'));
 
-/** The home page's journey: one machine, from code to a new universe (spec 2026-11-05-bob-machine-rebuild-design.md). */
+/** The home page's journey: live where it can run, calm where it should not, and never a blank page. */
 export function Journey(): JSX.Element {
+  const i18n = useTranslator();
+  const { t } = i18n;
+  const [mode, setMode] = useState<JourneyMode>('live');
+  useEffect(() => {
+    setMode(journeyMode({ webgl: webglSupport(), reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, failed: false }));
+  }, []);
+  const onFailed = useCallback(() => setMode('lite-link'), []);
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-journey-calm', mode !== 'live');
+    if (mode !== 'live') scrollTo({ top: 0, behavior: 'auto' });
+    return () => document.documentElement.removeAttribute('data-journey-calm');
+  }, [mode]);
+  if (mode !== 'live') return <CalmJourney litePointer={mode === 'lite-link'} />;
+  return (
+    <>
+      <noscript>
+        <p className="j-noscript">
+          {t.journey.calm.noScript} <a href={i18n.path(PAGES.lite)}>{t.journey.calm.lite}</a>
+        </p>
+      </noscript>
+      <LiveJourney onFailed={onFailed} />
+    </>
+  );
+}
+
+/** One machine, from code to a new universe (spec 2026-11-05-bob-machine-rebuild-design.md). */
+function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
   const { locale, t } = useTranslator();
   const timeline = useMemo(() => timelineFor(flightLayout(projects.byDate())), []);
-  const stopIds = useMemo(() => projects.byDate().map((project) => project.id), []);
+  const stopIds = useMemo((): string[] => projects.byDate().map((project) => project.id), []);
   const { pathname } = useLocation();
   const homePath = useRef(pathname);
   const canvas = useRef<CanvasHandle | null>(null);
   const [started, setStarted] = useState(false);
-  const [failed, setFailed] = useState(false);
   const [plan, setPlan] = useState<LoaderPlan>('full');
   const [ready, setReady] = useState(false);
   const [model, setModel] = useState(0);
@@ -160,7 +190,8 @@ export function Journey(): JSX.Element {
         applyLayer(flash, { opacity: layers.flash });
         applyLayer(hint, { opacity: layers.hint });
         const end = endWordsAt(f, timeline.shift);
-        applyLayer(endPage, { opacity: end.page });
+        // Its opacity alone: hidden, its links could not be reached by a keyboard.
+        if (endPage) endPage.style.opacity = String(end.page);
         if (end.rise !== risen) {
           risen = end.rise;
           endPage?.classList.toggle('on', risen);
@@ -235,6 +266,20 @@ export function Journey(): JSX.Element {
     };
     const stopHistory = listenToHistory(() => shown ?? 0, () => homePath.current);
 
+    // A link reached by the keyboard brings its chapter into place.
+    const focused = (event: FocusEvent): void => {
+      const el = event.target as HTMLElement | null;
+      if (!el?.matches?.(':focus-visible')) return;
+      const project = el.closest<HTMLElement>('.j-project')?.dataset.project;
+      if (project) glideTo(timeline.reads[stopIds.indexOf(project)], timeline, reduce.current);
+      else if (el.closest('#j-end')) glideTo(timeline.last, timeline, reduce.current);
+    };
+    document.addEventListener('focusin', focused);
+
+    // In a tab nobody is looking at, the sound sleeps.
+    const seen = (): void => Sound.watchVisibility(document.hidden);
+    document.addEventListener('visibilitychange', seen);
+
     // The end page: the cursor leans the words; hold anywhere but on a link to start a universe.
     const aim = (event: PointerEvent): void => {
       aimX = (event.clientX / innerWidth) * 2 - 1;
@@ -270,6 +315,8 @@ export function Journey(): JSX.Element {
       document.removeEventListener('click', onClick);
       stopHistory();
       cool();
+      document.removeEventListener('focusin', focused);
+      document.removeEventListener('visibilitychange', seen);
       removeEventListener('pointermove', aim);
       removeEventListener('pointerdown', press);
       removeEventListener('pointerup', up);
@@ -312,9 +359,9 @@ export function Journey(): JSX.Element {
   const onLoaderDone = useCallback(() => {}, []);
   const onFail = useCallback((error: unknown) => {
     console.error('the journey could not start', error);
-    setFailed(true);
     setReady(true);
-  }, []);
+    onFailed();
+  }, [onFailed]);
 
   return (
     <>
@@ -337,7 +384,7 @@ export function Journey(): JSX.Element {
       <p id="j-hint" className="j-hint">
         {t.journey.collapse.hint}
       </p>
-      {started && !failed ? (
+      {started ? (
         <Suspense fallback={null}>
           <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} label={t.journey.hero.machineAlt} onProgress={onProgress} onReady={onReady} onFail={onFail} />
         </Suspense>
