@@ -6,7 +6,7 @@ import { ease, ramp, seeded } from '~/journey/math';
  * drift in front. From the mock's `paintBase`, `buildTree`, `drawPaper`.
  */
 
-interface Segment {
+export interface Segment {
   x0: number;
   y0: number;
   x1: number;
@@ -18,6 +18,10 @@ interface Segment {
 
 /** How long the tree takes to grow, ms. */
 const GROW_MS = 2600;
+
+/** The tree drawn calmer, so the city below keeps the eye: its branches this much as thick, and one tip in this many lit. */
+const THIN = 0.5;
+const LIT_EVERY = 3;
 
 export function mist(c: CanvasRenderingContext2D, w: number, h: number, r: () => number, tints: readonly string[], n: number): void {
   for (let i = 0; i < n; i++) {
@@ -44,7 +48,7 @@ export function grain(c: CanvasRenderingContext2D, w: number, h: number, r: () =
   c.restore();
 }
 
-function buildTree(w: number, h: number): { segs: Segment[]; tips: [number, number][] } {
+export function buildTree(w: number, h: number): { segs: Segment[]; tips: [number, number][] } {
   const r = seeded(4711), segs: Segment[] = [], tips: [number, number][] = [], S = Math.min(w, h * 1.7) / 1280;
   function branch(x: number, y: number, ang: number, len: number, wid: number, depth: number): void {
     if (depth > 7 || wid < 0.5 || x < w * 0.52) {
@@ -73,7 +77,11 @@ function buildTree(w: number, h: number): { segs: Segment[]; tips: [number, numb
   branch(w * 1.03, h * 0.0, Math.PI * 0.9, 210 * S, 24 * S, 0);
   branch(w * 1.03, h * 0.2, Math.PI * 0.97, 150 * S, 11 * S, 2);
   segs.sort((p, q) => p.d - q.d);
-  return { segs, tips: tips.filter(([x, y]) => x > -10 && y > -10 && y < h + 10) };
+  // Thinned once grown, so that it keeps every branch it has.
+  return {
+    segs: segs.map((s) => ({ ...s, w: s.w * THIN })),
+    tips: tips.filter(([x, y]) => x > -10 && y > -10 && y < h + 10).filter((_, i) => i % LIT_EVERY === 0),
+  };
 }
 
 function paintBase(w: number, h: number): HTMLCanvasElement {
@@ -126,7 +134,7 @@ function drawSegment(x: CanvasRenderingContext2D, s: Segment): void {
   x.moveTo(s.x0, s.y0);
   x.lineTo(s.x1, s.y1);
   if (s.gold) {
-    x.strokeStyle = '#e6b84a';
+    x.strokeStyle = 'rgba(230,184,74,.72)';
     x.lineCap = 'square';
     x.lineWidth = Math.max(1, s.w);
   } else {
@@ -195,14 +203,14 @@ export function createPaper(canvas: HTMLCanvasElement, reduce: boolean): Paper {
         const on = ramp(bq * tips.length, i, i + 6);
         if (on <= 0) return;
         const pulse = reduce ? 1 : 0.78 + 0.22 * Math.sin(now / 900 + i * 1.7);
-        const g = ctx.createRadialGradient(x, y, 0, x, y, 16 * on);
-        g.addColorStop(0, `rgba(255,214,120,${0.55 * pulse})`);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 10 * on);
+        g.addColorStop(0, `rgba(255,214,120,${0.32 * pulse})`);
         g.addColorStop(1, 'rgba(255,214,120,0)');
         ctx.fillStyle = g;
         ctx.fillRect(x - 18, y - 18, 36, 36);
         ctx.fillStyle = '#fff0c4';
         ctx.beginPath();
-        ctx.arc(x, y, 2.1 * on * Math.max(1, canvas.width / 1600), 0, 7);
+        ctx.arc(x, y, 1.5 * on * Math.max(1, canvas.width / 1600), 0, 7);
         ctx.fill();
       });
     },
