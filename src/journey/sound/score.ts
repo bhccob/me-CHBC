@@ -118,3 +118,15 @@ export function scrollSpeed(framesPerSec: number): number {
 export function soundAfterReload(wanted: boolean, gesture: boolean): 'silent' | 'playing' {
   return wanted && gesture ? 'playing' : 'silent';
 }
+
+/** A sound of holding on the end page: which, how loud, how long in seconds. */
+export interface HoldSound {
+  name: 'whoosh';
+  level: number;
+  seconds: number;
+}
+
+/** What holding and letting go on the end page play: nothing while held, and on letting go only the soft whoosh. */
+export function holdSounds(on: boolean, wasHolding: boolean): readonly HoldSound[] {
+  return !on && wasHolding ? [{ name: 'whoosh', level: 0.05, seconds: 1.6 }] : [];
+}

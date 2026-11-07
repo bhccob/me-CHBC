@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dueEnding, dueHits, dueRuns, HITS, humLevel, MOVES, motorOn, padLevel, risingSweep, rushLevel, scrollSpeed, soundAfterReload } from '~/journey/sound/score';
+import { dueEnding, dueHits, dueRuns, HITS, holdSounds, humLevel, MOVES, motorOn, padLevel, risingSweep, rushLevel, scrollSpeed, soundAfterReload } from '~/journey/sound/score';
 
 describe('what plays as the scroll passes it', () => {
   it('plays a part as the scroll passes its frame', () => {
@@ -121,5 +121,19 @@ describe('after a reload', () => {
     expect(scrollSpeed(0)).toBe(0);
     expect(scrollSpeed(13)).toBe(0.5);
     expect(scrollSpeed(100)).toBe(1);
+  });
+});
+
+describe('holding and letting go on the end page (round 21)', () => {
+  it('makes no sound while you hold', () => {
+    expect(holdSounds(true, false)).toEqual([]);
+  });
+
+  it('plays only the soft whoosh as you let go: no tone, thump or bell', () => {
+    expect(holdSounds(false, true)).toEqual([{ name: 'whoosh', level: 0.05, seconds: 1.6 }]);
+  });
+
+  it('plays nothing on a let go that had no hold before it', () => {
+    expect(holdSounds(false, false)).toEqual([]);
   });
 });

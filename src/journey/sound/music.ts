@@ -1,7 +1,7 @@
 import { clamp, ramp, seeded } from '../math';
 import { type Audio, audioLevel, currentAudio, startAudio } from './engine';
 import { bell, burst, fall, gong, hello, HIT_SOUNDS, RUN_SOUNDS, snap, thump } from './effects';
-import { dueEnding, dueHits, dueRuns, flightLevel, humLevel, motorLevel, padLevel, risingSweep, scrollSpeed } from './score';
+import { dueEnding, dueHits, dueRuns, flightLevel, holdSounds, humLevel, motorLevel, padLevel, risingSweep, scrollSpeed } from './score';
 
 /** The chords under the end page: D minor, B flat, F, C, in MIDI notes; and the few high notes over them. */
 const CHORDS = [[38, 50, 53, 57], [34, 50, 53, 58], [41, 48, 53, 57], [36, 48, 52, 55]] as const;
@@ -42,7 +42,7 @@ class Music {
   private startedAt = 0;
   private shift = 0;
   private landed = false;
-  private holdTone: { osc: OscillatorNode; gain: GainNode } | null = null;
+  private holding = false;
   private readonly random = seeded(424242);
   private readonly listeners = new Set<() => void>();
 
@@ -271,29 +271,15 @@ class Music {
     else this.resumeIfWanted();
   }
 
-  /** Holding on the end page makes a rising tone; letting go, a low thump. */
+  /** Holding on the end page is quiet; letting go makes the soft whoosh, and nothing else. */
   hold(on: boolean): void {
+    const sounds = holdSounds(on, this.holding);
+    this.holding = on;
     const a = currentAudio();
     if (!a || !this.voices) return;
-    if (on && !this.holdTone) {
-      const osc = a.ctx.createOscillator(), gain = a.ctx.createGain(), t = a.ctx.currentTime;
-      osc.frequency.setValueAtTime(110, t);
-      osc.frequency.exponentialRampToValueAtTime(880, t + 2.2);
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.05, t + 1);
-      osc.connect(gain);
-      gain.connect(a.bus);
-      osc.start(t);
-      this.holdTone = { osc, gain };
-    } else if (!on && this.holdTone) {
-      const t = a.ctx.currentTime;
-      this.holdTone.gain.gain.cancelScheduledValues(t);
-      this.holdTone.gain.gain.setTargetAtTime(0, t, 0.03);
-      this.holdTone.osc.stop(t + 0.3);
-      this.holdTone = null;
-      thump(a, 0.26);
-      burst(a, 0.05, 1.6);
-      bell(a, midi(HIGH_NOTES[Math.floor(this.random() * HIGH_NOTES.length)]), 0.1, { duration: 4 });
+    for (const sound of sounds) {
+      burst(a, sound.level, sound.seconds);
+      this.counts[sound.name] = (this.counts[sound.name] ?? 0) + 1;
     }
   }
 
