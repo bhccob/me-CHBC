@@ -1,5 +1,8 @@
 # Weekly update pull requests for npm packages and GitHub Actions.
 # Each one runs the full build, tests and audit before it can be merged.
+#
+# Packages that must move together come in one pull request: a lone bump of one of them cannot install
+# (2026-11-07: @react-router/dev 8.5.1 without react-router 8.5.1, and three 0.187 that postprocessing does not accept yet).
 version: 2
 updates:
   - package-ecosystem: npm
@@ -7,12 +10,24 @@ updates:
     schedule:
       interval: weekly
     groups:
-      astro:
-        patterns: ['astro', '@astrojs/*']
+      react-router:
+        patterns: ['react-router', '@react-router/*']
+      react:
+        patterns: ['react', 'react-dom', '@types/react', '@types/react-dom']
+      # The 3D: three, its types, and what is built on it. A bump changes how the journey looks, so check it by eye.
+      three:
+        patterns: ['three', '@types/three', 'postprocessing', '@react-three/*']
+      gltf-transform:
+        patterns: ['@gltf-transform/*']
       fonts:
         patterns: ['@fontsource/*', '@fontsource-variable/*']
+    ignore:
+      # The site and its CI run on Node 24: Node's types stay on its major, so no newer API slips in.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     open-pull-requests-limit: 5
 
+  # The actions are pinned to commits (.github/workflows); Dependabot moves the commit and the version beside it together.
   - package-ecosystem: github-actions
     directory: /
     schedule:
