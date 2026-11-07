@@ -116,11 +116,13 @@ export class World {
   /** Draws everything once before anything shows, so that no shader or shadow is compiled in the middle of the journey. */
   warm(f: number): void {
     this.machine.showAll();
+    const asBefore = this.machine.drawEverything();
     this.renderer.compile(this.machine.scene, this.machine.camera);
     this.tunnel.prepare(this.renderer, () => this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera));
     this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
     this.iris.close();
     this.composer.render();
+    asBefore();
     this.iris.present(this.renderer);
     this.drawn = -1;
     this.update(f, 0, 0);

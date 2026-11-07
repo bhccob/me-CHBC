@@ -152,6 +152,23 @@ export class MachineScene {
     for (const part of this.parts.values()) part.visible = true;
   }
 
+  /**
+   * Lets every part be drawn whether or not the camera sees it, for that same draw: from the first view's camera, low on the
+   * board, the parts still waiting above it are out of sight, and would otherwise be built when they first come in. Gives
+   * back how to put things as they were.
+   */
+  drawEverything(): () => void {
+    const culled: Object3D[] = [];
+    this.scene.traverse((object) => {
+      if (!object.frustumCulled) return;
+      object.frustumCulled = false;
+      culled.push(object);
+    });
+    return () => {
+      for (const object of culled) object.frustumCulled = true;
+    };
+  }
+
   /** Puts everything where frame `f` has it; `idle` is how far the first view's light has run on its own, in frames. */
   update(f: number, idle = 0): void {
     const pose = machinePose(f, idle);

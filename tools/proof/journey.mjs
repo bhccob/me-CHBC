@@ -133,6 +133,22 @@ async function smooth(browser, step) {
     window.__tasks = [];
     new PerformanceObserver((list) => window.__tasks.push(...list.getEntries().map((e) => ({ ms: e.duration, frame: window.__journeyDebug.frame() })))).observe({ type: 'longtask', buffered: false });
   });
+  // Every shader the machine needs is built before the journey shows, wherever the first view's camera stands.
+  await page.evaluate(() => {
+    window.__links = [];
+    const link = WebGL2RenderingContext.prototype.linkProgram;
+    WebGL2RenderingContext.prototype.linkProgram = function (program) {
+      window.__links.push(window.__journeyDebug.frame());
+      return link.call(this, program);
+    };
+  });
+  // Reading the first view: the light runs along the traces on its own, so it draws every frame while nothing scrolls.
+  const reading = (await page.evaluate(() => window.__journeyDebug.frameTimes())).length;
+  await page.waitForTimeout(2500);
+  const read = (await page.evaluate(() => window.__journeyDebug.frameTimes())).slice(reading).sort((a, b) => a - b);
+  const readMedian = read[Math.floor(read.length / 2)] ?? 0;
+  step.check(read.length > 60, `reading the first view for 2.5 s, the page keeps its pace (${read.length} frames, median ${readMedian.toFixed(1)} ms)`);
+  if (WEAK) step.check(readMedian < 33, `on the weak GPU the first view's median frame is under 33 ms (${readMedian.toFixed(1)})`);
   const start = (await page.evaluate(() => window.__journeyDebug.frameTimes())).length;
   const end = Math.min(timeline.last, Number(process.env.WALK_TO ?? 366));
   const stepPx = 180;
@@ -147,6 +163,9 @@ async function smooth(browser, step) {
   const walk = times.slice(start).sort((a, b) => a - b);
   const median = walk[Math.floor(walk.length / 2)] ?? 0, p95 = walk[Math.floor(walk.length * 0.95)] ?? 0, worst = walk.at(-1) ?? 0;
   step.check(walk.length > 100, `the walk drew frames all the way (${walk.length}: median ${median.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, worst ${worst.toFixed(1)} ms)`);
+  // The flight's own stage loads from frame 260 and builds its shaders then, by design; before that, none.
+  const midway = (await page.evaluate(() => window.__links)).filter((f) => f < 255);
+  step.check(midway.length === 0, `no shader is built in the middle of the machine (${midway.length ? `at frames ${midway.map((f) => f.toFixed(0)).join(', ')}` : 'none'})`);
   const longest = tasks.reduce((a, b) => (b.ms > a.ms ? b : a), { ms: 0, frame: 0 });
   step.check(longest.ms < 200, `no main-thread task over 200 ms (the longest ${longest.ms.toFixed(0)}, near frame ${longest.frame.toFixed(0)})`);
   if (WEAK) {
