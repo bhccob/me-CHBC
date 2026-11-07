@@ -11,7 +11,7 @@ describe('structured data', () => {
     expect(person['@type']).toBe('Person');
     expect(person.name).toBe('Bob Chung');
     expect(person.url).toBe('https://bhccob.com');
-    expect(person.jobTitle).toBe('Student Software Engineer');
+    expect(person.jobTitle).toBe('Software Engineer');
     expect(person.sameAs).toEqual(['https://github.com/bhccob', 'https://www.instagram.com/bhccob/']);
     expect(JSON.stringify(person)).not.toMatch(/mailto|@gmail/);
   });

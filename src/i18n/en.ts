@@ -101,9 +101,9 @@ export const en = {
    * complete title, used as it is.
    */
   meta: {
-    homeTitle: 'Bob Chung | Student Software Engineer in Rotterdam',
+    homeTitle: 'Bob Chung - Software Engineer',
     homeDescription:
-      'Portfolio of Bob Chung, a student software engineer in Rotterdam: game and web projects, and a route toward systems and firmware security engineering.',
+      'Bob Chung is a full-stack software engineer in Rotterdam, Netherlands, working toward mechatronics to build across software and hardware as technology changes.',
     liteDescription: 'The Lite version of the portfolio of Bob Chung: all of the content as plain text, without 3D.',
     contactTitle: 'Contact',
     contactDescription: 'Send Bob Chung a message straight from his portfolio, or find him on GitHub and Instagram.',

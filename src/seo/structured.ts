@@ -20,7 +20,7 @@ export function personLd(): Record<string, unknown> {
     url: profile.site,
     image: `${profile.site}/og.jpg`,
     description: 'Born and raised in Aruba, now in Rotterdam, studying software and heading for mechatronics.',
-    jobTitle: 'Student Software Engineer',
+    jobTitle: 'Software Engineer',
     birthPlace: { '@type': 'Place', name: 'Aruba' },
     homeLocation: { '@type': 'Place', name: 'Rotterdam, Netherlands' },
     sameAs: profile.socials.filter((social) => social.id !== 'email').map((social) => social.url)

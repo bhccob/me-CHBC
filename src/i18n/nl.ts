@@ -89,9 +89,9 @@ export const nl: Dictionary = {
     loader: { withSound: 'Binnengaan met geluid', without: 'Binnengaan zonder' }
   },
   meta: {
-    homeTitle: 'Bob Chung | Software engineering-student in Rotterdam',
+    homeTitle: 'Bob Chung - Software-engineer',
     homeDescription:
-      'Portfolio van Bob Chung, student software engineer in Rotterdam: game- en webprojecten, op weg naar systems- en firmware-security-engineering.',
+      'Bob Chung is full-stack software engineer in Rotterdam en werkt toe naar mechatronica, om software én hardware te bouwen en mee te gaan met nieuwe technologie.',
     liteDescription: 'De lichte versie van het portfolio van Bob Chung: alle inhoud als gewone tekst, zonder 3D.',
     contactTitle: 'Contact opnemen',
     contactDescription: 'Stuur Bob Chung direct een bericht via zijn portfolio, of vind hem op GitHub en Instagram.',
