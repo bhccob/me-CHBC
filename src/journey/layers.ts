@@ -34,13 +34,54 @@ function sheetAt(f: number, n: number): SheetLayer {
 }
 
 export const TAG_NAMES = ['armour', 'controls', 'brain', 'body'] as const;
+
+/** The widest page that is a phone's, CSS px: journey.css's `max-width: 760px`. */
+export const PHONE_WIDTH = 760;
+
+/** The chapter rail shows on pages wider than this, CSS px: journey.css hides it at `max-width: 900px`. */
+export const RAIL_WIDTH = 900;
 export type TagName = (typeof TAG_NAMES)[number];
 
 /** Where a label's box stands on the page, from where it points, how small the machine stands and how the page scales. */
-export function tagPlace(name: TagName, [x, y]: readonly [number, number], fit: number, pageScale: number): [number, number] {
+export function tagPlace(name: TagName, [x, y]: readonly [number, number], fit: number, pageScale: number, tall = false): [number, number] {
+  // A tall page, a phone's or an upright tablet's, has its words above the stack and no room for the armour's label left
+  // of it or the body's past it: the armour's went off the left edge of a tablet. Each stands at its own corner, with the
+  // right of the page for its words (journey.css).
+  if (tall) return [x, y - 8];
   const k = (fit * pageScale) / 1.125;
   const off = name === 'armour' ? [-660 * k, 12] : name === 'body' ? [230 * k, 90] : [0, 0];
   return [x + off[0], y - 8 + off[1]];
+}
+
+/**
+ * The labels' tops, top to bottom, each moved down as far as it must to clear the one above it by `gap`: on a tall page
+ * the stack's parts stand closer than two lines of words.
+ */
+export function tagsApart(tops: readonly number[], heights: readonly number[], gap: number): number[] {
+  const apart: number[] = [];
+  tops.forEach((top, n) => apart.push(n === 0 ? top : Math.max(top, apart[n - 1] + heights[n - 1] + gap)));
+  return apart;
+}
+
+/**
+ * Where a label of this width starts so that its words end inside the page's edge: on a tablet turned sideways the
+ * body's went past the right edge. A label that fits stays where it was put.
+ */
+export function keepOnPage(x: number, width: number, pageWidth: number, edge: number): number {
+  return Math.max(edge, Math.min(x, pageWidth - edge - width));
+}
+
+/** A box on the page, CSS px. */
+export interface Box {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/** Whether two boxes come within `pad` of each other. */
+export function boxesMeet(a: Box, b: Box, pad: number): boolean {
+  return a.left < b.right + pad && b.left < a.right + pad && a.top < b.bottom + pad && b.top < a.bottom + pad;
 }
 
 export interface LayerStates {

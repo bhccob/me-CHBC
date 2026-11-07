@@ -514,6 +514,8 @@ html[data-route='home'] .site-header {
   white-space: nowrap;
   pointer-events: none;
   padding-left: 40px;
+  /* Where a narrower page brings a leg behind a label, the dark halo of the other words over the 3D keeps it read. */
+  text-shadow: 0 0 10px #040308, 0 0 3px #040308;
 }
 
 .j-tag::before {
@@ -1355,8 +1357,21 @@ html[data-project-open] .j-bar {
     transform: none;
   }
 
-  .j-tag {
-    display: none;
+  /* Each label at its part's corner, its words wrapping before the page's edge. */
+  .j-tag,
+  .j-tag-left {
+    right: 18px;
+    padding: 0 0 0 26px;
+    font-size: 12px;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .j-tag::before,
+  .j-tag-left::before {
+    left: 0;
+    right: auto;
+    width: 20px;
   }
 
   .j-hint {

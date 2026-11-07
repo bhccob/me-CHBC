@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { Matrix4, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { cameraPose, fitProjection, fovFor, pageFit } from '~/journey/machine/camera';
+import { cameraPose, fitProjection, fovFor, pageFit, pageOffset, PHONE_ASPECT } from '~/journey/machine/camera';
 import { machinePose } from '~/journey/machine/choreography';
 import { PART_NAMES } from '~/journey/machine/parts';
 import { ease, mix } from '~/journey/math';
@@ -102,9 +102,34 @@ describe('the lens', () => {
   it('on a tall page, stands the machine small enough to leave its words clear, full size at the first view and the portal', () => {
     expect(pageFit(0, 0.5)).toBe(1);
     expect(pageFit(100, 0.5)).toBeCloseTo(0.8);
-    expect(pageFit(304, 0.5)).toBeCloseTo(0.7);
+    expect(pageFit(304, 0.5)).toBeCloseTo(0.88);
+    expect(pageFit(304, 0.75)).toBeCloseTo(0.7 * (0.58 / 0.75));
     expect(pageFit(350, 0.5)).toBe(1);
     expect(pageFit(700, 0.5)).toBe(1);
+  });
+
+  it('on a phone, stands the open stack larger, moved left and up to leave room for its labels', () => {
+    // A phone with its browser's bars showing is still a phone; an upright tablet is not.
+    expect(390 / 664).toBeLessThan(PHONE_ASPECT);
+    expect(820 / 1180).toBeGreaterThan(PHONE_ASPECT);
+    expect(pageFit(304, 390 / 844)).toBeCloseTo(0.88);
+    expect(pageFit(304, 390 / 844)).toBeGreaterThan(pageFit(304, 0.75));
+    expect(pageOffset(304, 390 / 844)).toEqual([-0.07, 0.1]);
+    for (const f of [250, 270, 344, 400]) expect(pageOffset(f, 390 / 844), `frame ${f}`).toEqual([0, 0]);
+    // A tablet held upright and a wide page keep the machine where it was.
+    expect(pageOffset(304, 0.75)).toEqual([0, 0]);
+    expect(pageOffset(304, 16 / 9)).toEqual([0, 0]);
+  });
+
+  it('moves the whole picture by the page offset, in NDC', () => {
+    const plain = new PerspectiveCamera(30, 0.5, 0.01, 400), moved = new PerspectiveCamera(30, 0.5, 0.01, 400);
+    fitProjection(plain.projectionMatrix.elements as unknown as number[], -0.04, 0.88, 0.5);
+    fitProjection(moved.projectionMatrix.elements as unknown as number[], -0.04, 0.88, 0.5, [-0.07, 0.1]);
+    for (const point of [new Vector3(0, 0, -5), new Vector3(0.4, -0.3, -3)]) {
+      const a = point.clone().applyMatrix4(plain.projectionMatrix), b = point.clone().applyMatrix4(moved.projectionMatrix);
+      expect(b.x - a.x).toBeCloseTo(-0.07, 5);
+      expect(b.y - a.y).toBeCloseTo(0.1, 5);
+    }
   });
 
   it('scales the machine about the right edge, 62% down, as the page did', () => {

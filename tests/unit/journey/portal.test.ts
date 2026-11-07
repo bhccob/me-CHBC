@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { layersAt, tagPlace } from '~/journey/layers';
+import { boxesMeet, keepOnPage, layersAt, tagPlace, tagsApart } from '~/journey/layers';
 import { machinePose } from '~/journey/machine/choreography';
 import { buildTimeline } from '~/journey/timeline';
 import { canvasOpaque, irisWindowOn, windowReach } from '~/journey/world/portalWindow';
@@ -61,6 +61,33 @@ describe('the labels on the stack', () => {
     expect(tagPlace('controls', [500, 300], 1, 1.125)).toEqual([500, 292]);
     expect(tagPlace('armour', [900, 300], 1, 1.125)).toEqual([240, 304]);
     expect(tagPlace('body', [500, 300], 1, 1.125)).toEqual([730, 382]);
+  });
+
+  it('on a tall page, a phone or an upright tablet, all stand at their own corners, where the page has room for their words', () => {
+    for (const name of ['armour', 'controls', 'brain', 'body'] as const) expect(tagPlace(name, [210, 500], 0.88, 1.17, true), name).toEqual([210, 492]);
+    // The tablet's armour that went off its left edge: a stack at 380 px on an 820 x 1180 page.
+    expect(tagPlace('armour', [380, 594], 0.54, 1180 / 720, true)[0]).toBeGreaterThan(0);
+    expect(tagPlace('armour', [380, 594], 0.54, 1180 / 720)[0]).toBeLessThan(0);
+  });
+
+  it('keep their words inside the page, as the body on a tablet turned sideways did not', () => {
+    // The body's label, 135 px wide, put at 994 px on a page 1024 px wide.
+    expect(keepOnPage(994, 135, 1024, 34)).toBe(855);
+    expect(keepOnPage(500, 135, 1024, 34)).toBe(500);
+    expect(keepOnPage(-160, 135, 1024, 34)).toBe(34);
+  });
+
+  it('know when they reach the rail', () => {
+    const rail = { left: 880, top: 260, right: 994, bottom: 510 };
+    expect(boxesMeet({ left: 811, top: 427, right: 967, bottom: 457 }, rail, 12)).toBe(true);
+    expect(boxesMeet({ left: 700, top: 427, right: 860, bottom: 457 }, rail, 12)).toBe(false);
+    expect(boxesMeet({ left: 855, top: 590, right: 990, bottom: 620 }, rail, 12)).toBe(false);
+  });
+
+  it('on a tall page, keep clear of the label above them', () => {
+    expect(tagsApart([400, 470, 520, 540], [30, 30, 45, 30], 10)).toEqual([400, 470, 520, 575]);
+    expect(tagsApart([400, 405], [30, 30], 10)).toEqual([400, 440]);
+    expect(tagsApart([], [], 10)).toEqual([]);
   });
 
   it('show only while the stack is apart', () => {

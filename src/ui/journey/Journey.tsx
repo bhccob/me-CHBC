@@ -9,7 +9,7 @@ import { Translator } from '~/i18n/Translator';
 import { useTranslator } from '~/i18n/useTranslator';
 import { flightLayout, timelineFor } from '~/journey/flight/layout';
 import { frameForHash, frameOfChapter, glideTo, noteFrame, takePlace } from '~/journey/jump';
-import { layersAt, TAG_NAMES, tagPlace } from '~/journey/layers';
+import { boxesMeet, keepOnPage, layersAt, PHONE_WIDTH, RAIL_WIDTH, TAG_NAMES, tagPlace, tagsApart } from '~/journey/layers';
 import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } from '~/journey/loader/plan';
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
@@ -236,21 +236,35 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         updateQaWords(qaWords, state?.opaque ? state.flight.words : null, innerWidth);
         if (state && state.fired > 0 && endToy) endToy.style.opacity = '0';
         else if (paused) cool();
-        tags.forEach((tag, n) => {
-          if (!tag) return;
-          applyLayer(tag, { opacity: state ? layers.stack : 0 });
-          if (!state || layers.stack <= 0.002) return;
-          const name = TAG_NAMES[n];
-          const [x, y] = tagPlace(name, state.anchors[name], pageFit(f, innerWidth / innerHeight), Math.max(innerWidth / 1280, innerHeight / 720));
-          tag.style.left = `${x.toFixed(1)}px`;
-          tag.style.top = `${y.toFixed(1)}px`;
-        });
+        tags.forEach((tag) => applyLayer(tag, { opacity: state ? layers.stack : 0 }));
+        let tagsOnRail = false;
+        if (state && layers.stack > 0.002) {
+          const phone = innerWidth <= PHONE_WIDTH;
+          // A phone, or a page taller than it is wide: the stack stands in the middle, with no room left of it for the armour.
+          const tall = phone || innerWidth < innerHeight;
+          const fit = pageFit(f, innerWidth / innerHeight), pageScale = Math.max(innerWidth / 1280, innerHeight / 720);
+          const places = TAG_NAMES.map((name) => tagPlace(name, state.anchors[name], fit, pageScale, tall));
+          // Their sizes as last drawn, read before anything here moves them.
+          const sizes = tags.map((tag) => [tag?.offsetWidth ?? 0, tag?.offsetHeight ?? 0] as const);
+          const railBox = rail && innerWidth > RAIL_WIDTH ? rail.getBoundingClientRect() : null;
+          // A phone's labels wrap at its edge (journey.css); elsewhere each keeps its words inside the page's 34 px edge.
+          const lefts = places.map(([x], n) => (phone ? x : keepOnPage(x, sizes[n][0], innerWidth, 34)));
+          // On a tall page the labels stand close, and on a phone they wrap: each keeps clear of the one above it.
+          const tops = tall ? tagsApart(places.map(([, y]) => y), sizes.map(([, h]) => h), 10) : places.map(([, y]) => y);
+          tags.forEach((tag, n) => {
+            if (!tag) return;
+            tag.style.left = `${lefts[n].toFixed(1)}px`;
+            tag.style.top = `${tops[n].toFixed(1)}px`;
+          });
+          // On a narrow wide page, as a tablet turned sideways, the labels reach the rail: it keeps only its current word.
+          tagsOnRail = railBox !== null && lefts.some((left, n) => boxesMeet({ left, top: tops[n], right: left + sizes[n][0], bottom: tops[n] + sizes[n][1] }, railBox, 12));
+        }
         lastState = state ?? null;
         noteFrame(f);
         first ??= f;
         if (before > 0) frames.push(now - before);
         before = now;
-        if (rail) updateRail(rail, f, timeline);
+        if (rail) updateRail(rail, f, timeline, tagsOnRail);
         if (bar) bar.style.transform = `scaleX(${(f / timeline.last).toFixed(4)})`;
       },
     });

@@ -1,7 +1,7 @@
 import { Color, Fog, LinearFilter, type Material, type Mesh, type MeshStandardMaterial, Object3D, PerspectiveCamera, RectAreaLight, Scene, ShaderMaterial, ShadowMaterial, SpotLight, SRGBColorSpace, Texture, TextureLoader, Uniform, Vector3 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
-import { cameraPose, fitProjection, fovFor, pageFit } from '../machine/camera';
+import { cameraPose, fitProjection, fovFor, pageFit, pageOffset } from '../machine/camera';
 import { machinePose } from '../machine/choreography';
 import { PART_NAMES, type PartName } from '../machine/parts';
 import { AREA_LIGHTS, areaIntensity, GLOW_SCALE, LIGHT_SCALE, type LightName, lowLightLevel, shadowOpacity, sleeveGlow } from './looks';
@@ -217,7 +217,7 @@ export class MachineScene {
     this.camera.fov = fovFor(cam.lens, this.aspect);
     this.camera.aspect = this.aspect;
     this.camera.updateProjectionMatrix();
-    fitProjection(this.camera.projectionMatrix.elements as unknown as number[], cam.shift, pageFit(f, this.aspect), this.aspect);
+    fitProjection(this.camera.projectionMatrix.elements as unknown as number[], cam.shift, pageFit(f, this.aspect), this.aspect, pageOffset(f, this.aspect));
     this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
   }
 

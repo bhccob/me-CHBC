@@ -1,4 +1,4 @@
-import { catmullRom, ease, ez, mix, ramp } from '../math';
+import { band, catmullRom, ease, ez, mix, ramp } from '../math';
 
 /**
  * The camera on the machine, ported from `place_camera` and `CAM` in tools/blender/machine.py. Blender's axes stay: this
@@ -111,11 +111,23 @@ export function fovFor(lens: number, aspect: number): number {
 /** On a tall page the words stand above and below the machine: it stands small enough to stay between them. */
 const TALL_FIT: readonly (readonly [number, number])[] = [[0, 1], [16, 1], [30, 0.74], [48, 0.74], [64, 0.8], [270, 0.8], [292, 0.7], [326, 0.7], [344, 1], [600, 1]];
 
+/**
+ * A page this narrow for its height is a phone's (390 x 844 is 0.46; with the browser's bars, up to about 0.6). A tablet
+ * held upright is 0.69 or more.
+ */
+export const PHONE_ASPECT = 0.62;
+
+/**
+ * A phone's: as a tall page's, but the open stack stands larger, as wide as the labels beside it allow (Bob, 2026-11-07:
+ * "the machine is so small in mobile").
+ */
+const PHONE_FIT: readonly (readonly [number, number])[] = [[0, 1], [16, 1], [30, 0.74], [48, 0.74], [64, 0.8], [270, 0.8], [292, 0.88], [326, 0.88], [344, 1], [600, 1]];
+
 const WIDE_FIT: readonly (readonly [number, number])[] = [[0, 0.9], [34, 1], [48, 1], [64, 0.84], [168, 0.84], [184, 0.76], [208, 0.76], [270, 0.76], [292, 0.94], [314, 0.94], [344, 1], [502, 1]];
 
 /** How much smaller than the page's cover the machine stands at frame `f`, so that it leaves the words room. */
 export function pageFit(f: number, aspect: number): number {
-  const FIT = aspect < 1 ? TALL_FIT : WIDE_FIT;
+  const FIT = aspect < PHONE_ASPECT ? PHONE_FIT : aspect < 1 ? TALL_FIT : WIDE_FIT;
   if (f > 600) return aspect < 1 ? 1 : 0.76;
   let fit = 1;
   for (let i = 1; i < FIT.length; i++) {
@@ -137,13 +149,27 @@ const TALL_X = -0.28;
 const TALL_Y = -0.2;
 
 /**
- * Puts the film shift, the page fit and a tall page's offset into a projection matrix (three's column order), in place.
- * A shift moves the picture across by twice its value in NDC; a scale leaves the anchor where it is.
+ * Where a phone moves the open stack, in NDC: left, to leave the right edge for its labels, and up into the dark between
+ * its words and the bottom of the page.
  */
-export function fitProjection(m: number[], shift: number, scale: number, aspect: number): void {
+const PHONE_STACK: readonly [number, number] = [-0.07, 0.1];
+
+/** How far a page of this shape moves the machine at frame `f`, in NDC: on a phone, only while the stack stands open. */
+export function pageOffset(f: number, aspect: number): [number, number] {
+  if (aspect >= PHONE_ASPECT) return [0, 0];
+  const k = band(f, 270, 292, 326, 344);
+  return k > 0 ? [PHONE_STACK[0] * k, PHONE_STACK[1] * k] : [0, 0];
+}
+
+/**
+ * Puts the film shift, the page fit and a tall page's offset into a projection matrix (three's column order), in place.
+ * A shift moves the picture across by twice its value in NDC; a scale leaves the anchor where it is; `offset` moves the
+ * whole picture, in NDC.
+ */
+export function fitProjection(m: number[], shift: number, scale: number, aspect: number, offset: readonly [number, number] = [0, 0]): void {
   m[0] *= scale;
   m[5] *= scale;
   // A tall page scales about its own centre; a wide one keeps the right edge, to leave the left for the words.
-  m[8] = scale * 2 * shift - (aspect < 1 ? TALL_X : FIT_X * (1 - scale));
-  m[9] = aspect < 1 ? -TALL_Y : -FIT_Y * (1 - scale);
+  m[8] = scale * 2 * shift - (aspect < 1 ? TALL_X : FIT_X * (1 - scale)) - offset[0];
+  m[9] = (aspect < 1 ? -TALL_Y : -FIT_Y * (1 - scale)) - offset[1];
 }

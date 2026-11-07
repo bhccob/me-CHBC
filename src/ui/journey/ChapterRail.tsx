@@ -23,12 +23,13 @@ export function ChapterRail({ timeline, labels }: ChapterRailProps): JSX.Element
 }
 
 /** What the rail shows at frame `f`. */
-export function updateRail(rail: HTMLElement, f: number, tl: Timeline): void {
+/** `underLabels`: the stack's labels reach the rail, which then keeps only its current word, as under the machine's leg. */
+export function updateRail(rail: HTMLElement, f: number, tl: Timeline, underLabels = false): void {
   const opacity = railOpacity(f, tl);
   rail.style.opacity = opacity.toFixed(3);
   // Not hidden when it has faded: a keyboard must still reach it. It comes back while it has the focus.
   rail.style.pointerEvents = opacity > 0.002 ? '' : 'none';
-  rail.classList.toggle('j-rail-quiet', railQuiet(f));
+  rail.classList.toggle('j-rail-quiet', railQuiet(f) || underLabels);
   const current = chapterAt(f + 1, tl);
   for (const button of rail.querySelectorAll('button')) {
     const on = button.dataset.jump === current;
