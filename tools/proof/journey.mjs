@@ -298,6 +298,8 @@ async function rollingWordsStayAway(page, step) {
 
 async function firstView(browser, step) {
   const { context, page } = await openJourney(browser, step);
+  const order = await page.evaluate(() => [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].filter((h) => { const style = getComputedStyle(h); return style.display !== 'none' && style.visibility !== 'hidden' && h.getClientRects().length > 0; }).map((h) => Number(h.tagName[1])));
+  step.check(order[0] === 1 && order.every((level, i) => i === 0 || level - order[i - 1] <= 1), `the headings a screen reader finds go down one level at a time (${order.join(' ')})`);
   const first = await page.evaluate(() => document.querySelector('.j-hero h1').innerText.replace(/\s+/g, ' '));
   step.check(/^VAN CODE NAAR/i.test(first), `the heading reads (${first})`);
   const shown = () => page.evaluate(() => [...document.querySelectorAll('.j-swap span')].findIndex((s) => { const r = s.getBoundingClientRect(), box = s.parentElement.getBoundingClientRect(); return Math.abs(r.top - box.top) < 2; }));

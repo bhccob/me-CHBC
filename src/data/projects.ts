@@ -19,6 +19,9 @@ const pictureFiles: Record<string, string> = import.meta.env
 /** A picture on a project's own page: its file in src/assets/projects, and what it shows in words. */
 export interface Picture {
   file: string;
+  /** The file's own size in pixels, so the page keeps its place before the picture arrives. */
+  width: number;
+  height: number;
   alt: Record<Locale, string>;
 }
 
@@ -219,9 +222,9 @@ export const projects = new ProjectCatalog([
     links: { repo: 'https://github.com/bhccob/steady' },
     // Run from a copy of its last commit on the web, with stand-in details only (the app's own example name, one reminder).
     pictures: [
-      { file: 'steady-welcome.webp', alt: { nl: 'Steady: het welkomstscherm', en: 'Steady: the welcome screen' } },
-      { file: 'steady-home.webp', alt: { nl: 'Steady: het beginscherm met de streak', en: 'Steady: the home screen with the streak' } },
-      { file: 'steady-reminders.webp', alt: { nl: 'Steady: zachte herinneringen', en: 'Steady: gentle reminders' } }
+      { file: 'steady-welcome.webp', width: 1170, height: 2532, alt: { nl: 'Steady: het welkomstscherm', en: 'Steady: the welcome screen' } },
+      { file: 'steady-home.webp', width: 1170, height: 2532, alt: { nl: 'Steady: het beginscherm met de streak', en: 'Steady: the home screen with the streak' } },
+      { file: 'steady-reminders.webp', width: 1170, height: 2532, alt: { nl: 'Steady: zachte herinneringen', en: 'Steady: gentle reminders' } }
     ],
     pictureKind: 'phones',
     pictureCaption: {
@@ -272,7 +275,7 @@ export const projects = new ProjectCatalog([
     // Run from a copy of its last commit with its own example members and settings, signed in as one of them.
     pictures: [
       {
-        file: 'portle-portfolio.webp',
+        file: 'portle-portfolio.webp', width: 1440, height: 810,
         alt: { nl: 'Portle: het portfolio-overzicht van een voorbeeldlid', en: "Portle: an example member's portfolio overview" }
       }
     ],
@@ -328,7 +331,7 @@ export const projects = new ProjectCatalog([
     // sides, cuts none of its words; the clock set to a Wednesday 11:00 in Aruba so the store reads as open.
     pictures: [
       {
-        file: 'jontai-type.webp',
+        file: 'jontai-type.webp', width: 1440, height: 810,
         alt: {
           nl: 'Herontwerp van Jontai Energy: JONTAI in grote groene letters boven “Aruba sunlight, made useful.”, met Explore solar en Visit the store',
           en: 'Jontai Energy redesign: JONTAI in large green letters above “Aruba sunlight, made useful.”, with Explore solar and Visit the store'
@@ -395,7 +398,7 @@ export const projects = new ProjectCatalog([
     links: { repo: 'https://github.com/bhccob/Cookies-Clicker' },
     image: 'cookies.png',
     // The game from its public repository, played a while.
-    pictures: [{ file: 'cookies-playing.webp', alt: { nl: 'Cookies Clicker tijdens het spelen', en: 'Cookies Clicker being played' } }],
+    pictures: [{ file: 'cookies-playing.webp', width: 1440, height: 900, alt: { nl: 'Cookies Clicker tijdens het spelen', en: 'Cookies Clicker being played' } }],
     pictureKind: 'wide',
     pictureCaption: { nl: 'Cookies Clicker tijdens het spelen', en: 'Cookies Clicker being played' },
     copy: {

@@ -21,6 +21,8 @@ describe('Jontai Energy, the concept redesign', () => {
     expect(jontai.pictures).toEqual([
       {
         file: 'jontai-type.webp',
+        width: 1440,
+        height: 810,
         alt: {
           nl: 'Herontwerp van Jontai Energy: JONTAI in grote groene letters boven “Aruba sunlight, made useful.”, met Explore solar en Visit the store',
           en: 'Jontai Energy redesign: JONTAI in large green letters above “Aruba sunlight, made useful.”, with Explore solar and Visit the store'

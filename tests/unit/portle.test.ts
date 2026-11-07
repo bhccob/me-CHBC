@@ -85,6 +85,8 @@ describe('Portle', () => {
     expect(portle.pictures).toEqual([
       {
         file: 'portle-portfolio.webp',
+        width: 1440,
+        height: 810,
         alt: { nl: 'Portle: het portfolio-overzicht van een voorbeeldlid', en: "Portle: an example member's portfolio overview" }
       }
     ]);

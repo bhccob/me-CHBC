@@ -79,7 +79,7 @@ export function ProjectSheet({ id, headingId, Heading = 'h2' }: { id: string; he
         <div className={phones ? 'ps-media ps-phones' : 'ps-media ps-wide'}>
           {(phones ? project.pictures : project.pictures.slice(0, 1)).map((picture) => (
             <figure key={picture.file}>
-              <img src={project.pictureUrl(picture.file) ?? undefined} alt={picture.alt[locale]} loading="lazy" decoding="async" />
+              <img src={project.pictureUrl(picture.file) ?? undefined} width={picture.width} height={picture.height} alt={picture.alt[locale]} loading="lazy" decoding="async" />
             </figure>
           ))}
         </div>

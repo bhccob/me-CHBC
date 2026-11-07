@@ -10,7 +10,9 @@ import { useTranslator } from '~/i18n/useTranslator';
 export function ProjectLinks(): JSX.Element {
   const { locale, t } = useTranslator();
   return (
-    <section id="projects" className="j-projects" aria-label={t.journey.rail.projects}>
+    <section id="projects" className="j-projects" aria-labelledby="j-projects-title">
+      {/* For whoever reads the page another way: the titles below are its h3s, and the 3D shows the words. */}
+      <h2 id="j-projects-title">{t.journey.rail.projects}</h2>
       {projects.byDate().map((project) => {
         const copy = project.copy(locale);
         return (

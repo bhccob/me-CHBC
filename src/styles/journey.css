@@ -1129,6 +1129,7 @@ html[data-project-open] .j-bar {
 }
 
 /* The flight's projects: their words are drawn in the 3D, so these are for whoever reads the page another way. */
+.j-projects > h2,
 .j-project h3,
 .j-project p {
   position: absolute;
