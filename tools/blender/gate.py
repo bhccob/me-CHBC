@@ -228,7 +228,7 @@ for k in range(BLADES):
     for i in range(len(pts)):
         j = (i + 1) % len(pts)
         bm.faces.new((t[i], b[i], b[j], t[j]))
-    me_ob = finish(f'blade-mesh-{k}', bm, BLADE, piv, smooth=False)
+    finish(f'blade-mesh-{k}', bm, BLADE, piv, smooth=False)
     piv.rotation_euler = (0, 0, a + math.pi + 0.2)
 
 

@@ -24,7 +24,7 @@ import { tsImport } from 'tsx/esm/api';
 
 const require = createRequire(import.meta.url);
 const { chromium } = process.env.PLAYWRIGHT_CORE ? require(resolve(process.env.PLAYWRIGHT_CORE)) : require('playwright-core');
-const { buildTimeline, scrollFromFrame } = await tsImport('../../src/journey/timeline.ts', import.meta.url);
+const { scrollFromFrame } = await tsImport('../../src/journey/timeline.ts', import.meta.url);
 const { projects } = await tsImport('../../src/data/projects.ts', import.meta.url);
 const { flightLayout, timelineFor } = await tsImport('../../src/journey/flight/layout.ts', import.meta.url);
 const { profile } = await tsImport('../../src/data/profile.ts', import.meta.url);

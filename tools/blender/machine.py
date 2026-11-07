@@ -681,7 +681,7 @@ DRIVE_XY = [(g.location.x, g.location.y) for g in drive]
 
 
 def pose(f):
-    pos = place_camera(f)
+    place_camera(f)
     # Exploded view: the four layers lift apart so you can read the stack, then close.
     X = ease(f, 276, 296) * (1 - ease(f, 312, 326))
     closed = 200 <= f and X <= 0.001
@@ -794,7 +794,7 @@ def emission(m):
 scene.frame_set(0)
 poses = {}
 for f in REVIEW_FRAMES:
-    pos = pose(f)
+    pose(f)
     bpy.context.view_layer.update()
     poses[str(f)] = {
         'parts': {name: part_state(name) for name in DRIVEN},
