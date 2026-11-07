@@ -17,6 +17,8 @@ export const SCROLL_PX_PER_FRAME = 30.6;
 /** The flight's length in the mock's distance units, and in frames, with the four projects of the approved mock-up. */
 const BASE_FLIGHT_END = 180;
 const FRAMES_PER_UNIT = 1.2;
+/** The frames the approved mock-up's flight took, from 350 to 566. */
+const BASE_FLIGHT_FRAMES = 216;
 
 export type ChapterId = 'who' | 'software' | 'games' | 'security' | 'mechatronics' | 'stack' | 'projects' | 'qa' | 'contact';
 
@@ -46,8 +48,9 @@ export interface Timeline {
 }
 
 /** The timeline for a flight of `flightEnd` distance units, with its projects read at `reads`. */
-export function buildTimeline(flightEnd = BASE_FLIGHT_END, reads: readonly number[] = [399, 448, 493, 537]): Timeline {
-  const shift = Math.round((flightEnd - BASE_FLIGHT_END) * FRAMES_PER_UNIT);
+export function buildTimeline(flightEnd = BASE_FLIGHT_END, reads: readonly number[] = [399, 448, 493, 537], flightFrames?: number): Timeline {
+  // The flight's own frame count when its layout gives one (`flightFrames` in flight/layout.ts), else as far as it goes.
+  const shift = flightFrames === undefined ? Math.round((flightEnd - BASE_FLIGHT_END) * FRAMES_PER_UNIT) : flightFrames - BASE_FLIGHT_FRAMES;
   const last = 934 + shift;
   return {
     last,

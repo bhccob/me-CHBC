@@ -885,7 +885,8 @@ async function reducedMotion(browser, step) {
   step.check(header === 'rgb(7, 6, 11)', `the words scroll under a solid header (${header})`);
   step.check(seen.tall, 'it scrolls as a normal page');
   for (const words of ['Software Engineering', 'Cookies Clicker', 'Jontai Energy', 'What is your plan after MBO?', "Let's talk.", 'bhccob@gmail.com']) step.check(seen.text.toLowerCase().includes(words.toLowerCase()), `"${words}" reads there`);
-  step.check(seen.links >= 10, `its links are there (${seen.links})`);
+  // Each project's, and the six of the rail, the contact and the header.
+  step.check(seen.links >= 6 + projects.all().length, `its links are there (${seen.links})`);
   // Its pictures come as they are reached.
   const whole = await page.evaluate(() => document.documentElement.scrollHeight);
   for (let at = 0; at < whole; at += 500) {
@@ -894,7 +895,8 @@ async function reducedMotion(browser, step) {
   }
   await page.waitForTimeout(400);
   const pictures = await page.evaluate(() => [...document.querySelectorAll('.j-calm img')].map((img) => img.complete && img.naturalWidth > 0));
-  step.check(pictures.length >= 6 && pictures.every(Boolean), `its stills are all there (${pictures.filter(Boolean).length} of ${pictures.length})`);
+  // The machine's still, and at least one picture for each project.
+  step.check(pictures.length >= 1 + projects.all().length && pictures.every(Boolean), `its stills are all there (${pictures.filter(Boolean).length} of ${pictures.length})`);
   writeFileSync(join(dir, 'calm.jpg'), await page.screenshot({ type: 'jpeg', quality: 86, fullPage: true }));
   await page.evaluate(() => scrollTo({ top: 0, behavior: 'auto' }));
   const y = await page.evaluate(() => scrollY);

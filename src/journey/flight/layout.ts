@@ -54,6 +54,8 @@ export interface DistanceTable {
   cum: Float64Array;
   n: number;
   end: number;
+  /** How long the whole flight takes, in the table's own time: slow stretches count for more. */
+  time: number;
 }
 
 /** How scroll turns into distance: slow where you read, quick between, never still. */
@@ -69,7 +71,21 @@ export function distanceTable(layout: FlightLayout): DistanceTable {
   }
   const total = cum[n];
   for (let i = 0; i <= n; i++) cum[i] /= total;
-  return { cum, n, end: layout.end };
+  return { cum, n, end: layout.end, time: total * (layout.end / n) };
+}
+
+/** The approved mock-up's four, whose flight took 216 frames: the measure of a frame of the flight's time. */
+const MOCK_FOUR = [{ id: 'a', year: 2025 }, { id: 'b', year: 2026 }, { id: 'c', year: 2026 }, { id: 'd', year: 2026 }];
+const MOCK_FRAMES = 216;
+let framesPerTime = 0;
+
+/**
+ * How many frames a flight takes: as many for each stretch of its time as the mock-up's did, so that its start plays
+ * frame for frame the same whatever projects come after, and taking one off or adding one moves only what follows.
+ */
+export function flightFrames(table: DistanceTable): number {
+  if (framesPerTime === 0) framesPerTime = MOCK_FRAMES / distanceTable(flightLayout(MOCK_FOUR)).time;
+  return Math.round(table.time * framesPerTime);
 }
 
 /** The distance along the flight, for how far through its frames it is, 0 to 1. */
@@ -86,11 +102,12 @@ export function distanceAt(t: number, { cum, n, end }: DistanceTable): number {
 
 /** The frame each project is read at. */
 export function readFrames(layout: FlightLayout, table: DistanceTable): number[] {
-  const [from, to] = buildTimeline(layout.end).flight;
+  const [from, to] = buildTimeline(layout.end, undefined, flightFrames(table)).flight;
   return layout.stops.map((stop) => Math.round(from + table.cum[Math.round(((stop.s - READ) / layout.end) * table.n)] * (to - from)));
 }
 
 /** The whole journey's timeline, with this flight in it. */
 export function timelineFor(layout: FlightLayout): Timeline {
-  return buildTimeline(layout.end, readFrames(layout, distanceTable(layout)));
+  const table = distanceTable(layout);
+  return buildTimeline(layout.end, readFrames(layout, table), flightFrames(table));
 }

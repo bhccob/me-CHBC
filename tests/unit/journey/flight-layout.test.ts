@@ -47,6 +47,30 @@ describe('the flight, from the project data', () => {
   });
 });
 
+/** How far along the flight a layout is at frame `f`. */
+const sAt = (layout: ReturnType<typeof flightLayout>, f: number): number => {
+  const tl = timelineFor(layout);
+  return distanceAt(Math.min(1, Math.max(0, (f - tl.flight[0]) / (tl.flight[1] - tl.flight[0]))), distanceTable(layout));
+};
+
+describe('the flight\'s frames: the same stretch of it in each, whatever follows (round 22)', () => {
+  // Within half a unit, half a frame's travel at full speed: a flight is a whole number of frames, so it may be half a frame
+  // longer or shorter than its time would make it.
+  it('plays frame for frame as the mock-up did, up to its last project', () => {
+    for (let f = 350; f <= 448; f += 2) expect(Math.abs(sAt(real, f) - sAt(mock, f)), `frame ${f}`).toBeLessThan(0.5);
+  });
+
+  it('reads its two projects at the mock-up\'s frames', () => {
+    expect(timelineFor(real).reads).toEqual(timelineFor(mock).reads.slice(0, 2));
+  });
+
+  it('keeps every frame before a project that is added as it was', () => {
+    const more = flightLayout([...four, { id: 'next', year: 2026 }]);
+    for (let f = 350; f <= 537; f += 3) expect(Math.abs(sAt(more, f) - sAt(mock, f)), `frame ${f}`).toBeLessThan(0.5);
+    expect(timelineFor(more).shift).toBeGreaterThan(0);
+  });
+});
+
 describe('the mock-up\'s four, where the spacing rules were set', () => {
   it('stands each where the approved mock-up has it', () => {
     expect(mock.stops.map((s) => s.s)).toEqual([40, 80, 116, 152]);
@@ -64,8 +88,9 @@ describe('a project added to the data alone', () => {
   const newYear = flightLayout([...four, { id: 'next', year: 2027 }]);
 
   it('extends the flight', () => {
-    expect([more.stops.at(-1)?.s, more.end, timelineFor(more).shift]).toEqual([188, 216, 43]);
-    expect(timelineFor(more).flight).toEqual([350, 609]);
+    // As many frames more as its stretch of the flight's time takes (round 22: counted by time, not by distance).
+    expect([more.stops.at(-1)?.s, more.end, timelineFor(more).shift]).toEqual([188, 216, 45]);
+    expect(timelineFor(more).flight).toEqual([350, 611]);
   });
 
   it('brings its own year gate in a new year', () => {
