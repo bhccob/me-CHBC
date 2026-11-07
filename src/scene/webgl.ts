@@ -1,7 +1,7 @@
 /**
  * Whether this browser can draw the scene: a WebGL2 context (three.js needs WebGL2), and not a software
  * rasteriser, where the scene would crawl at a few frames a second. The page shows the poster and the fallback
- * card for anything but 'ok' (SceneHost).
+ * card for anything but 'ok'.
  */
 import { gpuBench } from './gpuBench';
 

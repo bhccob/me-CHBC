@@ -51,7 +51,7 @@ export function cspFor(html) {
   const scripts = inlineHashes(html, SCRIPT_BLOCK, (attributes) => JSON_LD.test(attributes) || HAS_SRC.test(attributes));
   const styles = inlineHashes(html, STYLE_BLOCK, () => false);
 
-  // blob: is for the beads' GLB (public/models/bob-beads.glb) alone, never for scripts: three's GLTFLoader turns each
+  // blob: is for the models' GLB files (public/models) alone, never for scripts: three's GLTFLoader turns each
   // image embedded in it into a blob: URL and loads that, by fetch (its ImageBitmapLoader, so connect-src) where the
   // browser has createImageBitmap, else by an <img> (its TextureLoader, so img-src).
   return [

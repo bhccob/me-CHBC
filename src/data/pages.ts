@@ -23,18 +23,6 @@ export const PAGES: Record<PageId, string> = {
   contact: '/contact/',
 };
 
-/**
- * The new home's review address, beside the old home until the swap (plan 2026-11-06-bob-machine-rebuild, Task 1). Only with
- * JOURNEY=1 at build time; not a page of `PAGES`, so the sitemap and the deployed site never see it.
- */
-export const JOURNEY_ROUTE = '/journey/';
-export const JOURNEY_PATHS = ['/journey/', '/en/journey/'] as const;
-
-/** Whether this build has the review address. */
-export function journeyEnabled(): boolean {
-  return typeof process !== 'undefined' && process.env.JOURNEY === '1';
-}
-
 /** Every page in every locale, Dutch (at the root) first, then English (under /en/). Each path ends in `/`. */
 export function pagePaths(): string[] {
   const ordered = [defaultLocale, ...locales.filter((locale) => locale !== defaultLocale)];

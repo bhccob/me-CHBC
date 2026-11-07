@@ -1,10 +1,8 @@
 import type { JSX, MouseEvent } from 'react';
 import { Link, useLocation } from 'react-router';
-import { JOURNEY_PATHS, PAGES } from '~/data/pages';
+import { PAGES } from '~/data/pages';
 import { routeFromPath } from '~/i18n/locale';
 import { useTranslator } from '~/i18n/useTranslator';
-import { goToTop } from '~/input/useHomeScroll';
-import { isPlainClick } from './BackLink';
 import { SoundButton } from './journey/SoundButton';
 import { LangSwitch } from './LangSwitch';
 
@@ -23,41 +21,20 @@ export function closeMenuOnLink(event: MouseEvent<HTMLElement>): void {
   if (typeof menu.hidePopover === 'function' && menu.matches(':popover-open')) menu.hidePopover();
 }
 
-/** What `nameToTop` reads of a click and does to it. */
-type NameClick = Pick<MouseEvent, 'button' | 'metaKey' | 'ctrlKey' | 'shiftKey' | 'altKey' | 'defaultPrevented' | 'preventDefault'>;
-
 /**
- * The header's name clicked on the home page, at `pathname` (the home of the page's language, which is where the name
- * links): the story goes to its start by the Home key's own path (`toTop`, `goToTop` of src/input/useHomeScroll.ts: the
- * page to its top, then the move, or the step fade where the void failed), and the link does not navigate. Only a plain
- * left click that nothing has handled, and only when the home's scroll takes it; a click with a modifier or another
- * button, a click on any other page, and one the scroll does not take (3D off, a bead opening) are the link's, as ever.
- */
-export function nameToTop(event: NameClick, pathname: string, toTop: () => boolean = goToTop): void {
-  if (routeFromPath(pathname) !== PAGES.home || event.defaultPrevented || !isPlainClick(event)) return;
-  if (toTop()) event.preventDefault();
-}
-
-/**
- * The bar every page shows, the home page included: the way past the header to the content, the name (a link home;
- * the home's hero only says it to a screen reader; on the home itself it takes the story to its start, `nameToTop`), Work
- * and About, the contact page, the language switch, the Lite page and the 3D switch. It lives in the root layout, so it
- * never remounts.
+ * The bar every page shows: the way past the header to the content, the name, and the language switch. On the home
+ * page the name, Projects and Contact move through the journey and the sound button sits with them; on the other
+ * pages the name goes home and Contact goes to the contact page. It lives in the root layout, so it never remounts.
  *
- * On a laptop the nav is one row beside the name. On a phone (720 px wide or less) the header is one row, the name and
- * a Menu button, and the nav is a popover the button opens: a dark sheet under the header with Work, About and Contact
- * large, and the language, Lite and the 3D switch small at its foot (Bob picked option A of the phone header mock-up,
- * 2026-10-22). The popover is the browser's own, so it opens and closes without script, Escape and a tap outside
+ * On a phone (720 px wide or less) the header is one row, the name and a Menu button, and the nav is a popover the
+ * button opens. The popover is the browser's own, so it opens and closes without script, Escape and a tap outside
  * close it, and the button tells assistive technology whether it is open.
- *
- * Work and About both open Lite, at its work and about sections. Work opens Lite for now; where it goes now that the
- * home's void holds the projects is Bob's choice.
  */
 export function SiteHeader(): JSX.Element {
   const i18n = useTranslator();
   const { t } = i18n;
   const { pathname } = useLocation();
-  const onJourney = (JOURNEY_PATHS as readonly string[]).includes(pathname);
+  const onJourney = routeFromPath(pathname) === PAGES.home;
 
   return (
     <>
@@ -70,7 +47,7 @@ export function SiteHeader(): JSX.Element {
             Bob Chung
           </a>
         ) : (
-          <Link className="site-name" to={i18n.path(PAGES.home)} aria-label={t.nav.home} onClick={(event) => nameToTop(event, pathname)}>
+          <Link className="site-name" to={i18n.path(PAGES.home)} aria-label={t.nav.home}>
             Bob Chung
           </Link>
         )}

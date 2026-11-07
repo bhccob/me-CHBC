@@ -33,14 +33,14 @@
   --j-sheet-3-word: #f5dcae;
 }
 
-html[data-route='journey'],
-html[data-route='journey'] body {
+html[data-route='home'],
+html[data-route='home'] body {
   background: var(--j-bg);
   color: var(--j-ink);
   font-family: var(--j-sans);
 }
 
-html[data-route='journey'] .poster {
+html[data-route='home'] .poster {
   display: none;
 }
 
@@ -126,12 +126,12 @@ html[data-route='journey'] .poster {
 }
 
 /* The header on the journey. */
-html[data-route='journey'] main {
+html[data-route='home'] main {
   position: static;
   z-index: auto;
 }
 
-html[data-route='journey'] .site-header {
+html[data-route='home'] .site-header {
   position: fixed;
   inset: 0 0 auto;
   z-index: 6;
@@ -1188,7 +1188,7 @@ html[data-project-open] .j-bar {
 
 /* On a phone: the words above and below the machine, and nothing past the edge of the page. */
 @media (max-width: 760px) {
-  html[data-route='journey'] .site-header {
+  html[data-route='home'] .site-header {
     padding: 0 18px;
   }
 

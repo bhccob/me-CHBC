@@ -72,7 +72,7 @@ describe('the Lite page', () => {
       });
 
       it('shows each section\u2019s heading (the work section keeps its old heading, "Projects, one build at a time")', () => {
-        const headings = [t.journey.stack.title, t.work.title, t.about.title, t.skills.title, t.career.title, t.life.title, t.compass.qa.title, t.cta.title];
+        const headings = [t.journey.stack.title, t.work.title, t.about.title, t.skills.title, t.career.title, t.life.title, t.pages.questions, t.cta.title];
         const found = [...html.matchAll(/<h2[^>]*>(.*?)<\/h2>/g)].map((match) => textOf(match[1]));
         expect(found).toEqual(headings.map(stripMarkup));
       });
@@ -149,12 +149,6 @@ describe('the Lite page', () => {
         expect(image).toContain(`width="${PORTRAIT_SIZE.width}"`);
         expect(image).toContain(`height="${PORTRAIT_SIZE.height}"`);
         expect(t.about.portraitAlt.length).toBeGreaterThan(10);
-      });
-
-      it('leaves out the terminal, the clocks and the engine room', () => {
-        for (const string of [t.hood.title, t.hood.intro, t.terminal.welcome, t.about.clock.label, t.footer.terminalHint]) {
-          expect(text).not.toContain(stripMarkup(string));
-        }
       });
 
       it('writes no style element and no style attribute', () => {

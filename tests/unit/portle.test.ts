@@ -9,9 +9,6 @@ import { projects } from '~/data/projects';
 import { redirects } from '~/data/redirects';
 import { en } from '~/i18n/en';
 import { nl } from '~/i18n/nl';
-import { WORLD_PROJECTS } from '~/scene/bob/journey';
-import { objectKind } from '~/scene/bob/worldLayout';
-import { ProjectViews } from '~/ui/ProjectView';
 
 // Porfael was renamed Portle (Bob, 2026-10-29: "update my project to current projects"; spec
 // 2026-10-29-bob-stack-3-design.md, goal 5): its name, words, tools, links and a picture from its own repository.
@@ -23,12 +20,6 @@ const LOCALES = [
 
 const render = (path: string, page: ComponentType): string =>
   renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(page)));
-/** Portle's view over the stack in the markup. */
-const viewOf = (html: string): string => {
-  const start = html.indexOf('data-project="portle"');
-  const end = html.indexOf('data-project="', start + 20);
-  return html.slice(start, end < 0 ? undefined : end);
-};
 
 describe('Portle', () => {
   const portle = projects.byId('portle')!;
@@ -36,19 +27,16 @@ describe('Portle', () => {
   it('shows Portle, not Porfael', () => {
     expect(projects.all().map((p) => p.id)).toEqual(['steady', 'portle', 'jontai-energy', 'cookies-clicker']);
     expect(portle.title).toBe('Portle');
-    expect(WORLD_PROJECTS).toContain('portle');
-    expect(objectKind('portle')).toBe('portfolio');
     for (const [, t, prefix] of LOCALES) {
       const pages = [
         render(`${prefix}/`, Home),
-        render(`${prefix}/`, ProjectViews),
         render(`${prefix}/lite/`, Lite),
         render(`${prefix}/projects/portle/`, ProjectPage)
       ];
-      expect(pages[1]).toContain('data-project="portle"');
-      expect(pages[2]).toContain('Portle');
-      expect(pages[3]).toMatch(/<h1[^>]*><span>Portle <\/span><\/h1>/);
-      expect(pages[3]).toContain(t === nl ? portle.copy('nl').summary : portle.copy('en').summary);
+      expect(pages[0]).toContain('id="project-portle"');
+      expect(pages[1]).toContain('Portle');
+      expect(pages[2]).toMatch(/<h1[^>]*><span>Portle <\/span><\/h1>/);
+      expect(pages[2]).toContain(t === nl ? portle.copy('nl').summary : portle.copy('en').summary);
       for (const html of pages) expect(html).not.toMatch(/porfael/i);
     }
   });
@@ -78,15 +66,11 @@ describe('Portle', () => {
       const page = render(`${prefix}/projects/portle/`, ProjectPage);
       expect(page).toContain('href="https://portle-azure.vercel.app"');
       expect(page).toContain('href="https://github.com/bhccob/Portle"');
-      expect(page).toContain(t.needle.project.site);
+      expect(page).toContain(t.pages.site);
       expect(page).toContain(t.work.github);
-      const view = viewOf(render(`${prefix}/`, ProjectViews));
-      expect(view).toContain('href="https://portle-azure.vercel.app"');
-      expect(view).toContain('href="https://github.com/bhccob/Portle"');
-      expect(view).toContain(t.needle.project.site);
     }
     // A site, not a download.
-    expect([nl.needle.project.site, en.needle.project.site]).toEqual(['Naar de site', 'Visit the site']);
+    expect([nl.pages.site, en.pages.site]).toEqual(['Naar de site', 'Visit the site']);
   });
 
   it("forwards Porfael's old addresses", () => {
@@ -107,8 +91,6 @@ describe('Portle', () => {
     expect(portle.pictureCaption('nl')).toBe('Portle in early access, met voorbeeldgegevens');
     expect(portle.pictureCaption('en')).toBe('Portle in early access, with example data');
     expect(typeof portle.pictureUrl('portle-portfolio.webp')).toBe('string');
-    const view = viewOf(render('/', ProjectViews));
-    expect((view.match(/class="pv-card pv-wide"/g) ?? []).length).toBe(1);
-    expect(view).toContain('alt="Portle: het portfolio-overzicht van een voorbeeldlid"');
+    expect(render('/projects/portle/', ProjectPage)).toContain('alt="Portle: het portfolio-overzicht van een voorbeeldlid"');
   });
 });

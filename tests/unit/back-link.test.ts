@@ -7,7 +7,7 @@ import { localeFromPath } from '../../src/i18n/locale';
 import { nl } from '../../src/i18n/nl';
 import { Translator } from '../../src/i18n/Translator';
 import { translatorFor } from '../../src/i18n/useTranslator';
-import { BACK_STATE, resetRouteSync, syncRoute } from '../../src/state/routeSync';
+import { noteLocation, resetVisitStart } from '../../src/app/visitStart';
 import { BackLink, goBack, homeTarget, isEditableTarget, isPlainClick, popoverIsOpen, splitBackLabel } from '../../src/ui/BackLink';
 
 /** The back link as the server renders it, on a page at `path`. */
@@ -26,12 +26,12 @@ describe('goBack', () => {
 
   beforeEach(() => {
     calls.length = 0;
-    resetRouteSync();
+    resetVisitStart();
   });
-  afterEach(resetRouteSync);
+  afterEach(resetVisitStart);
 
   it('goes home when the visit began on this page', () => {
-    syncRoute({ pathname: '/projects/steady/', key: 'default' });
+    noteLocation({ key: 'default' });
     goBack(navigate, '/');
     expect(calls).toEqual(['/']);
   });
@@ -40,45 +40,37 @@ describe('goBack', () => {
     ['/projects/steady/', '/'],
     ['/en/projects/steady/', '/en/'],
   ])('goes home in the language of the page at %s, as the link does (%s)', (pathname, home) => {
-    syncRoute({ pathname, key: 'default' });
+    noteLocation({ key: 'default' });
     goBack(navigate, homeTarget(translatorFor(localeFromPath(pathname))));
     expect(calls).toEqual([home]);
   });
 
   it('goes home in the current language after a language switch on the page the visit began on', () => {
-    syncRoute({ pathname: '/projects/steady/', key: 'default' }, NavigationType.Pop);
+    noteLocation({ key: 'default' }, NavigationType.Pop);
     // The switch replaces the entry (LangSwitch): the page in the other language, still the first page of the visit.
-    syncRoute({ pathname: '/en/projects/steady/', key: 'r1' }, NavigationType.Replace);
+    noteLocation({ key: 'r1' }, NavigationType.Replace);
     goBack(navigate, homeTarget(translatorFor(localeFromPath('/en/projects/steady/'))));
     expect(calls).toEqual(['/en/']);
   });
 
   it('goes home after the contact form replaces ?sent=1 on a direct load', () => {
-    syncRoute({ pathname: '/contact/', key: 'default' }, NavigationType.Pop);
-    syncRoute({ pathname: '/contact/', key: 'r1' }, NavigationType.Replace);
+    noteLocation({ key: 'default' }, NavigationType.Pop);
+    noteLocation({ key: 'r1' }, NavigationType.Replace);
     goBack(navigate, '/');
     expect(calls).toEqual(['/']);
   });
 
-  it("says it is the page's own Back when it pushes the home page, so the story lands at the bead's stop", () => {
-    const options: unknown[] = [];
-    const recording = ((to: unknown, opts?: unknown) => void options.push([to, opts])) as NavigateFunction;
-    syncRoute({ pathname: '/projects/cookies-clicker/', key: 'default' });
-    goBack(recording, '/');
-    expect(options).toEqual([['/', { state: BACK_STATE }]]);
-  });
-
   it('goes back through the history when the visitor came from another page', () => {
-    syncRoute({ pathname: '/', key: 'default' });
-    syncRoute({ pathname: '/projects/steady/', key: 'k1' });
+    noteLocation({ key: 'default' });
+    noteLocation({ key: 'k1' });
     goBack(navigate, '/');
     expect(calls).toEqual([-1]);
   });
 
   it('goes home again on the page the document loaded on, after a round trip', () => {
-    syncRoute({ pathname: '/projects/steady/', key: 'default' });
-    syncRoute({ pathname: '/', key: 'k1' });
-    syncRoute({ pathname: '/projects/steady/', key: 'default' });
+    noteLocation({ key: 'default' });
+    noteLocation({ key: 'k1' });
+    noteLocation({ key: 'default' });
     goBack(navigate, '/');
     expect(calls).toEqual(['/']);
   });
@@ -102,10 +94,10 @@ describe('isPlainClick', () => {
 
 describe('splitBackLabel', () => {
   it('splits the approved copy into its key hint and its label, without changing the copy', () => {
-    expect(nl.needle.project.back).toBe('Esc · terug');
-    expect(en.needle.project.back).toBe('Esc · back');
-    expect(splitBackLabel(nl.needle.project.back)).toEqual({ hint: 'Esc', label: 'terug' });
-    expect(splitBackLabel(en.needle.project.back)).toEqual({ hint: 'Esc', label: 'back' });
+    expect(nl.pages.back).toBe('Esc · terug');
+    expect(en.pages.back).toBe('Esc · back');
+    expect(splitBackLabel(nl.pages.back)).toEqual({ hint: 'Esc', label: 'terug' });
+    expect(splitBackLabel(en.pages.back)).toEqual({ hint: 'Esc', label: 'back' });
   });
 
   it('takes a string without a separator for a label alone', () => {

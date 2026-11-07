@@ -4,7 +4,7 @@ import { PAGES, type PageId } from './pages';
 
 // Screenshots live in src/assets. A project names its file once; that name
 // gives the built image URL. Only under Vite (and Vitest), which rewrites the
-// glob: plain Node has neither, and the proof harness (tools/proof/needle.mjs)
+// glob: plain Node has neither, and the proof harness (tools/proof/journey.mjs)
 // reads the chapters, built from these projects, through tsx.
 const screenshots: Record<string, string> = import.meta.env
   ? import.meta.glob<string>('../assets/*.{png,jpg,jpeg,webp}', { query: '?url', import: 'default', eager: true })
@@ -23,14 +23,6 @@ export interface Picture {
 }
 
 export type ProjectId = 'steady' | 'portle' | 'jontai-energy' | 'cookies-clicker';
-
-/** A pin on the project's object: the layer of the build it marks. The position is a placeholder in the object's local frame (units of about the object's radius), tuned in M5. */
-export interface TestPoint {
-  id: string;
-  /** A technical label, translated like the rest of the HUD. */
-  label: Record<Locale, string>;
-  position: readonly [number, number, number];
-}
 
 /** What the flight needs of a project (spec 2026-11-05-bob-machine-rebuild-design.md, section 5.6). Its pictures are in public/flight. */
 export interface FlightInfo {
@@ -74,11 +66,7 @@ export interface ProjectData {
   order: number;
   flight: FlightInfo;
   /** What stands in the void; `fallbackGeometry` is built in three.js until a rendered plate or mesh replaces it. */
-  object: { glb?: string; plate?: string; video?: string; fallbackGeometry: string };
-  testPoints: TestPoint[];
   palette: { accent: string; glow: string };
-  /** How the object moves, in words: the brief for the animation. */
-  motion: string;
   stack: string[];
   links: { live?: string; repo?: string };
   /** Screenshot file name in src/assets, e.g. "cookies.png"; a project without one has none. */
@@ -111,10 +99,7 @@ export class Project {
   get order() { return this.data.order; }
   get flight() { return this.data.flight; }
   get categoryId() { return this.data.categoryId; }
-  get object() { return this.data.object; }
-  get testPoints() { return this.data.testPoints; }
   get palette() { return this.data.palette; }
-  get motion() { return this.data.motion; }
   get stack() { return this.data.stack; }
   get links() { return this.data.links; }
   get onPath() { return this.data.onPath === true; }
@@ -144,10 +129,6 @@ export class Project {
 
   get category(): Category {
     return categories.byId(this.data.categoryId);
-  }
-
-  testPointLabels(locale: Locale): string[] {
-    return this.data.testPoints.map((point) => point.label[locale]);
   }
 
   copy(locale: Locale): ProjectCopy {
@@ -232,18 +213,8 @@ export const projects = new ProjectCatalog([
       screens: 'phones',
       images: ['steady-1.webp', 'steady-3.webp', 'steady-2.webp'],
     },
-    object: { fallbackGeometry: 'streak-path-7-blocks+trophy' },
-    // Its README's own list (github.com/bhccob/steady), in that order.
-    testPoints: [
-      { id: 'reminders', label: { en: 'REMINDERS', nl: 'HERINNERINGEN' }, position: [-0.4, 0.1, 0] },
-      { id: 'streak', label: { en: 'STREAK PATH', nl: 'STREAKPAD' }, position: [-0.16, 0.16, -0.14] },
-      { id: 'insights', label: { en: 'INSIGHTS', nl: 'INZICHTEN' }, position: [0.08, 0.21, -0.28] },
-      { id: 'support', label: { en: 'SUPPORT LEVELS', nl: 'STEUNNIVEAUS' }, position: [0.32, 0.27, -0.42] },
-      { id: 'privacy', label: { en: 'PRIVACY', nl: 'PRIVACY' }, position: [0.46, 0.3, -0.49] }
-    ],
     // Its logo kit's Mark Bronze and Steady Beige.
     palette: { accent: '#7f6440', glow: '#e8d5b5' },
-    motion: "the streak path's blocks mark one after another, as days do; the trophy at the week's end lights",
     stack: ['Expo (SDK 58)', 'React Native', 'TypeScript', 'SQLite'],
     links: { repo: 'https://github.com/bhccob/steady' },
     // Run from a copy of its last commit on the web, with stand-in details only (the app's own example name, one reminder).
@@ -294,17 +265,7 @@ export const projects = new ProjectCatalog([
       pieceImage: 'ring-piece.webp',
       images: ['portle.webp'],
     },
-    object: { fallbackGeometry: 'allocation-ring-5+relic' },
-    // Its product spec's features (Porfael.md, before it was renamed Portle; Bob, 2026-10-28).
-    testPoints: [
-      { id: 'portfolio', label: { en: 'PORTFOLIO', nl: 'PORTEFEUILLE' }, position: [0.32, 0.3, 0] },
-      { id: 'paper', label: { en: 'PAPER TRADES', nl: 'OEFENTRADES' }, position: [-0.1, 0.3, 0.3] },
-      { id: 'theses', label: { en: 'THESES', nl: 'THESES' }, position: [-0.3, 0.3, -0.1] },
-      { id: 'guilds', label: { en: 'GUILDS', nl: 'GILDES' }, position: [0.1, 0.3, -0.3] },
-      { id: 'relics', label: { en: 'RELICS', nl: 'RELICS' }, position: [0, 0.3, 0] }
-    ],
     palette: { accent: '#7c5cff', glow: '#efb53d' },
-    motion: 'the ring of shares parts a little; the relic at its middle turns and lights',
     // Its README and package.json (github.com/bhccob/Portle, 2026-10-29).
     stack: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'Drizzle', 'PostgreSQL', 'Better Auth'],
     links: { repo: 'https://github.com/bhccob/Portle', live: 'https://portle-azure.vercel.app' },
@@ -353,17 +314,7 @@ export const projects = new ProjectCatalog([
       piece: 'sun',
       images: ['jontai.webp'],
     },
-    object: { fallbackGeometry: 'pv-module-4x4+junction-box' },
-    // What the redesign has (its design spec and PRODUCT.md): the day film, the product panels, the 3000 K to 6500 K bulb
-    // slider and the quote request.
-    testPoints: [
-      { id: 'tp1', label: { en: 'DAY FILM', nl: 'DAGFILM' }, position: [-0.45, 0.03, -0.2] },
-      { id: 'tp2', label: { en: 'PRODUCT PANELS', nl: 'PRODUCTPANELEN' }, position: [0.0, 0.03, 0.05] },
-      { id: 'tp3', label: { en: 'LIGHT SLIDER', nl: 'LICHTSCHUIF' }, position: [0.62, 0.06, 0.55] },
-      { id: 'tp4', label: { en: 'QUOTE PATH', nl: 'OFFERTEPAD' }, position: [0.95, 0.0, 0.8] }
-    ],
     palette: { accent: '#00a650', glow: '#00d16a' },
-    motion: 'sun sweep: a light arc crosses the module, cells charge in page order; single-axis tracker tilt',
     // Its package.json and PRODUCT.md (github.com/bhccob/Jontai-Energy, 9546f43): the film rendered in Blender Cycles.
     stack: ['Next.js', 'React', 'TypeScript', 'GSAP', 'Lenis', 'Blender'],
     // No live link: jontaienergy.com is not Bob's build, and the redesign is not published.
@@ -438,17 +389,8 @@ export const projects = new ProjectCatalog([
       pieceImage: 'cookie-piece.webp',
       images: ['cookies.webp'],
     },
-    object: { fallbackGeometry: 'clockwork-movement-8-wheels' },
-    testPoints: [
-      { id: 'tp1', label: { en: 'CLICK LOOP', nl: 'KLIKLUS' }, position: [0.92, 0.0, 0.0] },
-      { id: 'tp2', label: { en: '8 PRODUCERS', nl: '8 PRODUCENTEN' }, position: [-0.2, 0.08, 0.3] },
-      { id: 'tp3', label: { en: 'BOOSTS & EVENTS', nl: 'BOOSTS & EVENTS' }, position: [0.35, 0.1, -0.45] },
-      { id: 'tp4', label: { en: 'SAVE', nl: 'OPSLAG' }, position: [-0.55, 0.06, -0.35] },
-      { id: 'tp5', label: { en: 'STATS', nl: 'STATISTIEKEN' }, position: [0.0, 0.14, 0.0] }
-    ],
     // The glow, ember orange, is provisional: it has not been checked against the art direction's palette yet.
     palette: { accent: '#c69255', glow: '#ff8a3d' },
-    motion: 'discrete 1 Hz escapement tick, gear train steps per beat; beat doubles briefly on boost',
     stack: ['HTML', 'CSS', 'JavaScript', 'Bootstrap 5', 'localStorage'],
     links: { repo: 'https://github.com/bhccob/Cookies-Clicker' },
     image: 'cookies.png',

@@ -1,4 +1,4 @@
-// The share image's source and the calm journey's still of the machine, shot from the real journey. Run after a JOURNEY=1 build,
+// The share image's source and the calm journey's still of the machine, shot from the real journey. Run after a build,
 // with the site served on BASE, and commit what it writes.
 //   BASE=http://localhost:4490 node tools/share_image.mjs      (PLAYWRIGHT_CORE as in tools/proof)
 import { createRequire } from 'node:module';
@@ -11,7 +11,7 @@ const browser = await chromium.launch({ channel: 'msedge', headless: false, args
 const context = await browser.newContext({ viewport: { width: 1200, height: 630 } });
 await context.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
 const page = await context.newPage();
-await page.goto(`${BASE}/en/journey/?proof`);
+await page.goto(`${BASE}/en/?proof`);
 await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
 // The tree grows in its first seconds.
 await page.waitForTimeout(6000);

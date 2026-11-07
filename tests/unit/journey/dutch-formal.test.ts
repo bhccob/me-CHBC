@@ -16,7 +16,6 @@ describe('the Dutch speaks formally to its visitor', () => {
     ['the journey', nl.journey],
     ['the contact page', nl.contact],
     ['the page not found', nl.notFound],
-    ['the end of the old Q&A ring', nl.end.ring],
   ])('%s', (_where, words) => {
     expect(sentences(words).filter((sentence) => INFORMAL.test(sentence))).toEqual([]);
   });

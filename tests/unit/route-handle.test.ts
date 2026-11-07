@@ -14,12 +14,9 @@ const NAMES = Object.keys(HANDLES) as RouteName[];
 const moduleOf = (entry: RouteConfigEntry): Promise<{ handle?: unknown }> => import(fileURLToPath(new URL(`../../src/app/${entry.file}`, import.meta.url)));
 
 describe('the route handle: one table for every kind of page', () => {
-  it('names each kind of page once, with the scene it shows; only the old home shows one', () => {
-    expect(NAMES.sort()).toEqual(['contact', 'home', 'journey', 'lite', 'not-found', 'project']);
+  it('names each kind of page once', () => {
+    expect(NAMES.sort()).toEqual(['contact', 'home', 'lite', 'not-found', 'project']);
     for (const name of NAMES) expect(HANDLES[name].route, name).toBe(name);
-    expect(NAMES.filter((name) => HANDLES[name].scene === null).sort()).toEqual(['contact', 'journey', 'lite', 'not-found', 'project']);
-    expect(HANDLES.home.scene).toBe('home');
-    expect(HANDLES.project.scene).toBeNull();
   });
 
   it('gives every page of the site a kind, and no page is the not-found kind', () => {

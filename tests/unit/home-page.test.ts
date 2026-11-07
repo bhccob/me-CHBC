@@ -1,124 +1,57 @@
-import { readFileSync } from 'node:fs';
+import type { RouteConfigEntry } from '@react-router/dev/routes';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import Home from '../../src/app/routes/home';
+import routes from '../../src/app/routes';
 import { en } from '../../src/i18n/en';
 import { nl } from '../../src/i18n/nl';
 
 const render = (path: string): string => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(Home)));
 
-/** The declarations of the first rule of base.css whose selector is exactly `selector`. */
-const base = readFileSync(fileURLToPath(new URL('../../src/styles/base.css', import.meta.url)), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-function rule(selector: string): string {
-  for (const match of base.matchAll(/([^{}]+)\{([^{}]*)\}/g)) if (match[1].trim() === selector) return match[2];
-  throw new Error(`no rule for ${selector}`);
+const slashed = (path: string): string => `/${path}/`.replace(/\/+/g, '/');
+
+/** The URL path of every route entry, as the router builds it. */
+function routePaths(entries: readonly RouteConfigEntry[], parent = ''): string[] {
+  return entries.flatMap((entry) => {
+    const path = entry.path ? `${parent}/${entry.path}` : parent;
+    const own = entry.index || entry.path ? [slashed(path)] : [];
+    return [...own, ...routePaths(entry.children ?? [], path)];
+  });
 }
 
-describe('the home page', () => {
-  for (const [path, t] of [
+/** Every file under a folder of the repo. */
+function sourceFiles(folder: string): string[] {
+  const root = fileURLToPath(new URL(`../../${folder}`, import.meta.url));
+  const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    return statSync(path).isDirectory() ? walk(path) : [path];
+  });
+  return walk(root).filter((path) => /\.(ts|tsx|css)$/.test(path));
+}
+
+describe('the home page is the journey', () => {
+  it.each([
     ['/', nl],
     ['/en/', en],
-  ] as const) {
-    describe(path, () => {
-      const html = render(path);
-
-      it('keeps the name as its one h1, visually hidden: the engraving says it, a screen reader and a crawler read it', () => {
-        const headings = [...html.matchAll(/<h1\b([^>]*)>(.*?)<\/h1>/g)];
-        expect(headings).toHaveLength(1);
-        expect(headings[0][2]).toBe(t.needle.hero.name);
-        expect(headings[0][1]).toMatch(/class="visually-hidden"/);
-      });
-
-      it('has no tagline, and keeps the scroll cue', () => {
-        expect(html).not.toContain(t.needle.hero.tagline);
-        expect(html).not.toContain('hero-tagline');
-        expect(html).toMatch(new RegExp(`<p class="hero-cue"><span class="hero-cue-word">${t.needle.hero.scrollCue}</span></p>`));
-      });
-
-      it("links no country page, and the four projects from the world's names, the areas' words, the open project's page and the nav; no bead label is left", () => {
-        expect(html).not.toContain('/about/');
-        const links = html.match(/href="[^"]*\/projects\/[a-z-]+\/"/g) ?? [];
-        expect(links).toHaveLength(16);
-        expect(new Set(links).size).toBe(4);
-        expect(html).not.toContain('bead-label');
-        // The areas' words and dots come out of the server inert, until the scene shows them.
-        expect(html.match(/class="area-caption"[^>]*inert=""/g)).toHaveLength(3);
-        expect(html.match(/class="project-view"[^>]*inert=""/g)).toHaveLength(4);
-        expect(html).toMatch(/class="area-dots"[^>]*inert=""/);
-      });
-
-      it('server-renders the five facts as a list before the nav, the words of the table with "/" as a line break', () => {
-        const from = html.indexOf('<ol class="light-facts"');
-        expect(from).toBeGreaterThan(-1);
-        expect(from).toBeLessThan(html.indexOf('class="home-nav"'));
-        const list = html.slice(from, html.indexOf('</ol>', from));
-        const items = [...list.matchAll(/<li>(.*?)<\/li>/g)].map((match) => match[1]!.replace(/<br\/>/g, ' / '));
-        expect(items).toEqual([...t.lightDive.facts]);
-      });
-
-      it("draws the facts beside the light as one layer the screen reader skips: five labels, number, line and words", () => {
-        const from = html.indexOf('<div class="light-fact-layer" aria-hidden="true">');
-        expect(from).toBeGreaterThan(-1);
-        const layer = html.slice(from, html.indexOf('<ol class="light-facts"'));
-        expect(layer.match(/class="light-fact"/g)).toHaveLength(5);
-        expect(layer.match(/class="light-fact-line"/g)).toHaveLength(5);
-        expect(layer).toContain('<span class="light-fact-n">05</span>');
-      });
-
-      it("the end page's link is in .home-nav with the copy, NL and EN", () => {
-        const from = html.indexOf('<nav class="home-nav"');
-        const nav = html.slice(from, html.indexOf('</nav>', from));
-        const copy = t.end.failLink.replace(/&/g, '&amp;');
-        expect(nav).toContain(`<button type="button" class="end-link">${copy}</button>`);
-        expect(html.match(/class="end-link"/g)).toHaveLength(1);
-      });
-    });
-  }
-
-  it("shows the end page's link whenever 3D is on, in the nav (hidden with it, shown on focus), and never with 3D off, where the end page is in the flow", () => {
-    expect(rule('.end-link')).toMatch(/display:\s*none/);
-    const shown = rule("html[data-3d='on'] .end-link");
-    expect(shown).toMatch(/display:\s*[a-z-]+/);
-    expect(shown).not.toMatch(/display:\s*none/);
-    expect(base.indexOf("html[data-3d='on'] .end-link {")).toBeGreaterThan(base.indexOf('.end-link {'));
-    // Not only with the void failed any more: a screen reader needs it with the void ready too.
-    expect(base).not.toContain("html[data-void='failed'] .end-link");
+  ] as const)('%s opens on the first view', (path, t) => {
+    const html = render(path);
+    expect(html).toContain(t.journey.hero.cta);
+    expect(html).toContain('id="j-hero"');
   });
 
-  it('hides the facts list visually with 3D on, as the nav is (clipped, for screen readers), and leaves it in the flow with 3D off', () => {
-    const css = rule("html[data-3d='on'] .light-facts");
-    expect(css).toMatch(/position:\s*absolute/);
-    expect(css).toMatch(/clip-path:\s*inset\(50%\)/);
-    expect(css).not.toMatch(/display:\s*none/);
-    expect(rule('.light-facts')).not.toMatch(/display:\s*none/);
-    // Its words wrap in the clipped box: a fact on one line would reach past a phone's edge (the harness's mobile step).
-    expect(css).not.toMatch(/white-space:\s*nowrap/);
+  it('has no review address any more', async () => {
+    const paths = routePaths(await routes);
+    expect(paths).not.toContain('/journey/');
+    expect(paths).not.toContain('/en/journey/');
   });
 
-  it('has a visually-hidden utility that leaves the text to assistive technology (clipped, never display:none or visibility:hidden)', () => {
-    const css = rule('.visually-hidden');
-    expect(css).toMatch(/position:\s*absolute/);
-    expect(css).toMatch(/width:\s*1px/);
-    expect(css).toMatch(/height:\s*1px/);
-    expect(css).toMatch(/overflow:\s*hidden/);
-    expect(css).toMatch(/clip-path:\s*inset\(50%\)/);
-    expect(css).not.toMatch(/display:\s*none|visibility:\s*hidden/);
-  });
-});
-
-// The Q&A's ring (spec 2026-10-29-bob-stack-2-design.md, goal 1): its words are client-only, with 3D on; the end page
-// stays in the HTML for crawlers and 3D off.
-describe("the home's Q&A", () => {
-  const source = readFileSync(fileURLToPath(new URL('../../src/app/routes/home.tsx', import.meta.url)), 'utf8');
-
-  it("mounts the ring's words", () => {
-    expect(source).toMatch(/<QaRing \/>/);
-  });
-
-  it('keeps the end page in the HTML for 3D off and crawlers', () => {
-    expect(source).toMatch(/<EndPage \/>/);
+  it('keeps nothing of the old scenes, their scroll or their models', () => {
+    const left = sourceFiles('src').filter((file) => /VirtualScroll|SceneHost|scene\/bob|engine\/bob/.test(readFileSync(file, 'utf8')));
+    expect(left).toEqual([]);
   });
 });

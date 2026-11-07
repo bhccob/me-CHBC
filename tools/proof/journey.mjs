@@ -4,12 +4,12 @@
  * and the stills in a folder, exit 1 if a step failed. Every step also fails on a console error, a page error or a CSP
  * violation.
  *
- *   JOURNEY=1 PUBLIC_WEB3FORMS_KEY=local-proof-placeholder npm run build
+ *   PUBLIC_WEB3FORMS_KEY=local-proof-placeholder npm run build
  *   STEPS=stills,smooth node tools/proof/journey.mjs
  *
  * Environment:
  *   BASE             site to test; by default the harness serves dist/client itself
- *   ROUTE            the journey's address, default /journey/
+ *   ROUTE            the journey's address, default /
  *   GPU=weak         Edge's low-power GPU with the CPU throttled 4x at 1080p, the slowest machine the site is held to
  *   PROOF_DIR        where results.json and the stills go, default ./proof-out
  *   STEPS            comma list of steps, default all
@@ -32,7 +32,7 @@ const profileAge = () => profile.ageOn();
 const { HITS } = await tsImport('../../src/journey/sound/score.ts', import.meta.url);
 const HIT_NAMES = HITS.map(([, name]) => name);
 
-const ROUTE = process.env.ROUTE ?? '/journey/';
+const ROUTE = process.env.ROUTE ?? '/';
 const OUT = resolve(process.env.PROOF_DIR ?? './proof-out');
 const WEAK = process.env.GPU === 'weak';
 const ARGS = ['--use-angle=d3d11', '--enable-gpu', ...(WEAK ? ['--force_low_power_gpu'] : [])];
@@ -232,7 +232,7 @@ async function langKeepsPlace(browser, step) {
   const { context, page } = await openJourney(browser, step);
   await goToFrame(page, 300);
   await page.locator('header a[hreflang]').click();
-  await page.waitForURL(/\/en\/journey\//, { timeout: 10_000 });
+  await page.waitForURL(/\/en\/(\?|#|$)/, { timeout: 10_000 });
   await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
   await page.waitForTimeout(400);
   const here = await page.evaluate(() => window.__journeyDebug?.frame());
@@ -372,7 +372,7 @@ async function coveredShare(page, word) {
 
 /** The long word on the last sheet reads, on the two common sizes. */
 async function engineeringReadable(browser, step) {
-  for (const [viewport, route, word] of [[{ width: 1440, height: 810 }, '/en/journey/', 'Engineering'], [{ width: 1920, height: 1080 }, '/en/journey/', 'Engineering'], [{ width: 1440, height: 810 }, '/journey/', 'Mechatronica'], [{ width: 1920, height: 1080 }, '/journey/', 'Mechatronica']]) {
+  for (const [viewport, route, word] of [[{ width: 1440, height: 810 }, '/en/', 'Engineering'], [{ width: 1920, height: 1080 }, '/en/', 'Engineering'], [{ width: 1440, height: 810 }, '/', 'Mechatronica'], [{ width: 1920, height: 1080 }, '/', 'Mechatronica']]) {
     const { context, page } = await openJourney(browser, step, viewport, { route });
     await goToFrame(page, 250);
     const share = await coveredShare(page, word);
@@ -517,7 +517,7 @@ const flightLoaded = (page, n) => page.waitForFunction((count) => {
 
 /** Each project: the one bright thing at its reading place, in its own words in both languages, with its pieces and its link. */
 async function projectsStep(browser, step) {
-  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
   const dated = projects.byDate();
@@ -636,10 +636,10 @@ async function qaStep(browser, step) {
   mkdirSync(dir, { recursive: true });
   const reads = qaReadFrames(timeline);
   for (const [viewport, route, words, tag] of [
-    [{ width: 1440, height: 810 }, '/en/journey/', en, 'en'],
-    [{ width: 1440, height: 810 }, '/journey/', nl, 'nl'],
-    [{ width: 1280, height: 720 }, '/en/journey/', en, 'en-720'],
-    [{ width: 1280, height: 720 }, '/journey/', nl, 'nl-720'],
+    [{ width: 1440, height: 810 }, '/en/', en, 'en'],
+    [{ width: 1440, height: 810 }, '/', nl, 'nl'],
+    [{ width: 1280, height: 720 }, '/en/', en, 'en-720'],
+    [{ width: 1280, height: 720 }, '/', nl, 'nl-720'],
   ]) {
     const { context, page } = await openJourney(browser, step, viewport, { route });
     await flightLoaded(page, projects.byDate().length);
@@ -670,7 +670,7 @@ async function qaStep(browser, step) {
 
 /** The light waits with its hint; a click plays the bang to the end by itself. */
 async function bangClick(browser, step) {
-  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
   await flightLoaded(page, projects.byDate().length);
@@ -696,7 +696,7 @@ async function bangClick(browser, step) {
 
 /** Scrolling scrubs the bang, and it is never brighter than the approved mock-up's at the same moment. */
 async function bangScroll(browser, step) {
-  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
   await flightLoaded(page, projects.byDate().length);
@@ -723,7 +723,7 @@ async function bangScroll(browser, step) {
 }
 
 /** To the end page, settled. */
-async function openEnd(browser, step, viewport = VIEW, route = '/en/journey/') {
+async function openEnd(browser, step, viewport = VIEW, route = '/en/') {
   const opened = await openJourney(browser, step, viewport, { route });
   await flightLoaded(opened.page, projects.byDate().length);
   await opened.page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
@@ -854,7 +854,7 @@ async function endHold(browser, step) {
 /** Less motion asked for: the same words and links on a page that simply scrolls. */
 async function reducedMotion(browser, step) {
   const { context, page } = await openPage(browser, step, VIEW, { reducedMotion: 'reduce' });
-  await page.goto(`${BASE}/en/journey/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/en/`, { waitUntil: 'load' });
   await page.waitForSelector('.j-calm', { timeout: 15_000 });
   await page.waitForTimeout(500);
   const dir = join(OUT, 'stills');
@@ -894,7 +894,7 @@ async function noWebgl(browser, step) {
       return /webgl/i.test(kind) ? null : original.call(this, kind, ...rest);
     };
   });
-  await page.goto(`${BASE}/en/journey/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/en/`, { waitUntil: 'load' });
   await page.waitForSelector('.j-calm', { timeout: 15_000 });
   await page.waitForTimeout(400);
   const link = page.locator('.j-calm-note a');
@@ -908,7 +908,7 @@ async function noWebgl(browser, step) {
 
 /** The GPU takes the drawing away in the middle of the flight: the words stay, Lite is one link away. */
 async function contextLost(browser, step) {
-  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
   await flightLoaded(page, projects.byDate().length);
   await goToFrame(page, 372);
   await goToFrame(page, 450, 200);
@@ -928,7 +928,7 @@ async function contextLost(browser, step) {
 
 /** Every link reachable by Tab, the focus visible, and a link bringing its chapter into place. */
 async function keyboard(browser, step) {
-  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
   await flightLoaded(page, projects.byDate().length);
   const reached = [];
   let unseen = 0;
@@ -964,7 +964,7 @@ async function keyboard(browser, step) {
 
 /** A tab nobody looks at for 30 s: it keeps its place and comes back with no burst of sound. */
 async function backgroundTab(browser, step) {
-  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/journey/' });
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
   await goToFrame(page, 372);
   await goToFrame(page, 450, 200);
   await page.waitForTimeout(600);
@@ -986,7 +986,7 @@ async function backgroundTab(browser, step) {
 /** With no script at all the words are in the page, and it says where to go. */
 async function noScript(browser, step) {
   const { context, page } = await openPage(browser, step, VIEW, { javaScriptEnabled: false });
-  await page.goto(`${BASE}/en/journey/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/en/`, { waitUntil: 'load' });
   const text = await page.content();
   for (const words of ['Software', 'Cookies Clicker', 'What is your plan after MBO?', 'bhccob@gmail.com']) step.check(text.includes(words), `"${words}" is in the HTML`);
   step.check((await page.locator('.j-noscript a').getAttribute('href')) === '/en/lite/', 'and it points to Lite');
@@ -1031,7 +1031,7 @@ const inside = (page, selector) => page.evaluate((sel) => [...document.querySele
 
 /** One whole journey by touch, at one size. */
 async function smallScreen(browser, step, viewport, tag) {
-  const { context, page } = await openJourney(browser, step, viewport, { route: '/en/journey/', hasTouch: true, isMobile: true });
+  const { context, page } = await openJourney(browser, step, viewport, { route: '/en/', hasTouch: true, isMobile: true });
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
   await flightLoaded(page, projects.byDate().length);
@@ -1134,13 +1134,13 @@ async function dutchFit(browser, step) {
   for (const [viewport, tag, options] of [[{ width: 1440, height: 810 }, 'desktop', {}], [{ width: 390, height: 844 }, 'phone', { hasTouch: true, isMobile: true }]]) {
     // The door, before anything else.
     const door = await openPage(browser, step, viewport, options);
-    await door.page.goto(`${BASE}/journey/?proof`, { waitUntil: 'load' });
+    await door.page.goto(`${BASE}/?proof`, { waitUntil: 'load' });
     await door.page.waitForSelector('.j-door-on', { timeout: 60_000 });
     await partsFit(door.page, step, `${tag}, the door`, ['.j-door-go', '.j-door-without']);
     read.push(await door.page.evaluate(() => document.querySelector('.j-door').textContent));
     await door.context.close();
 
-    const { context, page } = await openJourney(browser, step, viewport, { route: '/journey/', ...options });
+    const { context, page } = await openJourney(browser, step, viewport, { route: '/', ...options });
     await flightLoaded(page, dated.length);
     await page.waitForFunction(() => window.__journeyDebug.stops()?.questions.every((q) => q.words.length > 0) && window.__journeyDebug.stops().end !== null, null, { timeout: 30_000 });
     await page.waitForTimeout(600);
@@ -1203,7 +1203,7 @@ async function dutchFit(browser, step) {
 
 /** Turning a phone in the middle of the flight keeps the place. */
 async function rotateStep(browser, step) {
-  const { context, page } = await openJourney(browser, step, { width: 390, height: 844 }, { route: '/en/journey/', hasTouch: true, isMobile: true });
+  const { context, page } = await openJourney(browser, step, { width: 390, height: 844 }, { route: '/en/', hasTouch: true, isMobile: true });
   await flightLoaded(page, projects.byDate().length);
   await jumpTo(page, 450);
   await page.waitForTimeout(600);
@@ -1222,7 +1222,7 @@ async function rotateStep(browser, step) {
 
 /** The end page by touch: a drift in the cursor's place, and a long press that holds and nothing else. */
 async function endTouch(browser, step) {
-  const { context, page } = await openJourney(browser, step, { width: 390, height: 844 }, { route: '/en/journey/', hasTouch: true, isMobile: true });
+  const { context, page } = await openJourney(browser, step, { width: 390, height: 844 }, { route: '/en/', hasTouch: true, isMobile: true });
   await flightLoaded(page, projects.byDate().length);
   await page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
   await jumpTo(page, timeline.last);
@@ -1273,7 +1273,7 @@ async function rungs(browser, step) {
   for (let n = 0; n < journeySteps(true); n++) {
     const opened = await openPage(browser, step, { width: 1280, height: 720 }, { deviceScaleFactor: 1.5 });
     await opened.page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
-    await opened.page.goto(`${BASE}/en/journey/?proof&stages=all&step=${n}`, { waitUntil: 'load' });
+    await opened.page.goto(`${BASE}/en/?proof&stages=all&step=${n}`, { waitUntil: 'load' });
     await opened.page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
     await flightLoaded(opened.page, projects.byDate().length);
     await opened.page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
@@ -1297,7 +1297,7 @@ async function walkDown(browser, step) {
   const opened = await openPage(browser, step, { width: 1280, height: 720 }, { deviceScaleFactor: 1.5 });
   const { page, context } = opened;
   await page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
-  await page.goto(`${BASE}/en/journey/?proof&stages=all&step=0&govern`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/en/?proof&stages=all&step=0&govern`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
   await flightLoaded(page, projects.byDate().length);
   await goToFrame(page, 372);
@@ -1330,7 +1330,7 @@ async function walkDown(browser, step) {
 
 /** Pressing End at the very start on a slow line: dark, with no error, until the end has come, and no pile of sounds. */
 async function jumpEarly(browser, step) {
-  const { context, page } = await openJourney(browser, step, undefined, { route: '/en/journey/', stages: '' });
+  const { context, page } = await openJourney(browser, step, undefined, { route: '/en/', stages: '' });
   const cdp = await context.newCDPSession(page);
   await cdp.send('Network.enable');
   await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 300, downloadThroughput: (400 * 1024) / 8, uploadThroughput: (400 * 1024) / 8 });

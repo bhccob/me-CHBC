@@ -64,7 +64,7 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail, onPixelRa
         const fine = matchMedia('(pointer: fine)').matches;
         const fixed = params.get('step');
         const ladder = Array.from({ length: journeySteps(fine) }, (_, n) => journeyQuality(n, fine));
-        let step = fixed === null ? startStep(gpuSpeed(), fine, { width: innerWidth, height: innerHeight }, devicePixelRatio, ladder) : Number(fixed);
+        let step = fixed === null ? startStep(gpuSpeed(), { width: innerWidth, height: innerHeight }, devicePixelRatio, ladder) : Number(fixed);
         const governed = fixed === null || params.has('govern');
         const judge = new FrameJudge();
         const useStep = (): void => {

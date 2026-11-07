@@ -7,7 +7,7 @@ export function LiteQa(): JSX.Element {
   const { t } = useTranslator();
 
   return (
-    <LiteSection id="questions" title={t.compass.qa.title}>
+    <LiteSection id="questions" title={t.pages.questions}>
       <div className="qa">
         {t.end.questions.map(({ question, answer }) => (
           <details key={question} className="lite-details">

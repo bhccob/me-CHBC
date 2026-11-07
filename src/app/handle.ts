@@ -1,38 +1,29 @@
 // Imported by src/app/routes.ts, which the router's build reads in Node: relative imports only.
-import { JOURNEY_ROUTE, PAGES, type PageId } from '../data/pages';
+import { PAGES, type PageId } from '../data/pages';
 import { routeFromPath } from '../i18n/locale';
 
 /**
  * What kind of page the router shows. The styles read it from `<html data-route>`, and each kind's route module is
  * the file named after it (`routes/lite.tsx`).
  */
-export type RouteName = 'home' | 'project' | 'lite' | 'contact' | 'not-found' | 'journey';
-
-/** What the scene shows for a page: the compass on the home page, a project's object. */
-export type SceneKind = 'home' | 'project';
+export type RouteName = 'home' | 'project' | 'lite' | 'contact' | 'not-found';
 
 /** The `handle` every route module exports; the Shell reads it from the deepest matched route (`useMatches`). */
 export interface RouteHandle {
   route: RouteName;
-  /**
-   * The page's scene, or null for a page of text alone (Lite, contact, not found). SceneHost reads it: a visit that
-   * begins on a page without a scene loads no WebGL at all, and a canvas already there sleeps behind it.
-   */
-  scene: SceneKind | null;
 }
 
-/** The one table of the kinds of page and their scenes. Every route module exports its own entry as its `handle`. */
+/** The one table of the kinds of page. Every route module exports its own entry as its `handle`. */
 export const HANDLES = {
-  home: { route: 'home', scene: 'home' },
-  project: { route: 'project', scene: null },
-  lite: { route: 'lite', scene: null },
-  contact: { route: 'contact', scene: null },
-  'not-found': { route: 'not-found', scene: null },
-  journey: { route: 'journey', scene: null },
+  home: { route: 'home' },
+  project: { route: 'project' },
+  lite: { route: 'lite' },
+  contact: { route: 'contact' },
+  'not-found': { route: 'not-found' },
 } as const satisfies { readonly [R in RouteName]: RouteHandle & { route: R } };
 
 /** The kind of every page of the site. `src/app/routes.ts` gives each page the module of its kind, `routes/<kind>.tsx`. */
-export const PAGE_KINDS: Readonly<Record<PageId, Exclude<RouteName, 'not-found' | 'journey'>>> = {
+export const PAGE_KINDS: Readonly<Record<PageId, Exclude<RouteName, 'not-found'>>> = {
   home: 'home',
   'project-steady': 'project',
   'project-portle': 'project',
@@ -46,7 +37,7 @@ const isRouteHandle = (handle: unknown): handle is RouteHandle =>
   typeof handle === 'object' && handle !== null && Object.hasOwn(HANDLES, (handle as { route?: unknown }).route as string);
 
 /** The addresses of the site's pages in either language, as `routeFromPath` gives them: case and all. */
-const PAGE_ROUTES: ReadonlySet<string> = new Set([...Object.values(PAGES), JOURNEY_ROUTE]);
+const PAGE_ROUTES: ReadonlySet<string> = new Set(Object.values(PAGES));
 
 /**
  * The handle of the deepest matched route. The root alone (the 404 file, before the router has matched the URL) and a

@@ -1,6 +1,6 @@
 // What the journey costs to download: walks it with a clean cache and sums what came over the wire. At the first view only the
 // machine stage's files may have come; the whole journey must stay within 15 MB.
-//   node tools/proof/budget.mjs          (a JOURNEY=1 build, served on PORT; PLAYWRIGHT_CORE as in tools/proof)
+//   node tools/proof/budget.mjs          (after a build, served on PORT; PLAYWRIGHT_CORE as in tools/proof)
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
@@ -25,7 +25,7 @@ const list = () => [...sizes.entries()].map(([id, bytes]) => ({ url: urls.get(id
 const sum = (files) => files.reduce((total, file) => total + file.bytes, 0);
 const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 
-await page.goto(`http://localhost:${PORT}/en/journey/?proof`, { waitUntil: 'load' });
+await page.goto(`http://localhost:${PORT}/en/?proof`, { waitUntil: 'load' });
 await page.waitForFunction(() => document.querySelector('.j-door-on') || window.__journeyDebug?.ready(), null, { timeout: 60_000 });
 await page.waitForTimeout(3000);
 const first = list();

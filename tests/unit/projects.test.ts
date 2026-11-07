@@ -59,50 +59,7 @@ describe('projects', () => {
     for (const entry of all) expect(projects.route(entry), entry.id).toBe(PAGES[`project-${entry.id}` as keyof typeof PAGES]);
   });
 
-  it('each have 4 or 5 test points, labelled in both languages', () => {
-    for (const entry of all) {
-      expect(entry.testPoints.length, entry.id).toBeGreaterThanOrEqual(4);
-      expect(entry.testPoints.length, entry.id).toBeLessThanOrEqual(5);
-      for (const point of entry.testPoints) {
-        for (const locale of locales) expect(point.label[locale].trim().length, `${entry.id} ${point.id} ${locale}`).toBeGreaterThan(0);
-        expect(point.position).toHaveLength(3);
-      }
-      expect(new Set(entry.testPoints.map((point) => point.id)).size, entry.id).toBe(entry.testPoints.length);
-    }
-  });
-
-  it('translate the test point labels', () => {
-    expect(project('steady').testPointLabels('en')).toEqual(['REMINDERS', 'STREAK PATH', 'INSIGHTS', 'SUPPORT LEVELS', 'PRIVACY']);
-    expect(project('steady').testPointLabels('nl')).toEqual(['HERINNERINGEN', 'STREAKPAD', 'INZICHTEN', 'STEUNNIVEAUS', 'PRIVACY']);
-    expect(project('portle').testPointLabels('en')).toEqual(['PORTFOLIO', 'PAPER TRADES', 'THESES', 'GUILDS', 'RELICS']);
-    expect(project('portle').testPointLabels('nl')).toEqual(['PORTEFEUILLE', 'OEFENTRADES', 'THESES', 'GILDES', 'RELICS']);
-    expect(project('jontai-energy').testPointLabels('en')).toEqual(['DAY FILM', 'PRODUCT PANELS', 'LIGHT SLIDER', 'QUOTE PATH']);
-    expect(project('jontai-energy').testPointLabels('nl')).toEqual(['DAGFILM', 'PRODUCTPANELEN', 'LICHTSCHUIF', 'OFFERTEPAD']);
-    expect(project('cookies-clicker').testPointLabels('en')).toEqual(['CLICK LOOP', '8 PRODUCERS', 'BOOSTS & EVENTS', 'SAVE', 'STATS']);
-    expect(project('cookies-clicker').testPointLabels('nl')).toEqual(['KLIKLUS', '8 PRODUCENTEN', 'BOOSTS & EVENTS', 'OPSLAG', 'STATISTIEKEN']);
-  });
-
-  it('keep the approved placeholder positions', () => {
-    expect(project('jontai-energy').testPoints.map((point) => point.position)).toEqual([
-      [-0.45, 0.03, -0.2],
-      [0.0, 0.03, 0.05],
-      [0.62, 0.06, 0.55],
-      [0.95, 0.0, 0.8],
-    ]);
-    expect(project('cookies-clicker').testPoints.map((point) => point.position)).toEqual([
-      [0.92, 0.0, 0.0],
-      [-0.2, 0.08, 0.3],
-      [0.35, 0.1, -0.45],
-      [-0.55, 0.06, -0.35],
-      [0.0, 0.14, 0.0],
-    ]);
-  });
-
-  it('keep the approved objects, palettes and links', () => {
-    expect(project('steady').object.fallbackGeometry).toBe('streak-path-7-blocks+trophy');
-    expect(project('portle').object.fallbackGeometry).toBe('allocation-ring-5+relic');
-    expect(project('jontai-energy').object.fallbackGeometry).toBe('pv-module-4x4+junction-box');
-    expect(project('cookies-clicker').object.fallbackGeometry).toBe('clockwork-movement-8-wheels');
+  it('keep the approved palettes and links', () => {
     // Steady's own brand colours (its logo kit): Mark Bronze and Steady Beige.
     expect(project('steady').palette).toEqual({ accent: '#7f6440', glow: '#e8d5b5' });
     expect(project('jontai-energy').palette).toEqual({ accent: '#00a650', glow: '#00d16a' });
@@ -113,7 +70,6 @@ describe('projects', () => {
     // Bob, 2026-10-29: the repository the site's pictures came from.
     expect(project('jontai-energy').links).toEqual({ repo: 'https://github.com/bhccob/Jontai-Energy' });
     expect(project('cookies-clicker').links).toEqual({ repo: 'https://github.com/bhccob/Cookies-Clicker' });
-    for (const entry of all) expect(entry.motion.length, entry.id).toBeGreaterThan(0);
   });
 
   it('gives Steady and Portle their own words, in both languages', () => {

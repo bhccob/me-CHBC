@@ -63,7 +63,7 @@ export function ProjectSheet({ id, headingId, Heading = 'h2' }: { id: string; he
             <p className="ps-links">
               {project.links.live && (
                 <a className="ps-link ps-first" href={project.links.live} target="_blank" rel="noopener noreferrer">
-                  {t.needle.project.site} <span aria-hidden="true">→</span>
+                  {t.pages.site} <span aria-hidden="true">→</span>
                 </a>
               )}
               {project.links.repo && (

@@ -50,19 +50,26 @@ describe('where a GPU starts on the ladder', () => {
   const costs = Array.from({ length: journeySteps(true) }, (_, step) => journeyQuality(step, true));
 
   it('is the top for a strong one', () => {
-    expect(startStep(0.5, true, screen, 1, costs)).toBe(0);
+    expect(startStep(0.5, screen, 1, costs)).toBe(0);
   });
 
   it('is lower for a weak one', () => {
-    expect(startStep(13, true, screen, 1, costs)).toBeGreaterThan(0);
+    expect(startStep(13, screen, 1, costs)).toBeGreaterThan(0);
   });
 
   it('is the top with no timing, for the frames to judge', () => {
-    expect(startStep(null, true, screen, 1, costs)).toBe(0);
+    expect(startStep(null, screen, 1, costs)).toBe(0);
+    expect(startStep(Number.NaN, screen, 1, costs)).toBe(0);
+    expect(startStep(-1, screen, 1, costs)).toBe(0);
   });
 
-  it('leaves the old ladder as it was when given none', () => {
-    expect(startStep(13, true, screen, 1)).toBe(startStep(13, true, screen, 1, undefined));
+  it('is the last step for the weak GPU the costs were measured on, at 1080p, so it never resizes mid-journey', () => {
+    expect(startStep(13, screen, 1, costs)).toBe(costs.length - 1);
+    expect(startStep(52, screen, 1, costs)).toBe(costs.length - 1);
+  });
+
+  it('is lower on more pixels', () => {
+    expect(startStep(3, { width: 3840, height: 2160 }, 1, costs)).toBeGreaterThanOrEqual(startStep(3, { width: 1280, height: 720 }, 1, costs));
   });
 });
 

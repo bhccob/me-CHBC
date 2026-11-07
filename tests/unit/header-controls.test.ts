@@ -1,16 +1,15 @@
 import { createElement, type FunctionComponent } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { PAGES } from '../../src/data/pages';
 import { en } from '../../src/i18n/en';
 import { routeFromPath } from '../../src/i18n/locale';
 import { nl } from '../../src/i18n/nl';
 import { Translator } from '../../src/i18n/Translator';
-import { useScene } from '../../src/state/store';
 import { LangSwitch } from '../../src/ui/LangSwitch';
 import { stripMarkup } from '../../src/ui/Markup';
-import { closeMenuOnLink, MENU_ID, nameToTop, SiteHeader } from '../../src/ui/SiteHeader';
+import { closeMenuOnLink, MENU_ID, SiteHeader } from '../../src/ui/SiteHeader';
 
 const render = (path: string, component: FunctionComponent): string =>
   renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(component)));
@@ -42,28 +41,15 @@ describe('the language switch', () => {
 });
 
 describe('the header', () => {
-  // The same bar on every page, the home page included, since the home's hero says the name only to a screen reader:
-  // the name, Work and About (both point at Lite's sections), Contact and the language switch. No link to the light
-  // version and no 3D switch (Bob, 2026-10-29; spec 2026-10-29-bob-stack-3-design.md, goal 2).
-  const initial = useScene.getInitialState();
-  afterEach(() => {
-    initial.threeD = true;
-  });
-
   it.each([
-    ['/', nl, 'nl' as const],
-    ['/en/', en, 'en' as const],
     ['/lite/', nl, 'nl' as const],
     ['/en/contact/', en, 'en' as const],
     ['/projects/steady/', nl, 'nl' as const],
   // Bob (2026-10-30): "remove the Over mij and Werk in the header".
-  ])('on %s it lists the name, Contact and the language switch, in that order: no Work, no About, no light-version link and no 3D switch', (path, t, locale) => {
-    initial.threeD = true;
+  ])('on %s it lists the name, Contact and the language switch, in that order', (path, t, locale) => {
     const controls = controlsOf(render(path, SiteHeader));
     const other = locale === 'en' ? 'nl' : 'en';
     const at = (route: string): string => Translator.pathFor(locale, route);
-
-    // The order by the links' addresses and the switch's role ...
     expect(controls.map((control) => (control.tag === 'button' ? (control.attrs.role ?? control.attrs.class) : control.attrs.href))).toEqual([
       '#main',
       at(PAGES.home),
@@ -71,84 +57,23 @@ describe('the header', () => {
       at(PAGES.contact),
       Translator.pathFor(other, routeFromPath(path)),
     ]);
-    // ... and by the labels the components render.
     expect(controls.map((control) => control.text)).toEqual([t.nav.skip, 'Bob Chung', t.nav.menu + t.nav.close, t.nav.contact, other.toUpperCase()]);
-
-    // The name is a link home that says so, on the home page as on any other; the nav holds two links.
     expect(controls[1].attrs.class).toBe('site-name');
     expect(controls[1].attrs['aria-label']).toBe(t.nav.home);
-    expect(controls.filter((control) => control.attrs.class === 'header-control')).toHaveLength(2);
-    expect(controls[4].attrs['aria-label']?.startsWith(`${other.toUpperCase()} `)).toBe(true);
-    expect(controls.some((control) => control.attrs.href === at(`${PAGES.lite}#work`) || control.attrs.href === at(`${PAGES.lite}#about`))).toBe(false);
-    // Nothing of the light version's link or the switch, on a laptop's row or in the phone's menu (the same markup).
     expect(controls.some((control) => control.attrs.href === at(PAGES.lite))).toBe(false);
-    expect(controls.some((control) => control.attrs.role === 'switch')).toBe(false);
-  });
-});
-
-describe("the header's name on the home: the story to its start, as the Home key takes it (goToTop)", () => {
-  /** A click on the name as the link's handler receives it: a plain left click unless `overrides` say otherwise. */
-  const click = (overrides: Partial<{ button: number; metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; defaultPrevented: boolean }> = {}) => {
-    const event = {
-      button: 0,
-      metaKey: false,
-      ctrlKey: false,
-      shiftKey: false,
-      altKey: false,
-      defaultPrevented: false,
-      ...overrides,
-      preventDefault() {
-        event.defaultPrevented = true;
-      },
-    };
-    return event;
-  };
-
-  it.each(['/', '/en/'])('on %s a plain click takes the story to its start by goToTop, and the link does not navigate', (path) => {
-    let asked = 0;
-    const event = click();
-    nameToTop(event, path, () => {
-      asked++;
-      return true;
-    });
-    expect([asked, event.defaultPrevented]).toEqual([1, true]);
-  });
-
-  it("leaves the link to navigate where the home's scroll does not take it (3D off, a bead opening, none connected)", () => {
-    const refused = click();
-    nameToTop(refused, '/', () => false);
-    expect(refused.defaultPrevented).toBe(false);
-    const unconnected = click(); // the real goToTop, with no home scroll connected in this test
-    nameToTop(unconnected, '/');
-    expect(unconnected.defaultPrevented).toBe(false);
-  });
-
-  it.each(['/lite/', '/en/contact/', '/projects/steady/', '/en/projects/cookies-clicker/'])('on %s, not the home, the link navigates as ever', (path) => {
-    let asked = 0;
-    const event = click();
-    nameToTop(event, path, () => {
-      asked++;
-      return true;
-    });
-    expect([asked, event.defaultPrevented]).toEqual([0, false]);
   });
 
   it.each([
-    ['ctrl', { ctrlKey: true }],
-    ['meta (cmd)', { metaKey: true }],
-    ['shift', { shiftKey: true }],
-    ['alt', { altKey: true }],
-    ['the middle button', { button: 1 }],
-    ['one already handled', { defaultPrevented: true }],
-  ])('leaves a click with %s to the browser', (_, overrides) => {
-    let asked = 0;
-    const event = click(overrides);
-    nameToTop(event, '/', () => {
-      asked++;
-      return true;
-    });
-    expect(asked).toBe(0);
-    expect(event.defaultPrevented, 'prevented only if it already was').toBe('defaultPrevented' in overrides);
+    ['/', nl, 'nl' as const],
+    ['/en/', en, 'en' as const],
+  ])('on the home, %s, the name, Projects and Contact move through the journey, beside the sound', (path, t, locale) => {
+    const controls = controlsOf(render(path, SiteHeader));
+    const other = locale === 'en' ? 'nl' : 'en';
+    const links = controls.filter((control) => control.tag === 'a');
+    expect(links.map((link) => link.attrs.href)).toEqual(['#main', '#top', '#projects', '#contact', Translator.pathFor(other, '/')]);
+    expect(links.map((link) => link.text).slice(1, 4)).toEqual(['Bob Chung', t.journey.rail.projects, t.journey.rail.contact]);
+    expect(links[1].attrs['aria-label']).toBe(t.nav.home);
+    expect(controls.some((control) => control.tag === 'button' && control.attrs.class !== 'menu-toggle')).toBe(true);
   });
 });
 

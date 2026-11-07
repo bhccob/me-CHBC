@@ -17,7 +17,7 @@ import { HANDLES, type RouteHandle } from '../handle';
 export const meta: MetaFunction = ({ location }) => {
   const locale = localeFromPath(location.pathname);
   const { t } = translatorFor(locale);
-  return head({ locale, route: PAGES.lite, title: t.needle.liteLink, description: t.meta.liteDescription });
+  return head({ locale, route: PAGES.lite, title: t.pages.lite, description: t.meta.liteDescription });
 };
 
 export const handle: RouteHandle = HANDLES.lite;
@@ -33,7 +33,7 @@ export default function Lite() {
   return (
     <article className="page lite">
       <BackLink />
-      <h1 className="page-title">{t.needle.liteLink}</h1>
+      <h1 className="page-title">{t.pages.lite}</h1>
       <p className="lead">{t.meta.liteDescription}</p>
 
       <LiteFields />

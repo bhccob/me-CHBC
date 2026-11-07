@@ -112,11 +112,6 @@ export const nl: Dictionary = {
     switchTo: 'View this page in English',
     home: 'Bob Chung, terug naar home'
   },
-  loader: {
-    label: 'Portfolio laden',
-    status: 'Vertrekbord wordt geladen',
-    skip: 'Klik of druk op een toets om over te slaan'
-  },
   hero: {
     hello: 'Hoi, ik ben',
     name: ['Bob', 'Chung'],
@@ -327,22 +322,6 @@ export const nl: Dictionary = {
       'Bovenal leiden ze naar mijn doel op de lange termijn: een eigen technologiebedrijf oprichten. Elke rol is daar een bouwsteen voor: de elektronica en mechanica van een product, de software die erop draait, de data die het oplevert en de beveiliging die het beschermt.'
     ]
   },
-  hood: {
-    title: 'Deze site is <em>ook een project.</em>',
-    intro: 'Twee talen, elk voor het werk waar ze het best in zijn: dezelfde mindset die ik wil meenemen naar systems- en firmwarewerk.',
-    cards: [
-      {
-        lang: 'TypeScript · Astro',
-        title: 'De site',
-        text: 'Statische, SEO-vriendelijke pagina’s gegenereerd door Astro, met elke interactieve functie als TypeScript-klasse, inclusief dit bord.'
-      },
-      {
-        lang: 'Python',
-        title: 'De deploy-bewaker',
-        text: 'Voor elke deploy controleert een Python-auditor de titels, beschrijvingen, links en alt-teksten van elke pagina, en stopt de release als er iets niet klopt.'
-      }
-    ]
-  },
   cta: {
     title: 'Laatste oproep: <em>zeg hallo.</em>',
     text: 'Vragen, kansen of gewoon een hallo: mijn inbox staat open.',
@@ -380,7 +359,6 @@ export const nl: Dictionary = {
     mailtoText: 'Uw e-mailprogramma zou nu moeten openen met het bericht klaar om te versturen.'
   },
   end: {
-    head: 'Q&A',
     // Six, as the English has (the type says so): Bob's own questions and answers (2026-10-25). An answer left out shows
     // the placeholder.
     questions: [
@@ -414,17 +392,7 @@ export const nl: Dictionary = {
       }
     ],
     placeholder: 'Antwoord volgt.',
-    placeholderTag: 'placeholder',
-    messageTitle: 'Stuur een <em>bericht.</em>',
-    failLink: 'Vragen & contact',
-    ring: {
-      count: 'Q&A · {n} / {total}',
-      endKicker: 'Einde van de site',
-      endLine: 'Dit is het einde van de site. Staat uw vraag er niet tussen, of wilt u iets anders vragen? Stuur me een bericht.',
-      toContact: 'Naar contact',
-      toStart: 'Terug naar het begin',
-      marks: 'De vragen op de ring'
-    }
+    placeholderTag: 'placeholder'
   },
   project: {
     back: 'Alle categorieën',
@@ -440,11 +408,12 @@ export const nl: Dictionary = {
     moreText: 'Nieuw werk is in ontwikkeling of wacht op publicatie, en eerdere projecten die niet aan mijn standaard voldoen, staan hier niet.',
     moreLink: 'Terug naar alle categorieën'
   },
-  footer: {
-    made: 'Met nieuwsgierigheid gebouwd in Rotterdam',
-    analytics: 'Anonieme bezoekersstatistieken, zonder cookies.',
-    top: 'Terug naar boven',
-    terminalHint: 'Druk op <kbd>/</kbd> om de terminal te openen'
+  /** The other pages' shared words: the Lite page's name, the back link, a project's live site, and Lite's Q&A heading. */
+  pages: {
+    lite: 'Lichte versie',
+    back: 'Esc · terug',
+    site: 'Naar de site',
+    questions: 'Vragen'
   },
   notFound: {
     status: 'Vervallen',
@@ -452,109 +421,4 @@ export const nl: Dictionary = {
     text: 'De pagina die u zoekt bestaat niet (meer). De site is opnieuw gebouwd, dus sommige oude links zijn verplaatst.',
     home: 'Terug naar het vertrekbord'
   },
-  terminal: {
-    title: 'bob@rotterdam: ~',
-    placeholder: 'Typ een commando, bijv. help',
-    welcome: 'Welkom bij bob-shell. Typ “help” om te zien wat ik kan.',
-    notFound: 'commando niet gevonden: {cmd}. Probeer “help”.',
-    help: {
-      help: 'toon beschikbare commando’s',
-      whoami: 'wie is Bob?',
-      projects: 'toon projecten per categorie',
-      career: 'huidige build & roadmap',
-      socials: 'waar je mij vindt',
-      contact: 'open de contactpagina',
-      time: 'lokale tijd in Rotterdam en op Aruba',
-      lang: 'wissel van taal (en / nl)',
-      clear: 'scherm leegmaken',
-      exit: 'terminal sluiten'
-    },
-    whoami:
-      'Bob Chung, {age}. Student software engineer in Rotterdam. Geboren op Aruba, Chinees van afkomst. Bouwt met nieuwsgierigheid, test met eerlijkheid.',
-    careerNow: 'nu     → Student Software Engineer (MBO 4, Rotterdam)',
-    careerHbo: 'hierna → HBO in technologie, na mijn MBO 4 (richting nog open)',
-    careerNext: 'later  → mogelijk: Embedded · Data · DevSecOps · Firmware Security Automation',
-    careerGoal: 'doel   → een eigen technologiebedrijf',
-    opening: '{page} openen…',
-    sudo: 'Toegang verleend. Je gaat naar de contactpagina…',
-    moreSoon: '#03 volgende categorie: systems & security, onderweg…'
-  },
-  // Verbatim from the NL column of docs/art-direction.md § Copy budget (Bob approved it on 2026-10-20).
-  needle: {
-    hero: { name: 'BOB CHUNG', tagline: 'VOLG DE NAALD', scrollCue: 'Scroll' },
-    loader: {
-      caption: 'De naald zoekt het noorden',
-      enterSilent: 'Binnenkomen zonder geluid',
-      enterSound: 'Binnenkomen met geluid'
-    },
-    fallback: { title: 'DE NAALD IS HET NOORDEN KWIJT', lite: 'Open de lichte versie' },
-    liteLink: 'Lichte versie',
-    morph: 'Dezelfde kracht die schepen stuurde, bewaart nu onze data.',
-    project: { open: 'Openen', download: 'Downloaden', site: 'Naar de site', code: 'Code', back: 'Esc · terug' },
-    // The hologram world (src/ui/WorldNames.tsx, AreaCaption.tsx, AreaDots.tsx): the mock-up's words Bob approved.
-    world: {
-      hint: { click: 'Scroll of klik op een project', tap: 'Scroll of tik op een project' },
-      open: { click: 'Klik om te openen', tap: 'Tik om te openen' },
-      areas: 'Gebieden'
-    },
-    // An open project (src/ui/ProjectView.tsx): the next one's name, and its own page's way back and "Lees meer".
-    inside: { view: 'Bekijk project', back: 'Terug', previous: 'Vorig project', next: 'Volgend project' },
-    page: { back: 'Terug naar de stack', readMore: 'Lees meer' }
-  },
-  // Verbatim from the NL column of the light dive's spec (docs/superpowers/specs/2026-10-25-bob-light-dive-design.md).
-  lightDive: {
-    facts: [
-      '20 jaar',
-      'Chinees van afkomst / geboren en getogen op Aruba / woont in Nederland',
-      'Hakka-erfgoed',
-      'Oud-nationaal kampioen powerliften van Aruba',
-      'Oud-nationaal kampioen tafeltennis van Aruba'
-    ],
-    skip: 'Snel naar vragen ↓'
-  },
-  compass: {
-    meta: {
-      title: 'Kompasstudie | Bob Chung',
-      description: 'Een voorproef van het vernieuwde portfolio: een kompas waarvan de naald je cursor volgt.'
-    },
-    role: 'Student software engineer · Rotterdam',
-    hints: { scroll: 'Scroll', drag: 'Sleep om te draaien' },
-    about: { title: 'Over mij' },
-    homes: {
-      china: 'Chinees van afkomst',
-      aruba: 'Geboren en getogen op Aruba',
-      rotterdam: 'Sinds mijn achttiende in Rotterdam'
-    },
-    work: {
-      title: 'Waar ik mee werk',
-      caption: '1820: een elektrische stroom liet een kompasnaald bewegen.'
-    },
-    change: 'Dezelfde kracht die schepen de weg wees, slaat nu data op.',
-    projects: 'Projecten',
-    tp: 'TP{n} · {label}',
-    offduty: {
-      title: 'Buiten dienst',
-      spin: 'Wat mij draaiende houdt'
-    },
-    qa: {
-      title: 'Vragen',
-      items: [
-        'Wat doe je nu?',
-        'Wat komt er na MBO 4?',
-        'Welke rollen interesseren je?',
-        'Waarom deze richtingen?',
-        'Waar leidt het naartoe?'
-      ]
-    },
-    hello: 'Zeg hallo',
-    stills: {
-      hero: 'Een Chinees kompas met een gloeiende gele naald',
-      china: 'De kompasring in Chinees rood en goud',
-      aruba: 'De kompasring met de zee, de vlagstrepen en de ster van Aruba',
-      rotterdam: 'De kompasring met de kabels van de Erasmusbrug',
-      drive: 'Het kompas als harde schijf, met verlichte sporen',
-      offduty: 'De spindel van de schijf, van dichtbij'
-    },
-    loader: 'ZOEKT HET NOORDEN · {n}%'
-  }
 };

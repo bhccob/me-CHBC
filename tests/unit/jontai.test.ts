@@ -4,7 +4,6 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import ProjectPage from '~/app/routes/project';
 import { projects } from '~/data/projects';
-import { ProjectViews } from '~/ui/ProjectView';
 
 // Bob (2026-10-30): "the picture of jontai energy should be changed to new one", then, asked, "Yes, and update its
 // text": Jontai Energy is now his concept redesign of the store's site (github.com/bhccob/Jontai-Energy, 9546f43), so its
@@ -13,12 +12,6 @@ import { ProjectViews } from '~/ui/ProjectView';
 
 const render = (path: string, page: ComponentType): string =>
   renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(page)));
-/** Jontai Energy's view over the stack in the markup. */
-const viewOf = (html: string): string => {
-  const start = html.indexOf('data-project="jontai-energy"');
-  const end = html.indexOf('data-project="', start + 20);
-  return html.slice(start, end < 0 ? undefined : end);
-};
 
 describe('Jontai Energy, the concept redesign', () => {
   const jontai = projects.byId('jontai-energy')!;
@@ -37,12 +30,11 @@ describe('Jontai Energy, the concept redesign', () => {
     expect(jontai.pictureCaption('nl')).toBe('Het eerste scherm van het herontwerp');
     expect(jontai.pictureCaption('en')).toBe("The redesign's first screen");
     expect(typeof jontai.pictureUrl('jontai-type.webp')).toBe('string');
-    const view = viewOf(render('/', ProjectViews));
-    expect((view.match(/class="pv-card pv-wide"/g) ?? []).length).toBe(1);
-    expect(view).toContain('alt="Herontwerp van Jontai Energy: JONTAI in grote groene letters boven “Aruba sunlight, made useful.”, met Explore solar en Visit the store"');
+    const page = render('/projects/jontai-energy/', ProjectPage);
+    expect(page).toContain(`alt="${jontai.pictures[0].alt.nl}"`);
     // Neither of the pictures before it: the old static site's first screen, nor the retired sunrise film's.
-    expect(view).not.toContain('jontai-home');
-    expect(view).not.toContain('jontai-dawn');
+    expect(page).not.toContain('jontai-home');
+    expect(page).not.toContain('jontai-dawn');
   });
 
   it("lists the redesign's own tools", () => {
@@ -60,16 +52,11 @@ describe('Jontai Energy, the concept redesign', () => {
     );
   });
 
-  it('labels its points with what the redesign has', () => {
-    expect(jontai.testPointLabels('en')).toEqual(['DAY FILM', 'PRODUCT PANELS', 'LIGHT SLIDER', 'QUOTE PATH']);
-    expect(jontai.testPointLabels('nl')).toEqual(['DAGFILM', 'PRODUCTPANELEN', 'LICHTSCHUIF', 'OFFERTEPAD']);
-  });
-
   it('says nothing more of the old static site', () => {
     for (const locale of ['en', 'nl'] as const) {
       // Every word the site shows of it (its old screenshot's alt text goes with that screenshot, which no page shows).
       const copy = jontai.copy(locale);
-      const words = [copy.type, copy.role, copy.summary, copy.overview, copy.build, copy.focus, copy.metaDescription, ...jontai.testPointLabels(locale)].join(' ');
+      const words = [copy.type, copy.role, copy.summary, copy.overview, copy.build, copy.focus, copy.metaDescription].join(' ');
       expect(words, locale).not.toMatch(/Tailwind|PowerShell|HTML|three languages|drie talen|Spanish|Spaans|Chinese|Chinees|fifteen|vijftien|16 pages|16 pagina/i);
       expect(words, locale).not.toMatch(/official|officiële|we install|installeren/i);
     }

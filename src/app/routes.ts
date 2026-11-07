@@ -1,5 +1,5 @@
 import { type RouteConfig, index, route } from '@react-router/dev/routes';
-import { journeyEnabled, PAGES, type PageId } from '../data/pages';
+import { PAGES, type PageId } from '../data/pages';
 import { defaultLocale, locales, Translator } from '../i18n/Translator';
 import { PAGE_KINDS } from './handle';
 
@@ -22,9 +22,4 @@ const pages = ordered.flatMap((locale) =>
   }),
 );
 
-// The new home's review address, in both languages, only in a build with JOURNEY=1.
-const review = journeyEnabled()
-  ? [route('journey', 'routes/journey.tsx', { id: 'journey-nl', caseSensitive: true }), route('en/journey', 'routes/journey.tsx', { id: 'journey-en', caseSensitive: true })]
-  : [];
-
-export default [...pages, ...review, route('*', 'routes/not-found.tsx', { id: 'not-found' })] satisfies RouteConfig;
+export default [...pages, route('*', 'routes/not-found.tsx', { id: 'not-found' })] satisfies RouteConfig;

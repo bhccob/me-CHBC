@@ -16,6 +16,6 @@ describe('a project page', () => {
   });
 
   it('gives a project with no live site no link to one', () => {
-    expect(render('/projects/steady/')).not.toContain(nl.needle.project.site);
+    expect(render('/projects/steady/')).not.toContain(nl.pages.site);
   });
 });

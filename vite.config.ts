@@ -11,7 +11,7 @@ export default defineConfig({
     // media-src ('self') would block.
     assetsInlineLimit: 0,
     // three.js gets a chunk of its own (core and WebGL renderer: its build/),
-    // shared by the scene and by the scroll's lazily loaded maath easing. It is
+    // shared by the journey's world. It is
     // one library of about 740 KB minified that does not split further, fetched
     // only after hydration and only while 3D is on. Three's examples the scene
     // uses (the GLTF loader, the reflector) stay in the scene's own chunk, the
