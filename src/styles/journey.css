@@ -326,7 +326,7 @@ html[data-route='home'] .site-header {
   margin-top: 14px;
 }
 
-/* The sheets: full pages that slide over each other with a slight tilt, behind the machine. */
+/* The sheets: full pages that slide over each other with a slight tilt, behind the machine; their giant words are over it. */
 .j-sheet {
   position: fixed;
   left: -3vw;
@@ -369,7 +369,25 @@ html[data-route='home'] .site-header {
   background: var(--j-line);
 }
 
-.j-sheet h2 {
+/*
+ * Each sheet's giant word, over the machine (Bob, 2026-11-07): drawn again on a layer above the 3D, in the same box and
+ * with the same transform as its sheet, and cut along the next sheet's top edge as that slides over it (applyLayers.ts).
+ */
+.j-sheet-word {
+  position: fixed;
+  left: -3vw;
+  right: -3vw;
+  top: -3vh;
+  height: 106vh;
+  z-index: 4;
+  overflow: hidden;
+  visibility: hidden;
+  transform-origin: 50% 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.j-title {
   position: absolute;
   left: 34px;
   right: 34px;
@@ -381,18 +399,30 @@ html[data-route='home'] .site-header {
   color: var(--word);
 }
 
-.j-sheet h2 span {
+/*
+ * The heading and facts in the sheet, under the machine, are there to be read aloud and selected; the copies above it are
+ * what shows. The facts went up too once they were larger, since the armour's lid stood over the third one.
+ */
+.j-sheet .j-title,
+.j-sheet .j-trio dt,
+.j-sheet .j-trio dd {
+  color: transparent;
+}
+
+.j-title span {
   display: block;
   white-space: nowrap;
 }
 
-#j-sheet-2 h2 {
+[data-sheet='2'] .j-title {
   font-size: clamp(54px, 8.3vw, 142px);
 }
 
-/* The longest words, on the sheet where the machine stands tallest: higher up, and a little smaller, so that they read. */
-#j-sheet-3 h2 {
-  top: 19%;
+/*
+ * The longest words, a little smaller. They stood higher (19%) while the machine could hide them; drawn over it now, they
+ * stand where the others do, under the larger facts.
+ */
+[data-sheet='3'] .j-title {
   font-size: clamp(54px, 8.6vw, 146px);
 }
 
@@ -403,19 +433,20 @@ html[data-route='home'] .site-header {
   margin: 0;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 190px);
-  gap: 34px;
+  /* Larger since 2026-11-07 (Bob: "text bigger in the studies area"): 12 and 14.5 px were too small to read. */
+  grid-auto-columns: minmax(0, 270px);
+  gap: 44px;
 }
 
 .j-trio dt {
-  font: 500 12px / 1 var(--j-mono);
+  font: 500 clamp(13px, 1vw, 15px) / 1 var(--j-mono);
   color: var(--j-gold);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .j-trio dd {
   margin: 0;
-  font: 500 14.5px / 1.3 var(--j-sans);
+  font: 500 clamp(17px, 1.4vw, 21px) / 1.3 var(--j-sans);
   color: var(--j-ink);
 }
 
@@ -1219,9 +1250,9 @@ html[data-project-open] .j-bar {
 
 /* On a tall page wider than a phone: the same, with the words above the machine. */
 @media (max-aspect-ratio: 9/10) and (min-width: 761px) {
-  .j-sheet h2,
-  #j-sheet-3 h2 {
-    top: 14%;
+  /* Low enough to clear the facts, which wrap more on a narrow page. */
+  .j-title {
+    top: 21%;
   }
 
   .j-stack {
@@ -1264,16 +1295,16 @@ html[data-project-open] .j-bar {
     text-wrap: balance;
   }
 
-  .j-sheet h2,
-  #j-sheet-2 h2,
-  #j-sheet-3 h2 {
+  .j-title,
+  [data-sheet='2'] .j-title,
+  [data-sheet='3'] .j-title {
     left: 18px;
     right: 18px;
     top: 21%;
     font-size: 10.4vw;
   }
 
-  .j-sheet h2 span {
+  .j-title span {
     white-space: normal;
   }
 
@@ -1285,8 +1316,12 @@ html[data-project-open] .j-bar {
     grid-auto-columns: minmax(0, 1fr);
   }
 
+  .j-trio dt {
+    font-size: 12px;
+  }
+
   .j-trio dd {
-    font-size: 12.5px;
+    font-size: 14px;
   }
 
   .j-line {

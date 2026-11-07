@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { nl } from '~/i18n/nl';
-import { ageReels, placeAt, Story } from '~/ui/journey/Story';
+import { ageReels, MOVED_AT_AGE, placeAt, shownAge, Story, STORY_FROM_AGE } from '~/ui/journey/Story';
 import { FirstView } from '~/ui/journey/FirstView';
 import { render } from './render';
 
@@ -37,20 +37,35 @@ describe('the first view', () => {
   });
 });
 
-describe('the story', () => {
-  it('rolls from 18 to his age, whatever that is', () => {
-    expect(ageReels(18, 20)).toEqual({ tens: ['1', '1', '2'], ones: ['8', '9', '0'] });
-    expect(ageReels(18, 21)).toEqual({ tens: ['1', '1', '2', '2'], ones: ['8', '9', '0', '1'] });
+describe('the story (Bob, 2026-11-07: "13 in aruba till 18 - 20 in rotterdam")', () => {
+  it('starts at 13 and turns to Rotterdam at 18', () => {
+    expect(STORY_FROM_AGE).toBe(13);
+    expect(MOVED_AT_AGE).toBe(18);
   });
 
-  it('turns from Aruba to Rotterdam late in the roll', () => {
-    expect(placeAt(0.71, 'Aruba', 'Rotterdam')).toBe('Aruba');
-    expect(placeAt(0.72, 'Aruba', 'Rotterdam')).toBe('Rotterdam');
+  it('rolls from 13 to his age, whatever that is', () => {
+    expect(ageReels(13, 20)).toEqual({ tens: ['1', '1', '1', '1', '1', '1', '1', '2'], ones: ['3', '4', '5', '6', '7', '8', '9', '0'] });
+    expect(ageReels(13, 21).ones.at(-1)).toBe('1');
   });
 
-  it('shows the age and the first place in the markup', () => {
+  it('says Aruba up to 17 and Rotterdam from 18, by the age the reels show', () => {
+    expect(placeAt(13, 'Aruba', 'Rotterdam')).toBe('Aruba');
+    expect(placeAt(17, 'Aruba', 'Rotterdam')).toBe('Aruba');
+    expect(placeAt(17.49, 'Aruba', 'Rotterdam')).toBe('Aruba');
+    expect(placeAt(17.5, 'Aruba', 'Rotterdam')).toBe('Rotterdam');
+    expect(placeAt(20, 'Aruba', 'Rotterdam')).toBe('Rotterdam');
+  });
+
+  it('reads the age the reels stand at from how far they have rolled', () => {
+    expect(shownAge(0, 20)).toBe(13);
+    expect(shownAge(5 / 7, 20)).toBeCloseTo(18, 6);
+    expect(shownAge(1, 20)).toBe(20);
+  });
+
+  it('shows the age, 13 at the top of the reels, and the first place in the markup', () => {
     const html = render(Story, { age: 20 });
     expect(html).toContain('aria-label="Age: 20"');
+    expect(html).toContain('data-to="20"');
     expect(html).toContain('Aruba');
   });
 });

@@ -33,8 +33,8 @@ describe('what the page shows at each frame', () => {
     expect(at(54).story.opacity).toBe(0);
   });
 
-  it('rolls the age over frames 22 to 40', () => {
-    expect(at(22).age).toBe(0);
-    expect(at(40).age).toBe(1);
+  it('rolls the age over frames 20 to 42, seven years from 13', () => {
+    expect(at(20).age).toBe(0);
+    expect(at(42).age).toBe(1);
   });
 });

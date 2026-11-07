@@ -17,7 +17,7 @@ import { lightWaiting, playBang } from '~/journey/bang';
 import { canHold, driftAngles, endWordsAt, ORBIT_PITCH, ORBIT_YAW, touchPlan } from '~/journey/end';
 import { Sound } from '~/journey/sound/music';
 import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
-import { applyLayer, applySheet } from './applyLayers';
+import { applyLayer, applySheet, wordClip } from './applyLayers';
 import { type BandKind, paintBand } from './bands';
 import { journeyMode, type JourneyMode } from '~/journey/mode';
 import { webglSupport } from '~/scene/webgl';
@@ -104,6 +104,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     sparks.fit();
     growTree.current = () => paper.grow(performance.now());
     const sheets = t.journey.sheets.map((_, n) => document.getElementById(`j-sheet-${n}`));
+    const sheetWords = t.journey.sheets.map((_, n) => document.getElementById(`j-sheet-word-${n}`));
     const stack = document.getElementById('j-stack');
     const portal = document.getElementById('j-portal');
     const flash = document.getElementById('j-flash');
@@ -193,7 +194,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         paperEl.style.visibility = layers.paper ? 'visible' : 'hidden';
         if (layers.paper) paper.draw(now);
         sparks.draw(reduce.current ? 0 : layers.sparks, dt, now);
-        layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet));
+        layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet, sheetWords[n], wordClip(layers.sheets[n + 1])));
         applyLayer(stack, { opacity: layers.stack });
         applyLayer(portal, { opacity: layers.portal });
         applyLayer(flash, { opacity: layers.flash });

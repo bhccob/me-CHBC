@@ -47,7 +47,7 @@ export interface LayerStates {
   hero: Layer;
   vert: Layer;
   story: Layer;
-  /** How far the age has rolled, 0 to 1. */
+  /** How far the age has rolled, 0 to 1: from 13 to his age (src/ui/journey/Story.tsx). */
   age: number;
   /** Whether the paper is drawn: it sits under the sheets once the first one is up. */
   paper: boolean;
@@ -69,7 +69,8 @@ export function layersAt(f: number, tl: Timeline, _tall: boolean): LayerStates {
     hero: { opacity: 1 - heroOut, y: -heroOut * 40 },
     vert: { opacity: 1 - ease(f, 2, 14) },
     story: { opacity: band(f, 16, 24, 46, 54) },
-    age: ease(f, 22, 40),
+    // Seven years from 13 take a little longer than the two from 18 did (22 to 40).
+    age: ease(f, 20, 42),
     paper: f < 70,
     sparks: 1 - ease(f, 4, 26),
     sheets: sheetWindows.map((_, n) => sheetAt(f, n)),

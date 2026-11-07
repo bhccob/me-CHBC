@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { band, backOut, catmullRom, clamp, ease, ez, mix, ramp, seeded } from '~/journey/math';
-import { buildTimeline, chapterAt, frameFromScroll, HOLD, QA_PACE, SCROLL_PX_PER_FRAME, scrollFromFrame, SMOOTH_S, smoothFrame, trackHeightPx } from '~/journey/timeline';
+import { buildTimeline, chapterAt, frameFromScroll, HOLD, QA_PACE, SCROLL_PX_PER_FRAME, scrollFromFrame, SMOOTH_S, smoothFrame, STUDIES_PACE, trackHeightPx } from '~/journey/timeline';
 
 describe('the timeline, as spec section 4 has it', () => {
   const tl = buildTimeline();
@@ -62,9 +62,44 @@ describe('scroll to frame', () => {
 
   it('sizes the track from the frames, so a resize keeps the frame', () => {
     expect(SCROLL_PX_PER_FRAME).toBe(30.6);
-    // The questions' 168 frames take twice the scroll.
-    expect(trackHeightPx(tl)).toBeCloseTo((934 + 168) * 30.6, 3);
-    expect(trackHeightPx(buildTimeline(216))).toBeCloseTo((977 + 168) * 30.6, 3);
+    // The sheets' 234 frames take 1.4 times the scroll, and the questions' 168 frames twice.
+    expect(trackHeightPx(tl)).toBeCloseTo((934 + 0.4 * 234 + 168) * 30.6, 3);
+    expect(trackHeightPx(buildTimeline(216))).toBeCloseTo((977 + 0.4 * 234 + 168) * 30.6, 3);
+  });
+});
+
+describe('the sheets take the scroll a little slower (Bob, 2026-11-07: "slightly slower so it feels more premium")', () => {
+  const tl = buildTimeline();
+  const max = 10_000;
+  const scrollFor = (from: number, to: number, timeline = tl) => scrollFromFrame(to, max, timeline) - scrollFromFrame(from, max, timeline);
+  const plain = () => scrollFor(300, 301);
+
+  it('runs from the first sheet to the stack, 1.4 times over, ahead of the questions', () => {
+    expect(STUDIES_PACE).toBe(1.4);
+    expect(tl.paces).toEqual([{ from: 44, to: 278, times: 1.4 }, { from: 690, to: 858, times: 2 }]);
+  });
+
+  it('stays where it is when more or fewer projects make the flight longer or shorter', () => {
+    expect(buildTimeline(216).paces[0]).toEqual({ from: 44, to: 278, times: 1.4 });
+    expect(buildTimeline(180, [399, 448], 127).paces).toEqual([{ from: 44, to: 278, times: 1.4 }, { from: 601, to: 769, times: 2 }]);
+  });
+
+  it('gives a frame of the sheets 1.4 times the scroll of a plain one, and the frames either side none extra', () => {
+    expect(scrollFor(150, 151)).toBeCloseTo(1.4 * plain(), 6);
+    expect(scrollFor(30, 31)).toBeCloseTo(plain(), 6);
+    expect(scrollFor(420, 421)).toBeCloseTo(plain(), 6);
+  });
+
+  it('gives each sheet about 2300 px of scroll, where it had about 1650', () => {
+    const page = trackHeightPx(tl) / (1 - HOLD);
+    const perSheet = scrollFromFrame(152, page, tl) - scrollFromFrame(98, page, tl);
+    expect(perSheet).toBeCloseTo(54 * 1.4 * SCROLL_PX_PER_FRAME, 0);
+  });
+
+  it('goes there and back across both stretches', () => {
+    for (const f of [0, 20, 44, 45.5, 150, 278, 300, 690, 777.5, 858, 934]) {
+      expect(frameFromScroll(scrollFromFrame(f, max, tl), max, tl)).toBeCloseTo(f, 6);
+    }
   });
 });
 
@@ -75,8 +110,8 @@ describe('the questions take the scroll slower (Bob, 2026-11-07: "the Q&A scroll
 
   it('runs from the end of the break to the collapse, twice over', () => {
     expect(QA_PACE).toBe(2);
-    expect(tl.pace).toEqual({ from: 690, to: 858, times: 2 });
-    expect(buildTimeline(216).pace).toEqual({ from: 733, to: 901, times: 2 });
+    expect(tl.paces[1]).toEqual({ from: 690, to: 858, times: 2 });
+    expect(buildTimeline(216).paces[1]).toEqual({ from: 733, to: 901, times: 2 });
   });
 
   it('gives a frame of the questions twice the scroll of any other frame', () => {
