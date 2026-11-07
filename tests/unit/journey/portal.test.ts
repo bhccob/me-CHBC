@@ -34,12 +34,20 @@ describe('the window onto the tunnel', () => {
 });
 
 describe('the labels on the stack', () => {
-  it('follow the parts Blender says they point at', () => {
-    for (const f of [276, 290, 304, 320]) {
-      const { labels } = machinePose(f);
-      for (const name of ['armour', 'controls', 'brain', 'body'] as const) {
-        labels[name].forEach((value, i) => expect(Math.abs(value - anchors[f][name].point[i]), `${name} at ${f}`).toBeLessThan(1e-3));
-      }
+  it('stand where Blender had them as the stack begins to open', () => {
+    const { labels } = machinePose(276);
+    for (const name of ['armour', 'controls', 'brain', 'body'] as const) {
+      labels[name].forEach((value, i) => expect(Math.abs(value - anchors[276][name].point[i]), name).toBeLessThan(1e-3));
+    }
+  });
+
+  it('follow the parts they name wherever the open box takes them', () => {
+    for (const f of [290, 304, 320]) {
+      const { labels, parts } = machinePose(f);
+      const off = (got: readonly number[], want: readonly number[], name: string): void => got.forEach((value, i) => expect(Math.abs(value - want[i]), `${name} at ${f}`).toBeLessThan(1e-9));
+      off(labels.armour, [parts.lid.p[0] + 0.78, parts.lid.p[1] - 0.78, parts.lid.p[2] + 0.03], 'armour');
+      off(labels.controls, [parts.game.p[0] + 0.63, parts.game.p[1] - 0.63, parts.game.p[2]], 'controls');
+      off(labels.brain, [parts.code.p[0] + 0.63, parts.code.p[1] - 0.63, parts.code.p[2]], 'brain');
     }
   });
 

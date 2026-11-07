@@ -1,4 +1,4 @@
-import { Color, LinearFilter, type Material, type Mesh, type MeshStandardMaterial, Object3D, PerspectiveCamera, RectAreaLight, Scene, ShaderMaterial, ShadowMaterial, SpotLight, SRGBColorSpace, Texture, TextureLoader, Uniform, Vector3 } from 'three';
+import { Color, Fog, LinearFilter, type Material, type Mesh, type MeshStandardMaterial, Object3D, PerspectiveCamera, RectAreaLight, Scene, ShaderMaterial, ShadowMaterial, SpotLight, SRGBColorSpace, Texture, TextureLoader, Uniform, Vector3 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { cameraPose, fitProjection, fovFor, pageFit } from '../machine/camera';
@@ -11,6 +11,9 @@ const MODEL_URL = '/models/machine.glb';
 
 /** The share of the key light that comes from the spot, the only light that casts a shadow. */
 const SHADOW_SHARE = 0.25;
+
+/** The colour of the mist over the far end of the board on the first view: the page's own dark violet, in linear light. */
+const MIST: readonly [number, number, number] = [0.016, 0.012, 0.034];
 
 /**
  * The machine, live: the Blender model with `machinePose` and `cameraPose` applied at every frame. Its background is empty,
@@ -92,6 +95,8 @@ export class MachineScene {
     });
     this.dressCodeScreen(code);
     this.addLights();
+    // Always there, so that no material compiles again as it thins out; past the first view it starts beyond everything.
+    this.scene.fog = new Fog(new Color().setRGB(...MIST), 60, 120);
   }
 
   /** The floor only catches the machine's shadow, as Blender's shadow catcher did: the page shows through it. */
@@ -148,8 +153,14 @@ export class MachineScene {
   }
 
   /** Puts everything where frame `f` has it. */
-  update(f: number): void {
-    const pose = machinePose(f);
+  /** Puts everything where frame `f` has it; `idle` is how far the first view's light has run on its own, in frames. */
+  update(f: number, idle = 0): void {
+    const pose = machinePose(f, idle);
+    const fog = this.scene.fog as Fog | null;
+    if (fog) {
+      fog.near = pose.mist.near;
+      fog.far = pose.mist.far;
+    }
     for (const name of PART_NAMES) {
       const part = this.parts.get(name);
       if (!part) continue;

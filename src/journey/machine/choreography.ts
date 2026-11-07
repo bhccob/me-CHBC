@@ -25,6 +25,8 @@ export interface MachinePose {
   labels: Record<'armour' | 'controls' | 'brain' | 'body', [number, number, number]>;
   /** The opening of the iris: its centre and a point on its edge. */
   iris: { center: [number, number, number]; edge: [number, number, number] };
+  /** The mist over the far end of the board on the first view, in metres from the camera: where it starts, where it is whole. */
+  mist: { near: number; far: number };
 }
 
 /** The iris's radius in the lid, a little wider than its hole as the mock had it. */
@@ -35,6 +37,28 @@ const POSTS: readonly (readonly [number, number])[] = [[-0.72, -0.72], [0.72, -0
 const DRIVE_R = (0.655 + 0.098) * Math.sqrt(0.5);
 const DRIVES: readonly (readonly [number, number])[] = [[-DRIVE_R, DRIVE_R], [DRIVE_R, -DRIVE_R]];
 const radians = (degrees: number): number => (degrees * Math.PI) / 180;
+
+/** The open box: how high the board, the code and the game rise, where the top goes, and how far the lid tips back. */
+const OPEN_BOARD = 0.1, OPEN_CODE = 0.55, OPEN_GAME = 1.05, OPEN_LID_TIP = 0.4, POST_DROP = 0.6;
+const OPEN_TOP: readonly [number, number, number] = [0, 0.85, 1.35];
+/** The walls fold down this far about their feet: nearly flat. */
+const WALL_FOLD = 0.96 * (Math.PI / 2);
+
+/** How much of the first view's night is on at frame `f`: all of it while you read, none once the camera has dived in. */
+export function nightShare(f: number): number {
+  return 1 - ease(f, 4, 30);
+}
+
+/** The first view's light, as shares of the build's own: the studio light down, the parts lit from behind. */
+const NIGHT_LIGHT = { key: 0.32, rim: 2.2, strip: 0.4, low: 0.3, top: 1, bench: 1.6, lamp: 1 } as const;
+/** How fast the light runs along the traces while you read, in frames a second, and how long one lap takes. */
+const IDLE_FPS = 6;
+const LAP = 1 / 0.024;
+
+/** How far the light on the traces has run on its own after `seconds` on the first view, in frames of a lap. */
+export function idleFrames(seconds: number): number {
+  return (seconds * IDLE_FPS) % LAP;
+}
 
 /** The traces the light runs along on the board, one path for every third trace on each side, as the model has them. */
 const SIGNALS: readonly (readonly (readonly [number, number])[])[] = (() => {
@@ -63,46 +87,51 @@ function along(path: readonly (readonly [number, number])[], t: number): [number
   return [path[path.length - 1][0], path[path.length - 1][1]];
 }
 
-export function machinePose(f: number): MachinePose {
+export function machinePose(f: number, idle = 0): MachinePose {
   const parts = {} as Record<PartName, PartPose>;
   const set = (name: PartName, p: PartPose['p'], on: boolean, r: PartPose['r'] = [0, 0, 0], s: PartPose['s'] = [1, 1, 1]): void => {
     parts[name] = { p, r, s, on };
   };
 
-  // Exploded view: the four layers lift apart so you can read the stack, then close.
+  // Exploded view: the machine opens like a box so you can see inside: the walls fold down, the lid comes off up and back,
+  // and the layers rise straight up. Then it shuts.
   const X = ease(f, 276, 296) * (1 - ease(f, 312, 326));
   const closed = f >= 200 && X <= 0.001;
-  const SX = 0.6 * X, SY = -0.8 * X;
+  const topX = OPEN_TOP[0] * X, topY = OPEN_TOP[1] * X, topZ = OPEN_TOP[2] * X;
 
-  // The board wakes.
+  // The board wakes. On the first view its light runs along the traces on its own, like the lights of a city at night.
   const wake = ease(f, 6, 26);
+  const night = nightShare(f);
   const boardOn = !closed && f < 334;
-  set('board', [SX * 0.8, SY * 0.8, X * 0.8], boardOn);
+  set('board', [0, 0, OPEN_BOARD * X], boardOn);
   SIGNALS.forEach((path, i) => {
-    const [x, y] = along(path, f * 0.024 + i * 0.13);
+    const [x, y] = along(path, (f + idle * night) * 0.024 + i * 0.13);
     set(`pulse-${i}` as PartName, [x, y, Z + 0.004], boardOn);
   });
 
   // Software: the code layer lands and types itself.
   const d = ease(f, 52, 76);
   const codeOn = f >= 50 && !closed && f < 334;
-  set('code', [SX * 1.6, SY * 1.6, mix(1.5, 0.17, d) + X * 1.3], codeOn);
+  set('code', [0, 0, mix(1.5, 0.17, d) + OPEN_CODE * X], codeOn);
   const typed = Math.floor(ramp(f, 72, 96) * 16) / 16;
   set('code-cover', [0, -0.55, 0.0178], codeOn, [0, 0, 0], [1, Math.max(1 - typed, 0.0001) * 1.1, 1]);
 
   // Games: the controller lands on its own layer.
   const g = ease(f, 104, 130);
-  set('game', [SX * 2.4, SY * 2.4, mix(1.8, 0.34, g < 1 ? backOut(g, 0.9) : 1) + X * 1.75], f >= 102 && !closed && f < 334);
+  set('game', [0, 0, mix(1.8, 0.34, g < 1 ? backOut(g, 0.9) : 1) + OPEN_GAME * X], f >= 102 && !closed && f < 334);
 
   // Security: armour closes round them, the lid and shield come down.
+  // Open, each wall folds down about its foot, so it lies a little further out and nearly flat.
+  const fold = WALL_FOLD * X;
   for (let k = 0; k < 4; k++) {
-    const dist = mix(2.8, 0.7, ease(f, 156 + k * 3, 174 + k * 3)), a = (k * Math.PI) / 2;
-    set(`wall${k}` as PartName, [dist * Math.sin(a), -dist * Math.cos(a), WALL_Z], f >= 154 && f < 372, [0, 0, a]);
+    const a = (k * Math.PI) / 2, dist = mix(2.8, 0.7, ease(f, 156 + k * 3, 174 + k * 3)) + WALL_Z * Math.sin(fold);
+    const r: PartPose['r'] = [k === 0 ? fold : k === 2 ? -fold : 0, k === 1 ? fold : k === 3 ? -fold : 0, a];
+    set(`wall${k}` as PartName, [dist * Math.sin(a), -dist * Math.cos(a), WALL_Z * Math.cos(fold)], f >= 154 && f < 372, r);
   }
-  POSTS.forEach(([x, y], i) => set(`post-${i}` as PartName, [x, y, mix(1.9, WALL_Z, ease(f, 164 + i, 178 + i))], f >= 164 && f < 372));
+  POSTS.forEach(([x, y], i) => set(`post-${i}` as PartName, [x, y, mix(1.9, WALL_Z, ease(f, 164 + i, 178 + i)) - POST_DROP * X], f >= 164 && f < 372 && X <= 0.6));
   const lidOn = f >= 174 && f < 372;
-  const lidZ = mix(2.4, LZ, ease(f, 176, 196)) + X * 2.0;
-  set('lid', [SX * 3.2, SY * 3.2, lidZ], lidOn);
+  const lidZ = mix(2.4, LZ, ease(f, 176, 196)) + topZ;
+  set('lid', [topX, topY, lidZ], lidOn, [-OPEN_LID_TIP * X, 0, 0]);
 
   // Iris and shield.
   const openness = ease(f, 338, 356);
@@ -117,10 +146,10 @@ export function machinePose(f: number): MachinePose {
 
   // Mechatronics: the gear ring, the drives, then the legs, and it stands.
   const spin = Math.max(f - 218, 0) * 0.016;
-  set('turret', [SX * 3.2, SY * 3.2, mix(2.2, LZ + 0.05, ease(f, 208, 222)) + X * 2.0], f >= 206 && f < 372, [0, 0, spin]);
+  set('turret', [topX, topY, mix(2.2, LZ + 0.05, ease(f, 208, 222)) + topZ], f >= 206 && f < 372, [0, 0, spin]);
   DRIVES.forEach(([bx, by], i) => {
     const on = f >= 208 && f < 372;
-    set(`servo-${i}` as PartName, [bx + SX * 3.2, by + SY * 3.2, mix(1.8, LZ + 0.03, ease(f, 210 + i * 2, 224 + i * 2)) + X * 2.0], on);
+    set(`servo-${i}` as PartName, [bx + topX, by + topY, mix(1.8, LZ + 0.03, ease(f, 210 + i * 2, 224 + i * 2)) + topZ], on);
     set(`pinion-${i}` as PartName, [0, 0, 0.02], on, [0, 0, (-spin * 0.655) / 0.108 + 0.11]);
   });
   const u = ease(f, 240, 262);
@@ -151,19 +180,20 @@ export function machinePose(f: number): MachinePose {
     },
     iris: { center: [0, 0, lidZ], edge: [IRIS_EDGE, 0, lidZ] },
     emit: {
-      pulse: f < 334 ? 4 * wake : 14,
+      pulse: f < 334 ? Math.max(4 * wake, 5 * night) : 14,
       led: f < 356 ? led : mix(led, 1.5, ease(f, 356, 374)),
       key: (6 + 1.4 * Math.sin(f * 0.25)) * ease(f, 188, 200),
       code: 2.6 * ease(f, 68, 74),
     },
     lights: {
-      key: 150 * outside * mix(0.55, 1, ease(f, 8, 40)),
-      rim: 78 * outside * mix(0.5, 1, ease(f, 20, 60)),
-      strip: 42 * outside * mix(0.6, 1, ease(f, 8, 40)),
-      low: 18 * outside,
-      top: 40 * outside * ease(f, 40, 90),
-      bench: 9 * (1 - ease(f, 150, 180)) * mix(0.5, 1, ease(f, 2, 24)),
-      lamp: 60 * ease(f, 356, 374),
+      key: 150 * outside * mix(0.55, 1, ease(f, 8, 40)) * mix(1, NIGHT_LIGHT.key, night),
+      rim: 78 * outside * mix(0.5, 1, ease(f, 20, 60)) * mix(1, NIGHT_LIGHT.rim, night),
+      strip: 42 * outside * mix(0.6, 1, ease(f, 8, 40)) * mix(1, NIGHT_LIGHT.strip, night),
+      low: 18 * outside * mix(1, NIGHT_LIGHT.low, night),
+      top: 40 * outside * ease(f, 40, 90) * mix(1, NIGHT_LIGHT.top, night),
+      bench: 9 * (1 - ease(f, 150, 180)) * mix(0.5, 1, ease(f, 2, 24)) * mix(1, NIGHT_LIGHT.bench, night),
+      lamp: 60 * ease(f, 356, 374) * mix(1, NIGHT_LIGHT.lamp, night),
     },
+    mist: { near: mix(60, 0.9, night), far: mix(120, 3, night) },
   };
 }

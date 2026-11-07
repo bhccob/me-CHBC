@@ -7,7 +7,7 @@ import type { JourneyQuality } from '../quality';
 import { flightLayout } from '../flight/layout';
 import type { TagName } from '../layers';
 import { cameraPose } from '../machine/camera';
-import { machinePose } from '../machine/choreography';
+import { idleFrames, machinePose, nightShare } from '../machine/choreography';
 import type { Timeline } from '../timeline';
 import { type FlightProject, type FlightState, type StopReport, TunnelScene } from './flight/TunnelScene';
 import type { UniverseReport } from './end/Universe';
@@ -130,14 +130,20 @@ export class World {
     const moved = f !== this.drawn;
     const inside = canvasOpaque(f);
     const window = irisWindowOn(f);
+    // On the first view the light runs along the traces on its own while you read. With less motion asked for, it stands.
+    const running = !this.reduce && !inside && nightShare(f) > 0;
+    const idle = running ? idleFrames(now / 1000) : 0;
     if (moved) {
       this.drawn = f;
       this.dirty = true;
-      if (!inside) this.moveMachine(f);
+      if (!inside) this.moveMachine(f, idle);
       if (window) {
         const { iris } = machinePose(f);
         this.iris.place(iris.center, iris.edge, this.machine.camera, windowReach(f));
       } else this.iris.close();
+    } else if (running) {
+      this.machine.update(f, idle);
+      this.dirty = true;
     }
     // The tunnel never stands still: its light runs on and its speed settles while you read. With less motion asked for, it moves only with you.
     if (window || inside) {
@@ -150,8 +156,8 @@ export class World {
     return this.state;
   }
 
-  private moveMachine(f: number): void {
-    this.machine.update(f);
+  private moveMachine(f: number, idle: number): void {
+    this.machine.update(f, idle);
     const cam = cameraPose(f);
     const blur = blurShare(cam.lens, cam.fstop, cam.focus);
     this.bokehPass.enabled = this.dofAllowed && blur > NO_BLUR_SHARE;
