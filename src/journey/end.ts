@@ -24,6 +24,14 @@ export function driftAngles(t: number): { yaw: number; pitch: number } {
 export const ORBIT_YAW = 26 * DEG;
 export const ORBIT_PITCH = 15 * DEG;
 
+/** How far out the ring stands: past the page's edges, so that only its corners show and the words have the middle. */
+const RING_OUT = 1.85;
+
+/** Where the ring's inner edge reaches, as a share of half the view's height: further on a wide page than on a phone. */
+export function ringReach(phone: boolean): number {
+  return (phone ? 0.74 : 1.14) * RING_OUT;
+}
+
 /** The most galaxies of your own the page keeps. */
 export const MAX_GALAXIES = 8;
 

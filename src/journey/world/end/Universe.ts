@@ -1,5 +1,5 @@
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, Group, type IUniform, Matrix4, Mesh, MeshBasicMaterial, type MeshStandardMaterial, NoColorSpace, type Object3D, type PerspectiveCamera, type PointLight, Points, Raycaster, RingGeometry, type Scene, ShaderMaterial, Sprite, type SpriteMaterial, type Texture, Vector2, Vector3 } from 'three';
-import { addGalaxy, MAX_GALAXIES } from '../../end';
+import { addGalaxy, MAX_GALAXIES, ringReach } from '../../end';
 import type { JourneyQuality } from '../../quality';
 import { backOut, ease, seeded, TAU } from '../../math';
 import { displayReferred } from '../displayOutput';
@@ -385,7 +385,7 @@ export class Universe {
     // The ring grows out of the point, then keeps turning and leans toward the cursor.
     const grow = backOut(ease(bang, 0.34, 0.84), 1.1);
     const tanV = Math.tan(((phone ? 68 : 52) * Math.PI) / 360);
-    const fit = ((phone ? 0.74 : 1.14) * tanV * DISTANCE) / GATE_INNER;
+    const fit = (ringReach(phone) * tanV * DISTANCE) / GATE_INNER;
     this.spin.rotation.z = reduce ? 0 : now / 26000;
     this.rig.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(this.right, up, this.heading.clone().negate()));
     // It turns against the camera's swing, so that it keeps facing you; the words must never cross its metal.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addGalaxy, driftAngles, endWordsAt, MAX_GALAXIES, orbitAngles, touchPlan } from '~/journey/end';
+import { addGalaxy, driftAngles, endWordsAt, MAX_GALAXIES, orbitAngles, ringReach, touchPlan } from '~/journey/end';
 import { EndWords } from '~/ui/journey/EndWords';
 import { escape, render } from './render';
 
@@ -111,5 +111,13 @@ describe('the words of the end page', () => {
 
   it('name the year and him', () => {
     expect(html).toContain(`© ${new Date().getFullYear()} Bob Chung`);
+  });
+});
+
+describe('the ring on the end page (round 21)', () => {
+  it('stands further out, its inner edge past the edges of the page, so that only its corners show', () => {
+    expect(ringReach(false)).toBeCloseTo(1.14 * 1.85, 6);
+    expect(ringReach(true)).toBeCloseTo(0.74 * 1.85, 6);
+    expect(ringReach(true)).toBeGreaterThan(1);
   });
 });
