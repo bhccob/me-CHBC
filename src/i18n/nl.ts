@@ -38,9 +38,10 @@ export const nl: Dictionary = {
       {
         title: ['Cybersecurity', 'Stagiair'],
         facts: [
-          { label: 'Nu', value: 'Stagiair bij een cybersecuritybedrijf' },
+          // ­: a soft hyphen, where a long word may break in a phone's narrow column (tests/unit/journey/sheet-words.test.ts).
+          { label: 'Nu', value: 'Stagiair bij een cybersecurity­bedrijf' },
           { label: 'Leert via', value: 'TryHackMe en een cursus van het bedrijf' },
-          { label: 'Mogelijke richting', value: 'DevSecOps, firmwarebeveiliging' }
+          { label: 'Mogelijke richting', value: 'DevSecOps, firmware­beveiliging' }
         ],
         line: { lead: 'Het pantser.', rest: 'Wat het veilig houdt.' },
         titleBlock: 'Stage, nu · Blad 3 van 4 · Systems Builder'
