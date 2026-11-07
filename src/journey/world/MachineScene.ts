@@ -152,7 +152,6 @@ export class MachineScene {
     for (const part of this.parts.values()) part.visible = true;
   }
 
-  /** Puts everything where frame `f` has it. */
   /** Puts everything where frame `f` has it; `idle` is how far the first view's light has run on its own, in frames. */
   update(f: number, idle = 0): void {
     const pose = machinePose(f, idle);
