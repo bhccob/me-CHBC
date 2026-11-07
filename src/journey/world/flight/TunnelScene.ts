@@ -12,6 +12,7 @@ import { bangShare, collapseShare, fallPoint, voidLeftAfter } from '../end/Colla
 import { galaxy, Universe, type UniverseReport } from '../end/Universe';
 import { movingShare, starShare } from '../void/Dissolve';
 import { endFov, endFrame, voidDistanceAt, voidOpening, type VoidPose, voidPose, wallReach } from '../void/path';
+import type { QuestionText } from '../../qaType';
 import { type QuestionReport, Questions, type QuestionWords } from '../void/Questions';
 import { VoidScene } from '../void/VoidScene';
 import { Gates } from './Gates';
@@ -59,6 +60,8 @@ export interface FlightState {
   /** The tunnel breaking: the share of its points on their way, and the share already stars. */
   sparks: number;
   stars: number;
+  /** On a phone, where the page sets each question's words in type over the 3D; none shown anywhere else. */
+  words: QuestionText[];
 }
 
 /** What a stop holds, for those checking it. */
@@ -117,7 +120,7 @@ const look = new Vector3();
 export class TunnelScene {
   readonly scene = new Scene();
   readonly camera = new PerspectiveCamera(54, 16 / 9, 0.05, 900);
-  readonly state: FlightState = { s: 0, speed: 0, fov: 54, calm: 0, project: null, link: null, screen: null, hover: null, voidDistance: 0, sparks: 0, stars: 0 };
+  readonly state: FlightState = { s: 0, speed: 0, fov: 54, calm: 0, project: null, link: null, screen: null, hover: null, voidDistance: 0, sparks: 0, stars: 0, words: [] };
   private readonly input: TunnelInput;
   private readonly table: DistanceTable;
   private readonly uniforms: TunnelUniforms = tunnelUniforms();
@@ -503,6 +506,8 @@ export class TunnelScene {
     this.bang.update(fall, bang, now, camera.quaternion);
     this.universe?.update({ bang, now, dt, pointer: this.pointerAt, mouse: this.mouse, camera, phone: this.phone, reduce });
     this.questions?.update({ distance: beyond, now: reduce ? 0 : now, mouse: this.mouse, sway: m }, this.phone);
+    if (this.questions && this.phone) this.questions.pageWords(camera, this.width, this.height, state.words);
+    else for (const words of state.words) words.shown = false;
 
     // Each project swings out of the wall as you near it.
     let at: ProjectStop | null = null;

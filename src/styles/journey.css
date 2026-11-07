@@ -1088,6 +1088,52 @@ html[data-journey-calm] .site-header {
   clip-path: inset(50%);
 }
 
+/*
+ * On a phone, the questions' words in type over the 3D, where the 3D says (QaWords.tsx): its canvas draws too few pixels there
+ * for sharp words. Sized and placed frame by frame in units of the world; these set what the plates draw in the same units.
+ */
+.j-qa-words {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.j-qa-q {
+  visibility: hidden;
+}
+
+.j-qa-ask,
+.j-qa-say {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  overflow-wrap: break-word;
+  will-change: transform, opacity;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--r, 1) * 110% - 10%), transparent calc(var(--r, 1) * 110%));
+  mask-image: linear-gradient(90deg, #000 calc(var(--r, 1) * 110% - 10%), transparent calc(var(--r, 1) * 110%));
+}
+
+.j-qa-ask {
+  font-family: var(--j-sans);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.0254em;
+  text-transform: uppercase;
+  color: #f6f1e6;
+  text-shadow: 0 0 0.2em rgb(4 3 8 / 0.8);
+}
+
+.j-qa-say {
+  font-family: var(--j-sans);
+  font-weight: 500;
+  line-height: 1.31;
+  color: rgb(242 239 232 / 0.94);
+  text-shadow: 0 0 0.19em rgb(4 3 8 / 0.95);
+}
+
 /* A project open over the flight: its screen grows into its page. */
 html[data-project-open] {
   overflow: hidden;

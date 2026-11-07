@@ -8,10 +8,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege: the build (which also runs on pull requests) only reads; only the deploy job may publish.
+# Each action is pinned to a commit, with its version beside it; Dependabot keeps both up to date.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages-${{ github.ref }}
@@ -20,13 +20,26 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The token is not left in .git/config, where the build's own scripts could read it.
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
+
+      # SECURITY.md section 1: no secret may be committed. Fails on the usual key shapes anywhere in the tracked files.
+      - name: Scan for committed secrets
+        run: |
+          if git grep -nIE 'sk-ant-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}' -- . ':!package-lock.json'; then
+            echo "::error::A secret-shaped value is committed (see above). Rotate it first, then remove it from the history."
+            exit 1
+          fi
 
       - name: Install dependencies
         run: npm ci
@@ -46,7 +59,7 @@ jobs:
           PUBLIC_WEB3FORMS_KEY: ${{ vars.PUBLIC_WEB3FORMS_KEY }}
           PUBLIC_CF_ANALYTICS_TOKEN: ${{ vars.PUBLIC_CF_ANALYTICS_TOKEN }}
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.13'
 
@@ -61,7 +74,7 @@ jobs:
       - name: Lighthouse
         run: npx --yes @lhci/cli@0.15.1 autorun
 
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         if: github.event_name != 'pull_request'
         with:
           path: dist/client
@@ -72,9 +85,12 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

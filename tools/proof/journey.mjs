@@ -81,10 +81,9 @@ async function openJourney(browser, step, viewport, { route = ROUTE, stages = '&
 
 /** Scrolls to frame `f` by wheel, as a person does, and waits for the shown frame to get there. */
 async function goToFrame(page, f, stepPx = 300, gap = 16) {
-  const target = await page.evaluate(({ f, last, hold }) => {
-    const max = document.documentElement.scrollHeight - innerHeight;
-    return (hold + (Math.min(f, last) / last) * (1 - hold)) * max;
-  }, { f, last: timeline.last, hold: scrollFromFrame(0, 1, timeline) });
+  // The site's own mapping, which takes the questions slower (timeline.ts, QA_PACE): never a copy of it here.
+  const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  const target = scrollFromFrame(f, max, timeline);
   for (;;) {
     const y = await page.evaluate(() => scrollY);
     const left = target - y;
@@ -1017,10 +1016,9 @@ async function noScript(browser, step) {
 }
 
 const jumpTo = async (page, f) => {
-  await page.evaluate(([to, shape]) => {
-    const max = document.documentElement.scrollHeight - innerHeight;
-    scrollTo({ top: to <= 0 ? 0 : (0.035 + (to / shape) * 0.965) * max, behavior: 'auto' });
-  }, [f, timeline.last]);
+  const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  const top = f <= 0 ? 0 : scrollFromFrame(f, max, timeline);
+  await page.evaluate((to) => scrollTo({ top: to, behavior: 'auto' }), top);
   await page.waitForFunction((want) => Math.abs(window.__journeyDebug.frame() - want) < 0.5, f, { timeout: 15_000 });
 };
 

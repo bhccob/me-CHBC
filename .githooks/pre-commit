@@ -1,0 +1,13 @@
+#!/bin/sh
+# Refuses a commit that adds a secret-shaped value (SECURITY.md, section 1). The CI runs the same scan on every push.
+# Turn it on once per clone:  git config core.hooksPath .githooks
+pattern='sk-ant-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}'
+if git diff --cached -U0 --no-color -- . ':!package-lock.json' | grep -E '^\+' | grep -nE "$pattern"; then
+  echo "pre-commit: a secret-shaped value is staged (above). Take it out, keep it in .env, and rotate it if it was ever pushed." >&2
+  exit 1
+fi
+if git diff --cached --name-only | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$'; then
+  echo "pre-commit: a .env file is staged (above). Secrets stay out of the repository." >&2
+  exit 1
+fi
+exit 0

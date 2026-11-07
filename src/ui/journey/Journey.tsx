@@ -1,6 +1,7 @@
 import { type JSX, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import { PAGES } from '~/data/pages';
+import { tabStore } from '~/app/tabStore';
 import { profile } from '~/data/profile';
 import { projects } from '~/data/projects';
 import { installJourneyDebug } from '~/debug/journeyDebug';
@@ -34,6 +35,7 @@ import { createPaper, createSparks } from './paper';
 import { PortalWord } from './PortalWord';
 import { ProjectLinks } from './ProjectLinks';
 import { QaText } from './QaText';
+import { QaWords, qaWordsIn, updateQaWords } from './QaWords';
 import { StackWords } from './StackWords';
 import { Story, updateStory } from './Story';
 
@@ -88,7 +90,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
   useEffect(() => {
     reduce.current = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-    setPlan(loaderPlan({ seenThisTab: sessionStorage.getItem(SEEN_KEY) !== null, reload: navigation?.type === 'reload', reduced: reduce.current }));
+    setPlan(loaderPlan({ seenThisTab: tabStore.getItem(SEEN_KEY) !== null, reload: navigation?.type === 'reload', reduced: reduce.current }));
     setStarted(true);
     const rail = document.getElementById('j-rail');
     const bar = document.getElementById('j-bar');
@@ -149,6 +151,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       hotNow = false;
     };
     const tags = TAG_NAMES.map((name) => document.querySelector<HTMLElement>(`[data-tag="${name}"]`));
+    const qaWords = qaWordsIn(document.getElementById('j-qa-words'));
     const paintBands = (): void => {
       for (const band of document.querySelectorAll<HTMLCanvasElement>('.j-band')) paintBand(band, band.dataset.kind as BandKind);
     };
@@ -228,6 +231,8 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         const paused = openedProject() !== null;
         const state = paused ? null : canvas.current?.frame(f, dt, now);
         if (state) showProject(state.flight.project, state.flight.link, state.hover);
+        // On a phone the questions' words are type on the page, where the 3D says; only while the 3D holds the page.
+        updateQaWords(qaWords, state?.opaque ? state.flight.words : null, innerWidth);
         if (state && state.fired > 0 && endToy) endToy.style.opacity = '0';
         else if (paused) cool();
         tags.forEach((tag, n) => {
@@ -367,6 +372,8 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       uninstall();
       removeEventListener('resize', onResize);
       stopResume();
+      // Off to another page of the site: the machine's hum does not follow; the switch keeps his choice for the way back.
+      Sound.sleep();
       document.removeEventListener('click', onClick);
       stopHistory();
       cool();
@@ -437,6 +444,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       <PortalWord />
       <ProjectLinks />
       <QaText />
+      <QaWords />
       <EndWords />
       <div id="j-flash" className="j-flash" aria-hidden="true" />
       <p id="j-hint" className="j-hint">

@@ -51,6 +51,8 @@ export function Layout({ children }: { children: ReactNode }) {
           <meta httpEquiv="Content-Security-Policy" content="__CSP__" />
         )}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* A link to another site tells it only bhccob.com, never the page (SECURITY.md, section 5; no header on Pages). */}
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
         <meta name="theme-color" content="#0a0510" />
         <meta name="color-scheme" content="dark" />
         <Meta />

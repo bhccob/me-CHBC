@@ -36,6 +36,7 @@ export const en = {
         title: ['Game', 'Development'],
         facts: [
           { label: 'Engine', value: 'Godot, Roblox Studio' },
+          { label: 'Studied', value: 'MBO 4, Rotterdam' },
           { label: 'Built', value: 'Browser, Roblox and platform games' }
         ],
         line: { lead: 'The controls.', rest: 'How a person plays with it.' },
@@ -45,6 +46,7 @@ export const en = {
         title: ['Cybersecurity', 'Intern'],
         facts: [
           { label: 'Now', value: 'Intern at a cybersecurity company' },
+          { label: 'Learning', value: 'TryHackMe and a company course' },
           { label: 'Possible direction', value: 'DevSecOps, firmware security' }
         ],
         line: { lead: 'The armour.', rest: 'What keeps it safe.' },

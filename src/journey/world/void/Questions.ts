@@ -1,5 +1,6 @@
 import { AdditiveBlending, BoxGeometry, type Camera, Group, Matrix4, Mesh, MeshBasicMaterial, type MeshStandardMaterial, type Object3D, Quaternion, type Scene, type Vector2, Vector3 } from 'three';
 import { backOut, clamp, ease, mix, ramp } from '../../math';
+import { noQuestionText, PHONE_BIG, PHONE_LINE, PHONE_SMALL, PHONE_TYPE, PPU_BIG, PPU_SMALL, type QuestionText } from '../../qaType';
 import { displayReferred } from '../displayOutput';
 import { type TextPlate, textPlate } from '../flight/textures';
 import { wrapLines } from '../flight/wrap';
@@ -32,14 +33,18 @@ export interface QuestionReport {
   shown: boolean;
 }
 
-const PPU_BIG = 400;
-const PPU_SMALL = 560;
 const INK = '#f6f1e6';
 const UP = new Vector3(0, 1, 0);
 /** The height the camera travels at. */
 const EYE_HEIGHT = FLOOR + 2.2;
 
 const corner = new Vector3();
+
+/** A point of the world on the page, CSS px from the top left. */
+function toPage(point: Vector3, camera: Camera, width: number, height: number): [number, number] {
+  point.project(camera);
+  return [(point.x * 0.5 + 0.5) * width, (-point.y * 0.5 + 0.5) * height];
+}
 
 interface Stop {
   i: number;
@@ -57,6 +62,8 @@ interface Stop {
   left: number;
   top: number;
   total: number;
+  /** The width its words wrap at, in units of the world. */
+  wrap: number;
   home: Vector3;
   right: Vector3;
   face: Quaternion;
@@ -117,7 +124,7 @@ export class Questions {
       const stub = new Mesh(new BoxGeometry(1, 0.008, 0.02), gold());
       stub.frustumCulled = false;
       scene.add(stub);
-      return { i, d, group, gear, gearMaterials, leader, pad, stub, title: null, answer: null, plates: [], drawn: [], left: 0, top: 0, total: 0, home: new Vector3(), right: new Vector3(), face: new Quaternion() };
+      return { i, d, group, gear, gearMaterials, leader, pad, stub, title: null, answer: null, plates: [], drawn: [], left: 0, top: 0, total: 0, wrap: 0, home: new Vector3(), right: new Vector3(), face: new Quaternion() };
     });
   }
 
@@ -159,9 +166,9 @@ export class Questions {
     for (const plate of stop.plates) disposeWords(stop.group, plate);
     stop.plates = [];
     const side = questionSide(i);
-    const big = phone ? 118 : 148;
-    const small = phone ? 84 : 62;
-    const line = phone ? 110 : 84;
+    const big = phone ? PHONE_BIG : 148;
+    const small = phone ? PHONE_SMALL : 62;
+    const line = phone ? PHONE_LINE : 84;
     // On a phone they take the page's width at the reading distance, and no more.
     const across = Math.min(3.3, 2 * QREAD * Math.tan((endFov(true) * Math.PI) / 360) * aspect - 0.32);
     const wrapQ = phone ? across : 3.6;
@@ -223,7 +230,41 @@ export class Questions {
     stop.left = left;
     stop.top = top;
     stop.total = total;
+    stop.wrap = wrapQ;
+    // On a phone the page sets these words in type (`pageWords`): the plates are kept for their place, never drawn.
+    title.mesh.visible = !phone;
+    answer.mesh.visible = !phone;
     this.layoutStop(stop);
+  }
+
+  /**
+   * Where the page sets each question's words on a phone, this frame, into `out` (one entry for each question). The camera
+   * must be placed for this frame. Nothing shows where the plates are not in view.
+   */
+  pageWords(camera: Camera, width: number, height: number, out: QuestionText[]): void {
+    camera.updateMatrixWorld();
+    this.stops.forEach((stop, i) => {
+      const text = (out[i] ??= noQuestionText());
+      const { title, answer } = stop;
+      text.shown = stop.group.visible && title !== null && answer !== null;
+      if (!text.shown || !title || !answer) return;
+      stop.group.updateMatrixWorld();
+      const [tx, ty] = toPage(corner.set(-title.width / 2, title.height / 2, 0).applyMatrix4(title.mesh.matrixWorld), camera, width, height);
+      const [rx] = toPage(corner.set(title.width / 2, title.height / 2, 0).applyMatrix4(title.mesh.matrixWorld), camera, width, height);
+      const [ax, ay] = toPage(corner.set(-answer.width / 2, answer.height / 2, 0).applyMatrix4(answer.mesh.matrixWorld), camera, width, height);
+      const unit = (rx - tx) / title.width;
+      const inset = PHONE_TYPE.inset * unit;
+      text.unit = unit;
+      text.width = stop.wrap * unit;
+      text.titleX = tx + inset;
+      text.titleY = ty;
+      text.answerX = ax + inset;
+      text.answerY = ay;
+      text.titleA = title.mesh.material.uniforms.uA.value as number;
+      text.titleReveal = title.mesh.material.uniforms.uReveal.value as number;
+      text.answerA = answer.mesh.material.uniforms.uA.value as number;
+      text.answerReveal = answer.mesh.material.uniforms.uReveal.value as number;
+    });
   }
 
   private layoutStop(stop: Stop): void {

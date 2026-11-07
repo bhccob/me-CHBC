@@ -29,6 +29,7 @@ export const nl: Dictionary = {
         title: ['Game', 'Development'],
         facts: [
           { label: 'Engine', value: 'Godot, Roblox Studio' },
+          { label: 'Opleiding', value: 'MBO 4, Rotterdam' },
           { label: 'Gebouwd', value: 'Browser-, Roblox- en platformgames' }
         ],
         line: { lead: 'De besturing.', rest: 'Hoe iemand ermee speelt.' },
@@ -38,6 +39,7 @@ export const nl: Dictionary = {
         title: ['Cybersecurity', 'Stagiair'],
         facts: [
           { label: 'Nu', value: 'Stagiair bij een cybersecuritybedrijf' },
+          { label: 'Leert via', value: 'TryHackMe en een cursus van het bedrijf' },
           { label: 'Mogelijke richting', value: 'DevSecOps, firmwarebeveiliging' }
         ],
         line: { lead: 'Het pantser.', rest: 'Wat het veilig houdt.' },

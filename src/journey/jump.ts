@@ -1,4 +1,5 @@
 import { ease } from './math';
+import { tabStore } from '~/app/tabStore';
 import { type ChapterId, scrollFromFrame, type Timeline } from './timeline';
 
 /** Where a link or a hash lands on the journey. Pure, but for `glideTo`, which takes its window. */
@@ -47,12 +48,12 @@ export function noteFrame(f: number | null): void {
 }
 
 /** Keeps the place for the page about to replace this one, as the language link does. */
-export function rememberPlace(storage: PlaceStore = sessionStorage): void {
+export function rememberPlace(storage: PlaceStore = tabStore): void {
   if (shownFrame !== null) storage.setItem(PLACE_KEY, String(shownFrame));
 }
 
 /** The place kept for this page, read once. */
-export function takePlace(storage: PlaceStore = sessionStorage): number | null {
+export function takePlace(storage: PlaceStore = tabStore): number | null {
   const held = storage.getItem(PLACE_KEY);
   if (held === null) return null;
   storage.removeItem(PLACE_KEY);

@@ -1,5 +1,6 @@
 import { type JSX, useEffect, useRef, useState } from 'react';
 import { useTranslator } from '~/i18n/useTranslator';
+import { tabStore } from '~/app/tabStore';
 import { createInk } from '~/journey/loader/ink';
 import { doorAction, type DoorChoice, type DoorInput, GIVE_UP_MS, INK, inkTarget, type LoaderPlan, SEEN_KEY } from '~/journey/loader/plan';
 
@@ -71,7 +72,7 @@ export function InkLoader({ plan, ready, progress, onEnter, onLand, onDone }: In
       if (!waiting || doneAt) return;
       onEnter(doorAction(input));
       setDoor(false);
-      sessionStorage.setItem(SEEN_KEY, '1');
+      tabStore.setItem(SEEN_KEY, '1');
       doneAt = performance.now();
     };
     const finish = (): void => {

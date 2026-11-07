@@ -14,6 +14,12 @@ export const SMOOTH_S = 0.13;
 /** The scroll one frame takes, CSS px. */
 export const SCROLL_PX_PER_FRAME = 30.6;
 
+/**
+ * How many times the scroll a frame of the questions takes: a phone's swipe carried past a question or two before (Bob,
+ * 2026-11-07: "the Q&A scrolling is too fast"). Every frame plays as before; only the scroll between them is longer.
+ */
+export const QA_PACE = 2;
+
 /** The flight's length in the mock's distance units, and in frames, with the four projects of the approved mock-up. */
 const BASE_FLIGHT_END = 180;
 const FRAMES_PER_UNIT = 1.2;
@@ -45,6 +51,8 @@ export interface Timeline {
   bang: [number, number];
   settled: number;
   chapters: readonly Chapter[];
+  /** The stretch the scroll takes slower, in frames: the questions, from the end of the break to the collapse. */
+  pace: { from: number; to: number; times: number };
 }
 
 /** The timeline for a flight of `flightEnd` distance units, with its projects read at `reads`. */
@@ -75,18 +83,34 @@ export function buildTimeline(flightEnd = BASE_FLIGHT_END, reads: readonly numbe
       { id: 'qa', from: 640 + shift, jump: 668 + shift },
       { id: 'contact', from: 856 + shift, jump: last },
     ],
+    pace: { from: 690 + shift, to: 858 + shift, times: QA_PACE },
   };
+}
+
+/** How far along the scroll frame `f` stands, in frames of plain scroll: each frame of the paced stretch counts `times`. */
+function scrollUnits(f: number, tl: Timeline): number {
+  const { from, to, times } = tl.pace;
+  return f + (times - 1) * Math.max(0, Math.min(f, to) - from);
+}
+
+/** The frame at `units` frames of plain scroll: `scrollUnits` the other way. */
+function frameOfUnits(units: number, tl: Timeline): number {
+  const { from, to, times } = tl.pace;
+  if (units <= from) return units;
+  const paced = (to - from) * times;
+  if (units <= from + paced) return from + (units - from) / times;
+  return units - (times - 1) * (to - from);
 }
 
 /** The frame the scroll stands for. */
 export function frameFromScroll(scrollY: number, maxScroll: number, tl: Timeline): number {
   const raw = Math.min(1, Math.max(0, scrollY / Math.max(1, maxScroll)));
-  return ramp(raw, HOLD, 1) * tl.last;
+  return Math.min(tl.last, frameOfUnits(ramp(raw, HOLD, 1) * scrollUnits(tl.last, tl), tl));
 }
 
 /** The scroll that stands for a frame. */
 export function scrollFromFrame(f: number, maxScroll: number, tl: Timeline): number {
-  return (HOLD + (Math.min(f, tl.last) / tl.last) * (1 - HOLD)) * maxScroll;
+  return (HOLD + (scrollUnits(Math.min(f, tl.last), tl) / scrollUnits(tl.last, tl)) * (1 - HOLD)) * maxScroll;
 }
 
 /** The shown frame `dt` seconds on, eased toward `target`. */
@@ -103,5 +127,5 @@ export function chapterAt(f: number, tl: Timeline): ChapterId {
 
 /** How much taller than the window the page is, CSS px. The window's height adds to it, so a resize keeps the frame. */
 export function trackHeightPx(tl: Timeline): number {
-  return tl.last * SCROLL_PX_PER_FRAME;
+  return scrollUnits(tl.last, tl) * SCROLL_PX_PER_FRAME;
 }

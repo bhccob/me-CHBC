@@ -1,3 +1,4 @@
+import { tabStore } from '~/app/tabStore';
 import { clamp, ramp, seeded } from '../math';
 import { type Audio, audioLevel, currentAudio, startAudio } from './engine';
 import { bell, burst, fall, gong, hello, HIT_SOUNDS, RUN_SOUNDS, snap, thump } from './effects';
@@ -8,7 +9,29 @@ const CHORDS = [[38, 50, 53, 57], [34, 50, 53, 58], [41, 48, 53, 57], [36, 48, 5
 const HIGH_NOTES = [62, 65, 67, 69, 72, 74, 77, 79, 81, 84] as const;
 const EIGHTH = 60 / 66 / 2;
 const WANTED_KEY = 'journey-sound';
+/** The master level while the sound is on. */
+const LEVEL = 0.8;
+/**
+ * The events a browser counts as a person's own act, which it asks for before sound plays again. A touch counts on its
+ * way up (pointerup, touchend), not on its way down, so pointerdown alone never woke a phone.
+ */
+const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'] as const;
 const midi = (note: number): number => 440 * Math.pow(2, (note - 69) / 12);
+
+/** The switch as he left it in this tab; storage a browser has blocked reads as off and writes nothing. */
+function wanted(storage: Pick<Storage, 'getItem'>): boolean {
+  try {
+    return storage.getItem(WANTED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function remember(on: boolean): void {
+  tabStore.setItem(WANTED_KEY, on ? '1' : '0');
+}
+
+const pageHidden = (): boolean => typeof document !== 'undefined' && document.hidden;
 
 type NoiseVoice = { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode };
 
@@ -45,6 +68,12 @@ class Music {
   private holding = false;
   private readonly random = seeded(424242);
   private readonly listeners = new Set<() => void>();
+  /** Takes away the listeners that wait for a tap to wake the sound; null while none wait. */
+  private unarm: (() => void) | null = null;
+  /** The context whose changes of state it follows. */
+  private watched: AudioContext | null = null;
+  /** The master was brought down for a hidden page, and comes up again with it. */
+  private quieted = false;
 
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
@@ -72,30 +101,105 @@ class Music {
     if (this.on) this.startVoices();
   }
 
-  /** After a reload he had sound on: the next click or key brings it back, as browsers ask. */
-  resumeIfWanted(storage: Pick<Storage, 'getItem'> = sessionStorage): () => void {
-    if (storage.getItem(WANTED_KEY) !== '1') return () => {};
+  /** After a reload he had sound on: the next tap, click or key brings it back, as browsers ask. */
+  resumeIfWanted(storage: Pick<Storage, 'getItem'> = tabStore): () => void {
+    if (!wanted(storage)) return () => {};
     const resume = (): void => {
       stop();
-      if (!this.on) this.set(true);
-      this.startVoices();
+      // set() makes the context or wakes it; if the browser still holds it, set() waits for the next tap itself.
+      this.set(true);
+      if (this.landed) this.startVoices();
     };
     const stop = (): void => {
-      removeEventListener('pointerdown', resume);
-      removeEventListener('keydown', resume);
+      for (const type of GESTURES) removeEventListener(type, resume, true);
     };
-    addEventListener('pointerdown', resume);
-    addEventListener('keydown', resume);
+    for (const type of GESTURES) addEventListener(type, resume, true);
     return stop;
+  }
+
+  /** The home page has gone (another page of the site): its voices stop, and the switch keeps his choice for its return. */
+  sleep(): void {
+    this.disarm();
+    this.stopVoices();
   }
 
   private set(on: boolean): void {
     const a = on ? startAudio() : currentAudio();
     this.on = on && a !== null;
-    if (a) a.master.gain.setTargetAtTime(this.on ? 0.8 : 0, a.ctx.currentTime, this.on ? 0.2 : 0.06);
-    if (!this.on) this.stopVoices();
-    sessionStorage.setItem(WANTED_KEY, this.on ? '1' : '0');
+    if (a) {
+      this.follow(a);
+      this.quieted = false;
+      a.master.gain.cancelScheduledValues(a.ctx.currentTime);
+      a.master.gain.setTargetAtTime(this.on ? LEVEL : 0, a.ctx.currentTime, this.on ? 0.2 : 0.06);
+      if (this.on && a.ctx.state !== 'running') this.arm();
+    }
+    if (!this.on) {
+      this.disarm();
+      this.stopVoices();
+    }
+    remember(this.on);
     for (const listener of this.listeners) listener();
+  }
+
+  /** Follows the context's state: a phone may pause it by itself (a call, another app), and it wakes at the next tap. */
+  private follow(a: Audio): void {
+    if (this.watched === a.ctx) return;
+    this.watched = a.ctx;
+    a.ctx.addEventListener?.('statechange', () => {
+      if (!this.on) return;
+      if (a.ctx.state === 'running') {
+        this.disarm();
+        this.fadeUp(a);
+      } else if (!pageHidden()) this.arm();
+    });
+  }
+
+  /** Waits for his next tap, click or key to wake the sound, once: a second call while it waits adds nothing. */
+  private arm(): void {
+    if (this.unarm) return;
+    const wake = (): void => {
+      const a = currentAudio();
+      if (!a || !this.on) {
+        this.disarm();
+        return;
+      }
+      void a.ctx.resume().then(() => this.woke(a), () => {});
+    };
+    for (const type of GESTURES) addEventListener(type, wake, true);
+    this.unarm = () => {
+      for (const type of GESTURES) removeEventListener(type, wake, true);
+      this.unarm = null;
+    };
+  }
+
+  private disarm(): void {
+    this.unarm?.();
+  }
+
+  /** After a resume: playing, so the taps need not wait any more, and the master comes back up. */
+  private woke(a: Audio): void {
+    if (a.ctx.state !== 'running') return;
+    this.disarm();
+    this.fadeUp(a);
+  }
+
+  /** Brings the master down at once, for a page about to be hidden. */
+  private quiet(a: Audio): void {
+    const gain = a.master.gain, t = a.ctx.currentTime;
+    gain.cancelScheduledValues(t);
+    gain.setValueAtTime(gain.value, t);
+    gain.linearRampToValueAtTime(0, t + 0.04);
+    this.quieted = true;
+  }
+
+  /** Brings the master back up from silence after a hidden page, so that nothing comes back in a burst. */
+  private fadeUp(a: Audio): void {
+    if (!this.quieted) return;
+    this.quieted = false;
+    const gain = a.master.gain, t = a.ctx.currentTime;
+    gain.cancelScheduledValues(t);
+    gain.setValueAtTime(0, t);
+    gain.setTargetAtTime(this.on ? LEVEL : 0, t, 0.25);
   }
 
   private noiseVoice(a: Audio, type: BiquadFilterType, freq: number, q: number): NoiseVoice {
@@ -206,6 +310,8 @@ class Music {
 
   private pump(a: Audio): void {
     if (!this.voices) return;
+    // A timer held back (a background tab runs it once a second) plays the notes from now, not every one it missed.
+    if (this.nextNote < a.ctx.currentTime) this.nextNote = a.ctx.currentTime + 0.05;
     while (this.nextNote < a.ctx.currentTime + 0.18) {
       const step = this.note, t = this.nextNote;
       if (step % 16 === 0) {
@@ -263,12 +369,26 @@ class Music {
     }
   }
 
-  /** A tab nobody is looking at keeps quiet, and comes back as it was, with nothing saved up. */
+  /**
+   * A tab nobody is looking at keeps quiet, and comes back as it was, with nothing saved up: at once where the browser
+   * allows it, else at his next tap, click or key. The switch says what it said before.
+   */
   watchVisibility(hidden: boolean): void {
     const a = currentAudio();
     if (!a) return;
-    if (hidden) void a.ctx.suspend();
-    else this.resumeIfWanted();
+    if (hidden) {
+      this.disarm();
+      this.quiet(a);
+      void a.ctx.suspend().catch(() => {});
+      return;
+    }
+    if (!this.on) return;
+    if (a.ctx.state === 'running') {
+      this.fadeUp(a);
+      return;
+    }
+    this.arm();
+    void a.ctx.resume().then(() => this.woke(a), () => {});
   }
 
   /** Holding on the end page is quiet; letting go makes the soft whoosh, and nothing else. */

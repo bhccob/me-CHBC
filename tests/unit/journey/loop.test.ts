@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_DT, startLoop } from '~/journey/loop';
-import { buildTimeline } from '~/journey/timeline';
+import { buildTimeline, scrollFromFrame } from '~/journey/timeline';
 
 const tl = buildTimeline();
+/** The scroll of frame 467, on a page with 1000 px to scroll. */
+const AT_467 = scrollFromFrame(467, 1000, tl);
 
 /** A loop on a hand-turned clock. */
 function run(reduce: boolean, ys: readonly number[], times: readonly number[]): { f: number; dt: number }[] {
@@ -29,20 +31,20 @@ function run(reduce: boolean, ys: readonly number[], times: readonly number[]): 
 
 describe('the loop', () => {
   it('lands on the scroll as it stands on its first tick, so a reload shows that place', () => {
-    const [first] = run(false, [517.5], [100]);
+    const [first] = run(false, [AT_467], [100]);
     expect(first.f).toBeCloseTo(467, 6);
     expect(first.dt).toBe(0);
   });
 
   it('then eases toward the scroll', () => {
-    const [first, second] = run(false, [35, 517.5], [100, 116]);
+    const [first, second] = run(false, [35, AT_467], [100, 116]);
     expect(first.f).toBeCloseTo(0, 6);
     expect(second.f).toBeGreaterThan(0);
     expect(second.f).toBeLessThan(467);
   });
 
   it('follows the scroll at once with reduced motion', () => {
-    expect(run(true, [35, 517.5], [100, 116])[1].f).toBeCloseTo(467, 6);
+    expect(run(true, [35, AT_467], [100, 116])[1].f).toBeCloseTo(467, 6);
   });
 
   it('does not believe a long step, so a return from sleep does not jump the story', () => {
