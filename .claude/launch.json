@@ -11,6 +11,18 @@
       "port": 5173
     },
     {
+      "name": "needle-dev-2",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "react-router",
+        "dev",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
+    },
+    {
       "name": "journey",
       "runtimeExecutable": "node",
       "runtimeArgs": [
