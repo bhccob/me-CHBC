@@ -1,9 +1,9 @@
 import { ease, ramp, seeded } from '~/journey/math';
 
 /**
- * The page under everything on the first view, drawn in code: dark mist, a far hill and a sea line, and an Aruban tree bent
- * by the trade wind, whose branches turn into gold circuit traces with small lit blossoms. It grows on load. A few sparks
- * drift in front. From the mock's `paintBase`, `buildTree`, `drawPaper`.
+ * The page under everything on the first view, drawn in code: dark mist, a far hill and a sea line, and an Aruban tree that
+ * reaches in from the top right corner, its branches turning into gold circuit traces with small lit blossoms. It grows on
+ * load. A few sparks drift in front. From the mock's `paintBase`, `buildTree`, `drawPaper`.
  */
 
 export interface Segment {
@@ -19,9 +19,14 @@ export interface Segment {
 /** How long the tree takes to grow, ms. */
 const GROW_MS = 2600;
 
-/** The tree drawn calmer, so the city below keeps the eye: its branches this much as thick, and one tip in this many lit. */
-const THIN = 0.5;
-const LIT_EVERY = 3;
+/** Where the tree may grow: under the menu (TOP_HIGH of the height) and no lower than TOP_LOW, in from the right REACH of the width. */
+const TOP_HIGH = 0.1;
+const TOP_LOW = 0.3;
+const TOP_LOW_PHONE = 0.24;
+const REACH = 0.5;
+const REACH_PHONE = 0.7;
+/** How thick the tree is drawn, against how it grows. */
+const THIN = 0.6;
 
 export function mist(c: CanvasRenderingContext2D, w: number, h: number, r: () => number, tints: readonly string[], n: number): void {
   for (let i = 0; i < n; i++) {
@@ -48,40 +53,57 @@ export function grain(c: CanvasRenderingContext2D, w: number, h: number, r: () =
   c.restore();
 }
 
+/**
+ * The tree, kept to the top of the sky so the city below keeps the eye: it reaches in from the top right corner, under the
+ * menu, its wood turning to gold traces after two forks, every branch's end lit. A branch stops where it would go lower than
+ * TOP_LOW of the page or further in than REACH of its width.
+ */
 export function buildTree(w: number, h: number): { segs: Segment[]; tips: [number, number][] } {
   const r = seeded(4711), segs: Segment[] = [], tips: [number, number][] = [], S = Math.min(w, h * 1.7) / 1280;
+  const wide = w > h;
+  const high = h * TOP_HIGH, low = h * (wide ? TOP_LOW : TOP_LOW_PHONE), inner = w * (1 - (wide ? REACH : REACH_PHONE));
   function branch(x: number, y: number, ang: number, len: number, wid: number, depth: number): void {
-    if (depth > 7 || wid < 0.5 || x < w * 0.52) {
+    if (depth > 6 || wid < 0.6) {
       tips.push([x, y]);
       return;
     }
-    const gold = depth >= 4;
+    const gold = depth >= 2;
     let cx = x, cy = y, a = ang;
-    const steps = gold ? 2 + Math.floor(r() * 2) : 6;
+    const steps = gold ? 2 : 5;
     for (let i = 0; i < steps; i++) {
-      // Traces turn in 45 degree steps; the wood bends to the left with the trade wind.
-      if (gold) a = Math.round((a + (r() - 0.5) * 1.5) / (Math.PI / 4)) * (Math.PI / 4);
-      else a += (r() - 0.5) * 0.34 + (Math.PI - a) * 0.03;
+      // Traces turn in 45 degree steps; the wood leans west with the trade wind.
+      if (gold) a = Math.round((a + (r() - 0.5) * 1.3) / (Math.PI / 4)) * (Math.PI / 4);
+      else a += (r() - 0.5) * 0.3 + (Math.PI - a) * 0.06;
       const l = (len / steps) * (0.8 + r() * 0.4);
-      const nx = cx + Math.cos(a) * l, ny = cy + Math.sin(a) * l;
+      let nx = cx + Math.cos(a) * l, ny = cy + Math.sin(a) * l;
+      // Under the menu, never up into it: it runs level there instead.
+      if (ny < high) {
+        ny = high;
+        a = Math.PI;
+      }
+      // At its edge the branch ends where it is.
+      const t = Math.min(1, ny > low ? (low - cy) / (ny - cy) : 1, nx < inner ? (inner - cx) / (nx - cx) : 1);
+      if (t < 1) {
+        nx = cx + (nx - cx) * t;
+        ny = cy + (ny - cy) * t;
+        segs.push({ x0: cx, y0: cy, x1: nx, y1: ny, w: wid * (1 - (i / steps) * 0.28), gold, d: depth });
+        tips.push([nx, ny]);
+        return;
+      }
       segs.push({ x0: cx, y0: cy, x1: nx, y1: ny, w: wid * (1 - (i / steps) * 0.28), gold, d: depth });
       cx = nx;
       cy = ny;
     }
-    const kids = depth < 3 ? 2 + (r() > 0.6 ? 1 : 0) : 2;
+    const kids = depth < 2 ? 2 : r() < 0.62 ? 2 : 1;
     for (let k = 0; k < kids; k++) {
-      const side = k === 0 ? -1 : k === 1 ? 1 : r() > 0.5 ? 1 : -1;
-      branch(cx, cy, a + side * (0.28 + r() * 0.5), len * (0.68 + r() * 0.16), wid * 0.62, depth + 1);
+      const turn = kids === 1 ? (r() - 0.5) * 0.4 : (k === 0 ? -1 : 1) * (0.25 + r() * 0.4);
+      branch(cx, cy, a + turn, len * (0.7 + r() * 0.14), wid * 0.62, depth + 1);
     }
   }
-  branch(w * 1.03, h * 0.0, Math.PI * 0.9, 210 * S, 24 * S, 0);
-  branch(w * 1.03, h * 0.2, Math.PI * 0.97, 150 * S, 11 * S, 2);
+  branch(w * 1.02, h * 0.13, Math.PI * 0.985, 190 * S, 11 * S, 0);
   segs.sort((p, q) => p.d - q.d);
-  // Thinned once grown, so that it keeps every branch it has.
-  return {
-    segs: segs.map((s) => ({ ...s, w: s.w * THIN })),
-    tips: tips.filter(([x, y]) => x > -10 && y > -10 && y < h + 10).filter((_, i) => i % LIT_EVERY === 0),
-  };
+  // Drawn thinner than it grows, so that it keeps every fork.
+  return { segs: segs.map((s) => ({ ...s, w: s.w * THIN })), tips };
 }
 
 function paintBase(w: number, h: number): HTMLCanvasElement {
