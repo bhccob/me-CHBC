@@ -44,7 +44,7 @@ describe('the header', () => {
   it.each([
     ['/lite/', nl, 'nl' as const],
     ['/en/contact/', en, 'en' as const],
-    ['/projects/steady/', nl, 'nl' as const],
+    ['/projects/jontai-energy/', nl, 'nl' as const],
   // Bob (2026-10-30): "remove the Over mij and Werk in the header".
   ])('on %s it lists the name, Contact and the language switch, in that order', (path, t, locale) => {
     const controls = controlsOf(render(path, SiteHeader));
@@ -80,7 +80,7 @@ describe('the header', () => {
 describe('the phone menu (option A, 2026-10-22)', () => {
   it.each([
     ['/', nl],
-    ['/en/projects/steady/', en],
+    ['/en/projects/jontai-energy/', en],
   ])('on %s the Menu button opens the nav as a popover, by the browser alone (no script needed)', (path, t) => {
     const html = render(path, SiteHeader);
     const toggle = /<button[^>]*class="menu-toggle"[^>]*>/.exec(html)?.[0] ?? '';

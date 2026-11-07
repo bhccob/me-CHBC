@@ -25,7 +25,7 @@ export interface Picture {
   alt: Record<Locale, string>;
 }
 
-export type ProjectId = 'steady' | 'portle' | 'jontai-energy' | 'cookies-clicker';
+export type ProjectId = 'jontai-energy' | 'cookies-clicker';
 
 /** What the flight needs of a project (spec 2026-11-05-bob-machine-rebuild-design.md, section 5.6). Its pictures are in public/flight. */
 export interface FlightInfo {
@@ -195,120 +195,19 @@ export class ProjectCatalog {
 }
 
 /**
- * The four projects, in the order of the stack: Steady and Portle (apps), Jontai Energy (a website), Cookies Clicker
- * (game development). Jontai Energy's and Cookies Clicker's objects, palettes, motion and links are the ones Bob
- * approved on 2026-10-20 (docs/projects-discovery.md); Steady's and Portle's come from their own README and product spec
- * (Bob, 2026-10-28, who took Funcial off the site; Porfael renamed Portle, 2026-10-29); Jontai Energy's words, tools,
- * test points and picture from its concept redesign's own notes (Bob, 2026-10-30); the words are in each project's
- * `copy`.
+ * The projects, in the order of the stack: Jontai Energy (a website), Cookies Clicker (game development). Their objects,
+ * palettes, motion and links are the ones Bob approved on 2026-10-20 (docs/projects-discovery.md); Jontai Energy's words,
+ * tools, test points and picture from its concept redesign's own notes (Bob, 2026-10-30); the words are in each project's
+ * `copy`. Steady and Portle are off the site for now (Bob, 2026-11-07: "remove the 2 for now"); their entries are in the
+ * history at 35003bf.
  */
 export const projects = new ProjectCatalog([
-  {
-    id: 'steady',
-    title: 'Steady',
-    year: 2026,
-    categoryId: 'app',
-    order: 1,
-    flight: {
-      startedOn: '2026-10-25',
-      tint: [0.98, 0.86, 0.66],
-      titleLines: ['Steady'],
-      screens: 'phones',
-      images: ['steady-1.webp', 'steady-3.webp', 'steady-2.webp'],
-    },
-    // Its logo kit's Mark Bronze and Steady Beige.
-    palette: { accent: '#7f6440', glow: '#e8d5b5' },
-    stack: ['Expo (SDK 58)', 'React Native', 'TypeScript', 'SQLite'],
-    links: { repo: 'https://github.com/bhccob/steady' },
-    // Run from a copy of its last commit on the web, with stand-in details only (the app's own example name, one reminder).
-    pictures: [
-      { file: 'steady-welcome.webp', width: 1170, height: 2532, alt: { nl: 'Steady: het welkomstscherm', en: 'Steady: the welcome screen' } },
-      { file: 'steady-home.webp', width: 1170, height: 2532, alt: { nl: 'Steady: het beginscherm met de streak', en: 'Steady: the home screen with the streak' } },
-      { file: 'steady-reminders.webp', width: 1170, height: 2532, alt: { nl: 'Steady: zachte herinneringen', en: 'Steady: gentle reminders' } }
-    ],
-    pictureKind: 'phones',
-    pictureCaption: {
-      nl: 'Steady op Android: het welkomstscherm, het beginscherm en de zachte herinneringen',
-      en: 'Steady on Android: the welcome screen, the home screen and the gentle reminders'
-    },
-    copy: {
-      en: {
-        flightKind: 'Android app',
-        flightLine: 'A calm, private medication reminder for people working through hard things.',
-        type: 'Android app · Personal project',
-        role: 'Sole developer',
-        // Its README's first line.
-        summary: 'A calm, private medication reminder for people working through hard things.',
-        metaDescription:
-          'Steady: a calm, private medication reminder for Android, with gentle reminders, a streak path, and everything kept on your phone.'
-      },
-      nl: {
-        flightKind: 'Android-app',
-        flightLine: 'Een rustige, privacyvriendelijke medicatieherinnering voor mensen in een moeilijke periode.',
-        type: 'Android-app · Eigen project',
-        role: 'Enige ontwikkelaar',
-        summary: 'Een rustige, privacyvriendelijke medicatieherinnering voor mensen in een moeilijke periode.',
-        metaDescription:
-          'Steady: een rustige, privacyvriendelijke medicatieherinnering voor Android, met zachte herinneringen, een streakpad en alles op uw telefoon.'
-      }
-    }
-  },
-  {
-    id: 'portle',
-    title: 'Portle',
-    year: 2026,
-    categoryId: 'app',
-    order: 2,
-    flight: {
-      startedOn: '2026-10-28',
-      tint: [0.58, 0.5, 1],
-      titleLines: ['Portle'],
-      screens: 'wide',
-      piece: 'ring',
-      pieceImage: 'ring-piece.webp',
-      images: ['portle.webp'],
-    },
-    palette: { accent: '#7c5cff', glow: '#efb53d' },
-    // Its README and package.json (github.com/bhccob/Portle, 2026-10-29).
-    stack: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'Drizzle', 'PostgreSQL', 'Better Auth'],
-    links: { repo: 'https://github.com/bhccob/Portle', live: 'https://portle-azure.vercel.app' },
-    // Run from a copy of its last commit with its own example members and settings, signed in as one of them.
-    pictures: [
-      {
-        file: 'portle-portfolio.webp', width: 1440, height: 810,
-        alt: { nl: 'Portle: het portfolio-overzicht van een voorbeeldlid', en: "Portle: an example member's portfolio overview" }
-      }
-    ],
-    pictureKind: 'wide',
-    pictureCaption: { nl: 'Portle in early access, met voorbeeldgegevens', en: 'Portle in early access, with example data' },
-    copy: {
-      en: {
-        flightKind: 'Web app, early access',
-        flightLine: 'A private archive for your portfolio, your investment theses and the friends you trust with them.',
-        type: 'Web app · Personal project, in early access',
-        role: 'Sole developer',
-        // Its README's own words, nothing added.
-        summary:
-          'A private archive for your portfolio, your investment theses and the friends you trust with them: one portfolio across your accounts, theses with their revisions, a paper-trading lab, a journal, and Guilds and Relics. In early access.',
-        metaDescription: 'Portle: a private archive for your portfolio, your investment theses and the friends you trust with them.'
-      },
-      nl: {
-        flightKind: 'Webapp, vroege toegang',
-        flightLine: 'Een privéarchief voor uw portfolio, uw beleggingsthesen en de vrienden aan wie u ze toevertrouwt.',
-        type: 'Webapp · Eigen project, in early access',
-        role: 'Enige ontwikkelaar',
-        summary:
-          'Een privéarchief voor uw portfolio, uw beleggingsthesen en de vrienden aan wie u ze toevertrouwt: één portefeuille over uw rekeningen heen, theses met hun revisies, een oefenlab voor trades, een dagboek, en Gildes en Relics. In early access.',
-        metaDescription: 'Portle: een privéarchief voor uw portfolio, uw beleggingsthesen en de vrienden aan wie u ze toevertrouwt.'
-      }
-    }
-  },
   {
     id: 'jontai-energy',
     title: 'Jontai Energy',
     year: 2026,
     categoryId: 'website',
-    order: 3,
+    order: 1,
     flight: {
       startedOn: '2026-01-19',
       tint: [1, 0.78, 0.42],
@@ -382,7 +281,7 @@ export const projects = new ProjectCatalog([
     title: 'Cookies Clicker',
     year: 2025,
     categoryId: 'game',
-    order: 4,
+    order: 2,
     flight: {
       startedOn: '2025-01-01',
       tint: [1, 0.6, 0.24],

@@ -49,6 +49,14 @@ describe('redirects', () => {
     expect(targets.get('/nl/contact/')).toBe('/contact/');
   });
 
+  it('sends the pages of the projects taken off for now (Portle, Steady, and Porfael, Portle\'s old name) to the projects on the home page', () => {
+    const targets = new Map(redirects.map((redirect) => [redirect.from, redirect.to]));
+    for (const id of ['portle', 'steady', 'porfael']) {
+      expect(targets.get(`/projects/${id}/`), id).toBe('/#projects');
+      expect(targets.get(`/en/projects/${id}/`), id).toBe('/en/#projects');
+    }
+  });
+
   it('does not redirect the pages that are real now', () => {
     for (const from of ['/projects/jontai-energy/', '/projects/cookies-clicker/', '/en/projects/jontai-energy/', '/en/projects/cookies-clicker/']) {
       expect(froms.has(from), from).toBe(false);

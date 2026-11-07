@@ -25,8 +25,6 @@ export const HANDLES = {
 /** The kind of every page of the site. `src/app/routes.ts` gives each page the module of its kind, `routes/<kind>.tsx`. */
 export const PAGE_KINDS: Readonly<Record<PageId, Exclude<RouteName, 'not-found'>>> = {
   home: 'home',
-  'project-steady': 'project',
-  'project-portle': 'project',
   'project-jontai-energy': 'project',
   'project-cookies-clicker': 'project',
   lite: 'lite',

@@ -57,8 +57,8 @@ describe('the real links under the flight', () => {
   it('hold each project, oldest first', () => {
     expect(html.indexOf('Cookies Clicker')).toBeGreaterThan(-1);
     expect(html.indexOf('Cookies Clicker')).toBeLessThan(html.indexOf('Jontai Energy'));
-    expect(html.indexOf('Jontai Energy')).toBeLessThan(html.indexOf('Steady'));
-    expect(html.indexOf('Steady')).toBeLessThan(html.indexOf('Portle'));
+    expect(html).not.toContain('Steady');
+    expect(html).not.toContain('Portle');
   });
 
   it('hold each one line', () => {
@@ -77,7 +77,7 @@ describe('the real links under the flight', () => {
   });
 
   it('give each project the place its page closes to', () => {
-    expect(html).toContain('id="project-steady"');
+    expect(html).toContain('id="project-jontai-energy"');
   });
 
   it('speak Dutch at the Dutch address', () => {

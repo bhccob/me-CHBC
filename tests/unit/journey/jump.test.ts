@@ -11,8 +11,8 @@ describe('where a hash goes', () => {
   });
 
   it('knows a project by its stop', () => {
-    expect(frameForHash('#project-steady', tl, ['cookies-clicker', 'jontai-energy', 'steady', 'portle'])).toBe(tl.reads[2]);
-    expect(frameForHash('#project-nope', tl, ['steady'])).toBeNull();
+    expect(frameForHash('#project-jontai-energy', tl, ['cookies-clicker', 'jontai-energy'])).toBe(tl.reads[1]);
+    expect(frameForHash('#project-nope', tl, ['jontai-energy'])).toBeNull();
   });
 
   it('leaves anything else alone', () => {

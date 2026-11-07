@@ -1,5 +1,5 @@
-// The flight's pictures in public/flight: the real screenshots, with the cookie painted out of the game and the cookie and
-// Portle's ring cut out, so that they can float in front of their own place.
+// The flight's pictures in public/flight: the real screenshots, with the cookie painted out of the game and cut out, so
+// that it can float in front of its own place.
 //   node tools/flight_assets.mjs      (PLAYWRIGHT_CORE as in tools/proof)
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -12,20 +12,20 @@ const OUT = 'public/flight/';
 mkdirSync(OUT, { recursive: true });
 const url = (file) => `data:image/webp;base64,${readFileSync(SRC + file).toString('base64')}`;
 
-for (const [from, to] of [['jontai-type.webp', 'jontai.webp'], ['portle-portfolio.webp', 'portle.webp'], ['steady-welcome.webp', 'steady-1.webp'], ['steady-home.webp', 'steady-2.webp'], ['steady-reminders.webp', 'steady-3.webp']]) copyFileSync(SRC + from, OUT + to);
+for (const [from, to] of [['jontai-type.webp', 'jontai.webp']]) copyFileSync(SRC + from, OUT + to);
 
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 const page = await browser.newPage();
 await page.setContent('<!doctype html><body></body>');
 const made = await page.evaluate(
-  async ({ cookies, portle }) => {
+  async ({ cookies }) => {
     const load = async (src) => {
       const image = new Image();
       image.src = src;
       await image.decode();
       return image;
     };
-    const game = await load(cookies), archive = await load(portle);
+    const game = await load(cookies);
     // The game with its cookie and counter painted out, since the real cookie floats in front.
     const c = document.createElement('canvas');
     c.width = 1440;
@@ -54,9 +54,9 @@ const made = await page.evaluate(
       g.restore();
       return o.toDataURL('image/webp', 0.9);
     };
-    return { 'cookies.webp': c.toDataURL('image/webp', 0.86), 'cookie-piece.webp': cut(game, 240, 335, 126, 'rgba(120,70,30,0)'), 'ring-piece.webp': cut(archive, 480, 314, 132, '#17151f') };
+    return { 'cookies.webp': c.toDataURL('image/webp', 0.86), 'cookie-piece.webp': cut(game, 240, 335, 126, 'rgba(120,70,30,0)') };
   },
-  { cookies: url('cookies-playing.webp'), portle: url('portle-portfolio.webp') },
+  { cookies: url('cookies-playing.webp') },
 );
 await browser.close();
 for (const [name, data] of Object.entries(made)) writeFileSync(OUT + name, Buffer.from(data.split(',')[1], 'base64'));

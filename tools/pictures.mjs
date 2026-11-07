@@ -10,12 +10,8 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 
 const PICTURES = [
-  { name: 'steady-welcome', size: [1170, 2532] },
-  { name: 'steady-home', size: [1170, 2532] },
-  { name: 'steady-reminders', size: [1170, 2532] },
   { name: 'jontai-type', size: [1440, 900] },
-  { name: 'cookies-playing', size: [1440, 900] },
-  { name: 'portle-portfolio', size: [1440, 900] }
+  { name: 'cookies-playing', size: [1440, 900] }
 ];
 const QUALITY = 82;
 

@@ -37,8 +37,8 @@ describe('goBack', () => {
   });
 
   it.each([
-    ['/projects/steady/', '/'],
-    ['/en/projects/steady/', '/en/'],
+    ['/projects/jontai-energy/', '/'],
+    ['/en/projects/jontai-energy/', '/en/'],
   ])('goes home in the language of the page at %s, as the link does (%s)', (pathname, home) => {
     noteLocation({ key: 'default' });
     goBack(navigate, homeTarget(translatorFor(localeFromPath(pathname))));
@@ -49,7 +49,7 @@ describe('goBack', () => {
     noteLocation({ key: 'default' }, NavigationType.Pop);
     // The switch replaces the entry (LangSwitch): the page in the other language, still the first page of the visit.
     noteLocation({ key: 'r1' }, NavigationType.Replace);
-    goBack(navigate, homeTarget(translatorFor(localeFromPath('/en/projects/steady/'))));
+    goBack(navigate, homeTarget(translatorFor(localeFromPath('/en/projects/jontai-energy/'))));
     expect(calls).toEqual(['/en/']);
   });
 
@@ -139,14 +139,14 @@ describe('popoverIsOpen', () => {
 
 describe('BackLink', () => {
   it('links to the Dutch home page, names the shortcut and keeps the hint out of the name', () => {
-    const html = render('/projects/steady/');
+    const html = render('/projects/jontai-energy/');
     expect(html).toContain('href="/"');
     expect(html).toContain('aria-keyshortcuts="Escape"');
     expect(html).toContain('<span class="back-hint" aria-hidden="true">Esc ·</span>terug');
   });
 
   it('links to the English home page on an English page', () => {
-    const html = render('/en/projects/steady/');
+    const html = render('/en/projects/jontai-energy/');
     expect(html).toContain('href="/en/"');
     expect(html).toContain('<span class="back-hint" aria-hidden="true">Esc ·</span>back');
   });

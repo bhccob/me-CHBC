@@ -33,9 +33,17 @@ describe('categories', () => {
 });
 
 describe('projects', () => {
-  it('are four, in the order steady, portle, jontai-energy, cookies-clicker', () => {
-    expect(all.map((entry) => entry.id)).toEqual(['steady', 'portle', 'jontai-energy', 'cookies-clicker']);
-    expect(all.map((entry) => entry.order)).toEqual([1, 2, 3, 4]);
+  it('are two, Jontai Energy then Cookies Clicker (Bob, 2026-11-07: Portle and Steady off for now)', () => {
+    expect(all.map((entry) => entry.id)).toEqual(['jontai-energy', 'cookies-clicker']);
+    expect(all.map((entry) => entry.order)).toEqual([1, 2]);
+  });
+
+  it('have no Portle or Steady for now: no project, page or route of theirs', () => {
+    for (const id of ['portle', 'steady']) {
+      expect(projects.byId(id), id).toBeUndefined();
+      expect(Object.keys(PAGES).some((page) => page.includes(id)), id).toBe(false);
+      expect(projects.byRoute(`/projects/${id}/`), id).toBeUndefined();
+    }
   });
 
   it('has no Funcial anywhere: no project, page or route by that id (Bob, 2026-10-28)', () => {
@@ -52,7 +60,7 @@ describe('projects', () => {
   it('files each project under the kind of work it is', () => {
     const known = categories.all().map((category) => category.id);
     for (const entry of all) expect(known, entry.id).toContain(entry.categoryId);
-    expect(all.map((entry) => entry.categoryId)).toEqual(['app', 'app', 'website', 'game']);
+    expect(all.map((entry) => entry.categoryId)).toEqual(['website', 'game']);
   });
 
   it('each have a page of their own', () => {
@@ -60,30 +68,11 @@ describe('projects', () => {
   });
 
   it('keep the approved palettes and links', () => {
-    // Steady's own brand colours (its logo kit): Mark Bronze and Steady Beige.
-    expect(project('steady').palette).toEqual({ accent: '#7f6440', glow: '#e8d5b5' });
     expect(project('jontai-energy').palette).toEqual({ accent: '#00a650', glow: '#00d16a' });
     expect(project('cookies-clicker').palette).toEqual({ accent: '#c69255', glow: '#ff8a3d' });
-    expect(project('steady').links).toEqual({ repo: 'https://github.com/bhccob/steady' });
-    // Its repository and its early-access site (its README).
-    expect(project('portle').links).toEqual({ repo: 'https://github.com/bhccob/Portle', live: 'https://portle-azure.vercel.app' });
     // Bob, 2026-10-29: the repository the site's pictures came from.
     expect(project('jontai-energy').links).toEqual({ repo: 'https://github.com/bhccob/Jontai-Energy' });
     expect(project('cookies-clicker').links).toEqual({ repo: 'https://github.com/bhccob/Cookies-Clicker' });
-  });
-
-  it('gives Steady and Portle their own words, in both languages', () => {
-    // Steady's README: "A calm, private medication reminder for people working through hard things."
-    expect(project('steady').copy('en').summary).toBe('A calm, private medication reminder for people working through hard things.');
-    expect(project('steady').copy('nl').summary).toBe('Een rustige, privacyvriendelijke medicatieherinnering voor mensen in een moeilijke periode.');
-    // Portle is in early access (its README): it says so.
-    expect(project('portle').copy('en').summary).toMatch(/In early access\.$/);
-    expect(project('portle').copy('nl').summary).toMatch(/In early access\.$/);
-    for (const id of ['steady', 'portle']) {
-      expect(project(id).copy('en').role, id).toBe('Sole developer');
-      expect(project(id).copy('nl').role, id).toBe('Enige ontwikkelaar');
-      expect(project(id).year, id).toBe(2026);
-    }
   });
 
   it('never list AI or Claude in a stack, nor describe a project with AI', () => {
@@ -97,15 +86,11 @@ describe('projects', () => {
   });
 
   it('list the stacks their own sources give', () => {
-    expect(project('steady').stack).toEqual(['Expo (SDK 58)', 'React Native', 'TypeScript', 'SQLite']);
-    expect(project('portle').stack).toEqual(['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'Drizzle', 'PostgreSQL', 'Better Auth']);
     expect(project('jontai-energy').stack).toEqual(['Next.js', 'React', 'TypeScript', 'GSAP', 'Lenis', 'Blender']);
     expect(project('cookies-clicker').stack).toEqual(['HTML', 'CSS', 'JavaScript', 'Bootstrap 5', 'localStorage']);
   });
 
-  it('give Steady and Portle no screenshot', () => {
-    expect(project('steady').image).toBeUndefined();
-    expect(project('portle').image).toBeUndefined();
+  it('give both a screenshot', () => {
     expect(project('jontai-energy').image).toBeTypeOf('string');
     expect(project('cookies-clicker').image).toBeTypeOf('string');
   });
@@ -132,12 +117,10 @@ describe('projects', () => {
   });
 
   it('find a project by the route of its page, and none by a route that only differs in case', () => {
-    expect(projects.byRoute('/projects/steady/')?.id).toBe('steady');
-    expect(projects.byRoute('/projects/portle/')?.id).toBe('portle');
     expect(projects.byRoute('/projects/jontai-energy/')?.id).toBe('jontai-energy');
     expect(projects.byRoute('/projects/cookies-clicker/')?.id).toBe('cookies-clicker');
-    expect(projects.byRoute('/Projects/Steady/')).toBeUndefined();
-    expect(projects.byRoute('/projects/STEADY/')).toBeUndefined();
+    expect(projects.byRoute('/Projects/Jontai-Energy/')).toBeUndefined();
+    expect(projects.byRoute('/projects/JONTAI-ENERGY/')).toBeUndefined();
     expect(projects.byRoute('/projects/')).toBeUndefined();
   });
 
@@ -162,7 +145,7 @@ describe('the projects on the way (spec 2026-10-27-bob-light-path-design.md, goa
   };
 
   it('puts every project on the way while there are five or fewer', () => {
-    expect(projects.onPath().map((p) => p.id)).toEqual(['steady', 'portle', 'jontai-energy', 'cookies-clicker']);
+    expect(projects.onPath().map((p) => p.id)).toEqual(['jontai-energy', 'cookies-clicker']);
     expect(projects.offPath()).toEqual([]);
   });
 
@@ -181,24 +164,11 @@ describe('the projects on the way (spec 2026-10-27-bob-light-path-design.md, goa
 // The pictures on each project's own page over the stack (spec 2026-10-29-bob-stack-2-design.md, goal 2): made from
 // each project's own code, stand-in details only.
 describe('pictures', () => {
-  it("gives Steady three phone screens, in order", () => {
-    const steady = project('steady');
-    expect(steady.pictureKind).toBe('phones');
-    expect(steady.pictures.map((picture) => picture.file)).toEqual(['steady-welcome.webp', 'steady-home.webp', 'steady-reminders.webp']);
-    for (const locale of locales) {
-      for (const picture of steady.pictures) expect(picture.alt[locale].length, `${picture.file} ${locale}`).toBeGreaterThan(0);
-      // One line under the pictures, as the mock-up's.
-      expect(steady.pictureCaption(locale).length, locale).toBeGreaterThan(0);
-    }
-  });
-
-  it('gives Jontai Energy, Cookies Clicker and Portle one wide picture each', () => {
+  it('gives Jontai Energy and Cookies Clicker one wide picture each, with a line under it', () => {
     expect(project('jontai-energy').pictureKind).toBe('wide');
     expect(project('jontai-energy').pictures.map((picture) => picture.file)).toEqual(['jontai-type.webp']);
     expect(project('cookies-clicker').pictureKind).toBe('wide');
     expect(project('cookies-clicker').pictures.map((picture) => picture.file)).toEqual(['cookies-playing.webp']);
-    expect(project('portle').pictureKind).toBe('wide');
-    expect(project('portle').pictures.map((picture) => picture.file)).toEqual(['portle-portfolio.webp']);
   });
 
   it('links Jontai Energy to its own repository', () => {

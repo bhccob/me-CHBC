@@ -30,9 +30,12 @@ export const redirects: readonly Redirect[] = [
   ...OLD_PROJECT_ROUTES.map(([from, to]): Redirect => ({ from, to, locale: 'nl' })),
   ...OLD_PROJECT_ROUTES.map(([from, to]): Redirect => ({ from: `/en${from}`, to: `/en${to}`, locale: 'en' })),
 
-  // Porfael was renamed Portle (2026-10-29).
-  { from: '/projects/porfael/', to: '/projects/portle/', locale: 'nl' },
-  { from: '/en/projects/porfael/', to: '/en/projects/portle/', locale: 'en' },
+  // Portle and Steady are off the site for now (Bob, 2026-11-07); their pages, and Porfael (Portle's old name), go to the
+  // projects on the home page.
+  ...['portle', 'steady', 'porfael'].flatMap((id): Redirect[] => [
+    { from: `/projects/${id}/`, to: '/#projects', locale: 'nl' },
+    { from: `/en/projects/${id}/`, to: '/en/#projects', locale: 'en' },
+  ]),
 
   { from: '/lab/compass/', to: '/', locale: 'nl' },
   { from: '/en/lab/compass/', to: '/en/', locale: 'en' },

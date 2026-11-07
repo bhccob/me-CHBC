@@ -548,8 +548,7 @@ async function projectsStep(browser, step) {
   const byId = Object.fromEntries(report.stops.map((s) => [s.id, s]));
   step.check(byId['cookies-clicker'].pieces === 1, 'the cookie floats in front of Cookies Clicker');
   step.check(byId['jontai-energy'].pieces === 1, 'the sun glows behind Jontai Energy');
-  step.check(byId.steady.screens === 3, 'Steady stands as three phones');
-  step.check(byId.portle.pieces === 1, 'the ring floats off Portle');
+  step.check(!byId.steady && !byId.portle, 'no Steady or Portle stop, for now (Bob, 2026-11-07)');
 
   const reads = timeline.reads;
   await goToFrame(page, 372);
@@ -967,9 +966,9 @@ async function keyboard(browser, step) {
     if (!now || now.again) break;
     if (!now.seen) unseen += 1;
     reached.push(now);
-    if (now.project === 'steady') {
-      await page.waitForFunction((want) => Math.abs(window.__journeyDebug.frame() - want) < 2, timeline.reads[projects.byDate().findIndex((p) => p.id === 'steady')], { timeout: 20_000 });
-      step.check(true, "reaching Steady's link brings its stop into place");
+    if (now.project === 'jontai-energy') {
+      await page.waitForFunction((want) => Math.abs(window.__journeyDebug.frame() - want) < 2, timeline.reads[projects.byDate().findIndex((p) => p.id === 'jontai-energy')], { timeout: 20_000 });
+      step.check(true, "reaching Jontai Energy's link brings its stop into place");
     }
   }
   const keys = reached.map((r) => r.key);
@@ -1467,29 +1466,33 @@ async function projectDirect(browser, step) {
       return /webgl/i.test(kind) ? null : original.call(this, kind, ...rest);
     };
   });
-  await page.goto(`${BASE}/projects/steady/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/projects/jontai-energy/`, { waitUntil: 'load' });
   await page.waitForTimeout(800);
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'project-direct.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
-  const project = projects.byId('steady');
+  const project = projects.byId('jontai-energy');
   const seen = await page.evaluate(() => {
     const sheet = document.querySelector('.ps-page');
     return { text: sheet?.textContent ?? '', href: sheet?.querySelector('.ps-back')?.getAttribute('href'), covers: document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest('.ps-page') !== null, pictures: sheet?.querySelectorAll('.ps-media img').length ?? 0 };
   });
   step.check(seen.text.includes(project.copy('nl').summary), 'with WebGL off, its words show');
-  step.check(seen.pictures === 3, `its phones show (${seen.pictures})`);
+  step.check(seen.pictures === project.pictures.length, `its pictures show (${seen.pictures})`);
   step.check(seen.covers, 'it fills the view');
-  step.check(seen.href === '/#project-steady', `its close goes to its stop (${seen.href})`);
+  step.check(seen.href === '/#project-jontai-energy', `its close goes to its stop (${seen.href})`);
+  // A project taken off for now: its old address goes to the projects on the home page.
+  await page.goto(`${BASE}/projects/steady/`, { waitUntil: 'load' });
+  await page.waitForURL((url) => url.pathname === '/' && url.hash === '#projects', { timeout: 10_000 }).catch(() => {});
+  step.check(new URL(page.url()).hash === '#projects', `Steady's old page goes to the projects (${page.url()})`);
   await context.close();
   // That address at the review page, until the swap (Task 28): the hash lands at the stop.
   const opened = await openPage(browser, step);
   await opened.page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
-  await opened.page.goto(`${BASE}${ROUTE}?proof#project-steady`, { waitUntil: 'load' });
+  await opened.page.goto(`${BASE}${ROUTE}?proof#project-jontai-energy`, { waitUntil: 'load' });
   await opened.page.waitForFunction(() => window.__journeyDebug && window.__journeyDebug.first() !== null, null, { timeout: 60_000 });
   const first = await opened.page.evaluate(() => window.__journeyDebug.first());
-  const want = timeline.reads[projects.byDate().findIndex((p) => p.id === 'steady')];
-  step.check(Math.abs(first - want) <= 2, `#project-steady lands at Steady's stop (${first.toFixed(1)}, its stop ${want})`);
+  const want = timeline.reads[projects.byDate().findIndex((p) => p.id === 'jontai-energy')];
+  step.check(Math.abs(first - want) <= 2, `#project-jontai-energy lands at its stop (${first.toFixed(1)}, its stop ${want})`);
   await opened.context.close();
   return '';
 }

@@ -28,46 +28,46 @@ afterEach(() => {
 
 describe('the address of a project', () => {
   it('closes to its stop in the flight, in its language', () => {
-    expect(closeHref('steady', 'nl')).toBe('/#project-steady');
-    expect(closeHref('steady', 'en')).toBe('/en/#project-steady');
+    expect(closeHref('jontai-energy', 'nl')).toBe('/#project-jontai-energy');
+    expect(closeHref('jontai-energy', 'en')).toBe('/en/#project-jontai-energy');
   });
 
   it('lands at its stop', () => {
-    expect(frameForHash('#project-steady', tl, ['cookies-clicker', 'jontai-energy', 'steady', 'portle'])).toBe(tl.reads[2]);
+    expect(frameForHash('#project-jontai-energy', tl, ['cookies-clicker', 'jontai-energy'])).toBe(tl.reads[1]);
   });
 
   it('keeps the language link right while it is open', () => {
-    expect(langPathWhileOpen('/projects/steady/', 'en')).toBe('/en/projects/steady/');
-    expect(langPathWhileOpen('/en/projects/steady/', 'nl')).toBe('/projects/steady/');
+    expect(langPathWhileOpen('/projects/jontai-energy/', 'en')).toBe('/en/projects/jontai-energy/');
+    expect(langPathWhileOpen('/en/projects/jontai-energy/', 'nl')).toBe('/projects/jontai-energy/');
   });
 });
 
 describe('opening a project', () => {
   it('changes the address, without leaving the page', () => {
     const { pushed } = fakeHistory('/en/journey/');
-    openProject('steady', 493);
+    openProject('jontai-energy', 493);
     expect(pushed).toHaveLength(1);
-    expect(pushed[0].url).toBe('/en/projects/steady/');
-    expect(openedProject()).toMatchObject({ id: 'steady', f: 493 });
+    expect(pushed[0].url).toBe('/en/projects/jontai-energy/');
+    expect(openedProject()).toMatchObject({ id: 'jontai-energy', f: 493 });
   });
 
   it('keeps the router its own marks in the history', () => {
     const { pushed } = fakeHistory('/journey/');
-    openProject('portle', 537);
-    expect(pushed[0].state).toMatchObject({ idx: 3, key: 'k', journeyProject: 'portle' });
-    expect(pushed[0].url).toBe('/projects/portle/');
+    openProject('cookies-clicker', 537);
+    expect(pushed[0].state).toMatchObject({ idx: 3, key: 'k', journeyProject: 'cookies-clicker' });
+    expect(pushed[0].url).toBe('/projects/cookies-clicker/');
   });
 
   it('does not stack the same project twice', () => {
     const { pushed } = fakeHistory('/journey/');
-    openProject('portle', 537);
-    openProject('portle', 537);
+    openProject('cookies-clicker', 537);
+    openProject('cookies-clicker', 537);
     expect(pushed).toHaveLength(1);
   });
 
   it('closes by going back, so that Back and the close do the same', () => {
     const { back } = fakeHistory('/journey/');
-    openProject('portle', 537);
+    openProject('cookies-clicker', 537);
     closeProject();
     expect(back).toHaveBeenCalledTimes(1);
     expect(openedProject()).not.toBeNull();
@@ -77,7 +77,7 @@ describe('opening a project', () => {
 
   it('runs what was asked for once it has closed', () => {
     fakeHistory('/journey/');
-    openProject('portle', 537);
+    openProject('cookies-clicker', 537);
     const then = vi.fn();
     closeProject(then);
     expect(then).not.toHaveBeenCalled();
@@ -93,8 +93,8 @@ describe('opening a project', () => {
 
   it('opens again on Forward, at the frame it stands at', () => {
     fakeHistory('/journey/');
-    expect(popped({ journeyProject: 'steady' }, 493)).toBe(true);
-    expect(openedProject()).toMatchObject({ id: 'steady', f: 493 });
+    expect(popped({ journeyProject: 'jontai-energy' }, 493)).toBe(true);
+    expect(openedProject()).toMatchObject({ id: 'jontai-energy', f: 493 });
   });
 
   it('leaves every other Back to the router', () => {
@@ -106,7 +106,7 @@ describe('opening a project', () => {
     fakeHistory('/journey/');
     const heard = vi.fn();
     const stop = watchOpened(heard);
-    openProject('steady', 493);
+    openProject('jontai-energy', 493);
     expect(heard).toHaveBeenCalledTimes(1);
     stop();
     popped(null);

@@ -156,13 +156,13 @@ describe('the Lite page', () => {
         expect(html).not.toMatch(/ style="/);
       });
 
-      it('spells Steady so, claims no AI for it, and never calls Jontai Energy client work', () => {
-        expect(text).toContain('Steady');
+      it('lists no Steady or Portle for now, claims no AI, and never calls Jontai Energy client work', () => {
+        expect(text).not.toMatch(/Steady|Portle/);
         expect(text).not.toMatch(/Funancial/);
-        const steady = projects.byId('steady');
-        expect(steady, 'the steady project').toBeDefined();
-        const copy = steady?.copy(name);
-        expect(`${copy?.summary} ${copy?.metaDescription}`).not.toMatch(/\bAI\b/);
+        for (const project of projects.all()) {
+          const copy = project.copy(name);
+          expect(`${copy.summary} ${copy.metaDescription}`, project.id).not.toMatch(/\bAI\b/);
+        }
         expect(text).not.toMatch(/\b(client work|klantwerk)\b/i);
       });
     });

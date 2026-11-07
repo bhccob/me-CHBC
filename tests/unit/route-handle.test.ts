@@ -58,7 +58,7 @@ describe('handleOf', () => {
 
   it("reads the deepest matched route's handle", () => {
     expect(handleOf([root, { handle: HANDLES.lite, pathname: '/lite/' }])).toBe(HANDLES.lite);
-    expect(handleOf([root, { handle: HANDLES.project, pathname: '/en/projects/steady/' }])).toBe(HANDLES.project);
+    expect(handleOf([root, { handle: HANDLES.project, pathname: '/en/projects/jontai-energy/' }])).toBe(HANDLES.project);
     expect(handleOf([root, { handle: HANDLES.home, pathname: '/' }])).toBe(HANDLES.home);
     expect(handleOf([root, { handle: HANDLES['not-found'], pathname: '/does-not-exist/' }])).toBe(HANDLES['not-found']);
   });
