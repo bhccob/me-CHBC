@@ -32,3 +32,13 @@ describe('a project page', () => {
     expect(render('/projects/jontai-energy/')).not.toContain(nl.pages.site);
   });
 });
+
+describe('the headings of a project page (round 22)', () => {
+  it('go down one level at a time: the title, then its sections', () => {
+    for (const path of ['/projects/jontai-energy/', '/en/projects/cookies-clicker/']) {
+      const levels = [...render(path).matchAll(/<h([1-6])[\s>]/g)].map((m) => Number(m[1]));
+      expect(levels[0], path).toBe(1);
+      levels.slice(1).forEach((level, i) => expect(level - levels[i], `${path}: h${levels[i]} then h${level}`).toBeLessThanOrEqual(1));
+    }
+  });
+});

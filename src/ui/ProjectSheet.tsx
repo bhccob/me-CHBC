@@ -89,7 +89,7 @@ export function ProjectSheet({ id, headingId, Heading = 'h2' }: { id: string; he
         <div className="ps-case">
           {sections.map(({ title, text }) => (
             <section key={title}>
-              <h3>{title}</h3>
+              <h2>{title}</h2>
               <p>{text}</p>
             </section>
           ))}
