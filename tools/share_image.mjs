@@ -3,10 +3,16 @@
 //   BASE=http://localhost:4490 node tools/share_image.mjs      (PLAYWRIGHT_CORE as in tools/proof)
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
+import { tsImport } from 'tsx/esm/api';
 
 const require = createRequire(import.meta.url);
 const { chromium } = process.env.PLAYWRIGHT_CORE ? require(resolve(process.env.PLAYWRIGHT_CORE)) : require('playwright-core');
 const BASE = process.env.BASE ?? 'http://localhost:4490';
+// The journey's real length, which follows the projects: the still is found by its frame, not by a fixed scroll.
+const { projects } = await tsImport('../src/data/projects.ts', import.meta.url);
+const { flightLayout, timelineFor } = await tsImport('../src/journey/flight/layout.ts', import.meta.url);
+const { scrollFromFrame } = await tsImport('../src/journey/timeline.ts', import.meta.url);
+const timeline = timelineFor(flightLayout(projects.byDate()));
 const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--window-position=-2400,0', '--use-angle=d3d11'] });
 const context = await browser.newContext({ viewport: { width: 1200, height: 630 } });
 await context.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
@@ -30,10 +36,8 @@ await page.screenshot({ path: 'src/assets/journey/share.png', type: 'png' });
 await page.setViewportSize({ width: 1440, height: 810 });
 await page.waitForTimeout(400);
 const sharp = (await import('sharp')).default;
-await page.evaluate(() => {
-  const max = document.documentElement.scrollHeight - innerHeight;
-  scrollTo({ top: (0.035 + (304 / 934) * 0.965) * max, behavior: 'auto' });
-});
+const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+await page.evaluate((top) => scrollTo({ top, behavior: 'auto' }), scrollFromFrame(304, max, timeline));
 await page.waitForFunction(() => Math.abs(window.__journeyDebug.frame() - 304) < 0.4, null, { timeout: 15_000 });
 await asPicture(', #j-stack, .j-tag, .j-sheet');
 await page.waitForTimeout(900);
