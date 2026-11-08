@@ -227,7 +227,7 @@ export class World {
   }
 
   /** What stands in the flight, and where the head is, for those checking it. */
-  report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number } | null } {
+  report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number; locale: string } | null } {
     return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, head: this.tunnel.headReport() };
   }
 

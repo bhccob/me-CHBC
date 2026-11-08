@@ -42,6 +42,10 @@ export interface HeadAnchors {
   /** The camera on the side map, in head units (z, y), and the way it looks. */
   you: [number, number];
   youDir: [number, number];
+  /** The scan's slice: where it crosses the head's middle on the page (CSS px), how bright it is, its height in head units. */
+  scan: { y: number; on: number; head: number };
+  /** How lit each region is (the seven thoughts, then the visual cortex), for the read-out's meter. */
+  act: readonly number[];
 }
 
 const GOLD = new Color(0.93, 0.7, 0.28);
@@ -593,6 +597,9 @@ export class HeadScene {
     camFwd.set(0, 0, -1).applyQuaternion(camera.quaternion).applyQuaternion(this.quatToMock);
     out.you = [camLocal.z, camLocal.y];
     out.youDir = [camFwd.z, camFwd.y];
+    const [, scanY] = project(W(0, this.u.uScanY.value, 0).applyMatrix4(this.world.matrix));
+    out.scan = { y: scanY, on: this.u.uScanOn.value, head: this.u.uScanY.value };
+    out.act = this.u.uAct.value;
     return out;
   }
 
@@ -855,11 +862,11 @@ export class HeadScene {
     void dt;
   }
 
-  /** Where the head is, for the proof harness: its t, the answer being read (-1 for none), and the pressure behind the lips. */
-  report(): { t: number; active: number; pressure: number } {
+  /** Where the head is, for the proof harness: its t, the answer being read (-1 for none), the pressure behind the lips, and the language of the words that pour in. */
+  report(): { t: number; active: number; pressure: number; locale: string } {
     let active = -1;
     for (let i = 0; i < NQ; i++) if (answerShown(this.lastT, i) > 0.5) active = i;
-    return { t: this.lastT, active, pressure: this.lastPressure };
+    return { t: this.lastT, active, pressure: this.lastPressure, locale: this.locale };
   }
 
   dispose(): void {

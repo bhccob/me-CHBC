@@ -30,6 +30,8 @@ const { flightLayout, timelineFor } = await tsImport('../../src/journey/flight/l
 const { profile } = await tsImport('../../src/data/profile.ts', import.meta.url);
 const profileAge = () => profile.ageOn();
 const { HITS } = await tsImport('../../src/journey/sound/score.ts', import.meta.url);
+const { headFrame } = await tsImport('../../src/journey/head/time.ts', import.meta.url);
+const { en } = await tsImport('../../src/i18n/en.ts', import.meta.url);
 const HIT_NAMES = HITS.map(([, name]) => name);
 
 const ROUTE = process.env.ROUTE ?? '/';
@@ -970,6 +972,36 @@ async function headMissing(browser, step) {
   return '';
 }
 
+/** An answer showing, the language switched: the place holds, and the answer, the labels, the read-out and his poured words change with it. */
+async function headLanguage(browser, step) {
+  const { context, page } = await openJourney(browser, step);
+  // The third answer, his hobbies, stands at its fullest here.
+  const at = headFrame(0.5, timeline);
+  await goToFrame(page, at);
+  await page.waitForFunction(() => window.__journeyDebug.stops()?.head?.active === 2, null, { timeout: 30_000 });
+  const before = await page.evaluate(() => document.querySelector('[data-answer="2"] h3').textContent);
+  await page.locator('header a[hreflang]').click();
+  await page.waitForURL(/\/en\/(\?|#|$)/, { timeout: 10_000 });
+  await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
+  await page.waitForTimeout(400);
+  const here = await page.evaluate(() => window.__journeyDebug?.frame());
+  step.check(Math.abs(here - at) < 2, `it stays at the same place (${here?.toFixed(1)}, was ${at.toFixed(1)})`);
+  const seen = await page.evaluate(() => ({
+    card: document.querySelector('[data-answer="2"] h3').textContent,
+    shown: Number(getComputedStyle(document.querySelector('[data-answer="2"]')).opacity),
+    label: document.querySelector('.j-hud-label b').textContent,
+    region: document.querySelector('.j-hud-region').textContent,
+    poured: window.__journeyDebug.stops()?.head?.locale,
+  }));
+  const question = en.end.questions[2].question;
+  step.check(seen.card === question && seen.card !== before && seen.shown > 0.9, `the answer showing is the English one (${seen.card}, opacity ${seen.shown})`);
+  step.check(seen.label === en.journey.head.topics.plans, `the labels are English (${seen.label})`);
+  step.check(seen.region === en.journey.head.regions.motor, `the read-out is English (${seen.region})`);
+  step.check(seen.poured === 'en', `and the words that pour into his head are English (${seen.poured})`);
+  await context.close();
+  return '';
+}
+
 /** Every link reachable by Tab, the focus visible, and a link bringing its chapter into place. */
 async function keyboard(browser, step) {
   const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
@@ -1741,7 +1773,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, 'head-language': headLanguage, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

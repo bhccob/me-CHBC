@@ -16,7 +16,7 @@ import { startLoop } from '~/journey/loop';
 import { lightWaiting, playBang } from '~/journey/bang';
 import { canHold, driftAngles, endWordsAt, ORBIT_PITCH, ORBIT_YAW, touchPlan } from '~/journey/end';
 import { Sound } from '~/journey/sound/music';
-import { headT } from '~/journey/head/time';
+import { endClock, type EndClock, headT } from '~/journey/head/time';
 import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet, wordClip } from './applyLayers';
 import { type BandKind, paintBand } from './bands';
@@ -35,8 +35,10 @@ import type { WorldState } from '~/journey/world/World';
 import { createPaper, createSparks } from './paper';
 import { PortalWord } from './PortalWord';
 import { ProjectLinks } from './ProjectLinks';
-import { QaText } from './QaText';
+import { applyHead, forgetHeadSizes, headEls } from './applyHead';
+import { HeadAnswers } from './HeadAnswers';
 import { QaWords, qaWordsIn, updateQaWords } from './QaWords';
+import { ScanHud } from './ScanHud';
 import { StackWords } from './StackWords';
 import { Story, updateStory } from './Story';
 
@@ -92,6 +94,8 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
   const reduce = useRef(false);
   const words = useRef(t.journey);
   words.current = t.journey;
+  const localeNow = useRef(locale);
+  localeNow.current = locale;
   const age = profile.ageOn();
 
   useEffect(() => {
@@ -174,7 +178,14 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       sparks.fit();
       paintBands();
     };
+    // Bob's head: the scanner's frame and the six answers, and the ending's own clock from the spit on.
+    const headParts = headEls();
+    const clock: EndClock = { at: null };
+    const fitHead = (): void => {
+      if (headParts) forgetHeadSizes(headParts);
+    };
     addEventListener('resize', onResize);
+    addEventListener('resize', fitHead);
     const frames: number[] = [];
     let shown = 0;
     let first: number | null = null;
@@ -237,7 +248,9 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         }
         // While a project is open over it, the world waits.
         const paused = openedProject() !== null;
-        const state = paused ? null : canvas.current?.frame(f, dt, now, headT(f, timeline));
+        const tHead = endClock(clock, headT(f, timeline), now / 1000, false);
+        const state = paused ? null : canvas.current?.frame(f, dt, now, tHead);
+        const headLabels = headParts ? applyHead(headParts, tHead, state?.head ?? null, { head: words.current.head, locale: localeNow.current }, innerWidth <= PHONE_WIDTH) : [];
         if (state) showProject(state.flight.project, state.flight.link, state.hover);
         // On a phone the questions' words are type on the page, where the 3D says; only while the 3D holds the page.
         updateQaWords(qaWords, null, innerWidth);
@@ -264,6 +277,11 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
           });
           // On a narrow wide page, as a tablet turned sideways, the labels reach the rail: it keeps only its current word.
           tagsOnRail = railBox !== null && lefts.some((left, n) => boxesMeet({ left, top: tops[n], right: left + sizes[n][0], bottom: tops[n] + sizes[n][1] }, railBox, 12));
+        }
+        // The labels round his head reach the rail on most pages: it keeps only its current word, as with the stack's.
+        if (!tagsOnRail && headLabels.length > 0 && rail && innerWidth > RAIL_WIDTH) {
+          const railBox = rail.getBoundingClientRect();
+          tagsOnRail = headLabels.some((label) => boxesMeet(label, railBox, 12));
         }
         lastState = state ?? null;
         noteFrame(f);
@@ -392,6 +410,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       noteFrame(null);
       uninstall();
       removeEventListener('resize', onResize);
+      removeEventListener('resize', fitHead);
       stopResume();
       // Off to another page of the site: the machine's hum does not follow; the switch keeps his choice for the way back.
       Sound.sleep();
@@ -464,7 +483,8 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       <StackWords />
       <PortalWord />
       <ProjectLinks />
-      <QaText />
+      <ScanHud />
+      <HeadAnswers />
       <QaWords />
       <EndWords />
       <div id="j-flash" className="j-flash" aria-hidden="true" />

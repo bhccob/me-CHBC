@@ -16,7 +16,7 @@ export interface CanvasHandle {
   /** Where a project's screen stands on the page: left, top, width, height. */
   screenRect(id: string): [number, number, number, number] | null;
   /** What stands in the flight, for those checking it. */
-  report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number } | null };
+  report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number; locale: string } | null };
   /** Where a finger holds, and where the view drifts with no pointer on the page: each -1 to 1. */
   pointer(x: number, y: number): void;
   drift(x: number, y: number): void;

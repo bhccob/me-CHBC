@@ -1414,3 +1414,371 @@ html[data-project-open] .j-bar {
     text-align: center;
   }
 }
+
+/*
+ * Bob's head: the scanner's frame over the 3D (ScanHud.tsx) and his six answers (HeadAnswers.tsx), placed and shown each
+ * frame by applyHead.ts. From mock-up 20's #tint, #hud, .label, #intro, #shade and .q (spec 2026-11-08 "Into my head").
+ * Its words are the site's mono face; its lines and marks the compass's gold.
+ */
+.j-hud {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+  font: 500 12px/1.35 var(--j-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lilac);
+}
+
+.j-hud > *,
+.j-hud-label,
+.j-hud-leads path,
+.j-hud-leads circle,
+.j-hud-ruler i,
+.j-hud-ruler span {
+  opacity: 0;
+}
+
+.j-hud > .j-hud-leads,
+.j-hud > .j-hud-labels {
+  opacity: 1;
+}
+
+.j-hud p {
+  margin: 0;
+}
+
+/* A violet lift in the middle of his world, darker toward its edges. */
+.j-hud-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 45%, rgb(72 30 108 / 0.2) 0%, rgb(40 14 64 / 0.08) 45%, rgb(6 2 12 / 0) 62%, rgb(6 2 12 / 0.55) 100%);
+}
+
+/* While an answer is read, the page behind it goes dark from the left. */
+.j-hud-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(14 5 26 / 0.82) 0%, rgb(14 5 26 / 0.62) 34%, rgb(14 5 26 / 0) 62%);
+}
+
+.j-hud-leads {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.j-hud-leads path {
+  fill: none;
+  stroke: rgb(230 184 74 / 0.62);
+  stroke-width: 1;
+}
+
+.j-hud-leads circle {
+  fill: var(--gold);
+}
+
+.j-hud-corner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  border: 0 solid rgb(230 184 74 / 0.7);
+}
+
+.j-hud-corner.tl {
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.j-hud-corner.tr {
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.j-hud-corner.bl {
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.j-hud-corner.br {
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+.j-hud-readout {
+  position: absolute;
+  left: 18px;
+  top: 54px;
+  width: 244px;
+}
+
+.j-hud-title {
+  margin-bottom: 8px !important;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+}
+
+.j-hud-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-top: 1px solid rgb(184 170 216 / 0.16);
+}
+
+.j-hud-row b {
+  font-weight: 500;
+  color: var(--ink);
+  text-align: right;
+}
+
+.j-hud-meter {
+  height: 2px;
+  margin-top: 6px;
+  background: rgb(184 170 216 / 0.16);
+}
+
+.j-hud-meter i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+/* On the left, under the read-out: the chapter rail has the right edge. */
+.j-hud-ruler {
+  position: absolute;
+  left: 18px;
+  top: max(30%, 230px);
+  bottom: 26%;
+  width: 10px;
+  border-left: 1px solid rgb(242 239 232 / 0.2);
+  background: repeating-linear-gradient(to bottom, rgb(242 239 232 / 0.28) 0 1px, transparent 1px 14px);
+}
+
+.j-hud-ruler i {
+  position: absolute;
+  left: -1px;
+  top: 0;
+  width: 30px;
+  height: 1px;
+  background: var(--gold);
+}
+
+.j-hud-ruler span {
+  position: absolute;
+  left: 38px;
+  top: 0;
+  white-space: nowrap;
+  color: var(--gold);
+}
+
+.j-hud-map {
+  position: absolute;
+  right: 18px;
+  bottom: 40px;
+  width: 150px;
+}
+
+.j-hud-map canvas {
+  display: block;
+  width: 150px;
+  height: 150px;
+  border: 1px solid rgb(184 170 216 / 0.16);
+  background: rgb(14 5 26 / 0.55);
+}
+
+.j-hud-map span {
+  display: block;
+  margin-top: 6px;
+}
+
+.j-hud-labels {
+  position: absolute;
+  inset: 0;
+}
+
+.j-hud-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}
+
+.j-hud-label > span {
+  color: var(--gold);
+}
+
+.j-hud-label b {
+  display: block;
+  margin-top: 3px;
+  font: 800 22px/1 var(--j-sans);
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+.j-hud-label.left {
+  text-align: right;
+}
+
+.j-hud-intro {
+  position: absolute;
+  left: max(18px, 7vw);
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--j-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+
+.j-hud-eyebrow {
+  margin-bottom: 14px !important;
+  font: 500 12px/1.35 var(--j-mono);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.j-hud-heading {
+  max-width: 7ch;
+  font-weight: 800;
+  font-size: clamp(52px, 7.4vw, 124px);
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-shadow: 0 0 0.3em rgb(9 3 18 / 0.9);
+}
+
+.j-hud-line {
+  margin-top: 18px !important;
+  max-width: 22rem;
+  font-size: 18px;
+  line-height: 1.45;
+  color: rgb(242 239 232 / 0.86);
+  text-shadow: 0 0 0.45em rgb(9 3 18 / 0.95);
+}
+
+/* His answers: one at a time beside its thought, on the shade. */
+.j-answers {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* The section's own name, for those who read the page another way: the scanner shows it on screen. */
+.j-answers-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.j-answer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(34rem, calc(100vw - 36px));
+  opacity: 0;
+  transform-origin: 0 50%;
+  will-change: transform, opacity, filter;
+  color: var(--ink);
+}
+
+.j-answer p,
+.j-answer h3 {
+  margin: 0;
+}
+
+.j-answer-num {
+  margin-bottom: 8px !important;
+  font: 800 54px/1 var(--j-sans);
+  letter-spacing: -0.02em;
+  color: transparent;
+  -webkit-text-stroke: 1.2px var(--gold);
+}
+
+.j-answer-where {
+  margin-bottom: 12px !important;
+  font: 500 12px/1.35 var(--j-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.j-answer h3 {
+  margin-bottom: 14px;
+  font: 800 clamp(30px, 3.2vw, 48px)/0.94 var(--j-sans);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-shadow: 0 0 0.3em rgb(9 3 18 / 0.9);
+}
+
+.j-answer-say {
+  max-width: 31rem;
+  font: 500 clamp(16px, 1.3vw, 19px)/1.45 var(--j-sans);
+  color: rgb(242 239 232 / 0.92);
+  text-shadow: 0 0 0.45em rgb(9 3 18 / 0.95);
+}
+
+@media (max-width: 760px) {
+  /* A phone's shade runs top to bottom, darkest where the answer stands. */
+  .j-hud-shade {
+    background: linear-gradient(180deg, rgb(14 5 26 / 0.2) 0%, rgb(14 5 26 / 0.78) 30%, rgb(14 5 26 / 0.78) 80%, rgb(14 5 26 / 0.2) 100%);
+  }
+
+  .j-hud-ruler,
+  .j-hud-map span,
+  .j-hud-long {
+    display: none;
+  }
+
+  .j-hud-map {
+    width: 96px;
+    bottom: 34px;
+  }
+
+  .j-hud-map canvas {
+    width: 96px;
+    height: 96px;
+  }
+
+  .j-hud-readout {
+    top: 92px;
+    width: 212px;
+  }
+
+  .j-hud-label b {
+    font-size: 15px;
+  }
+
+  .j-hud-intro {
+    top: auto;
+    bottom: 56px;
+    transform: none;
+  }
+
+  .j-hud-heading {
+    max-width: none;
+    font-size: 42px;
+  }
+
+  .j-hud-line {
+    font-size: 15px;
+  }
+
+  .j-answer-num {
+    font-size: 40px;
+  }
+}

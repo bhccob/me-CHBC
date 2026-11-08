@@ -134,7 +134,7 @@ export class TunnelScene {
   private softBang: SoftBang | null = null;
   private bangPlaced = false;
   private readonly endView = new PerspectiveCamera();
-  private readonly headState: HeadAnchors = { labels: [], cards: [], cardsInFront: [], spark: [0, 0], headBox: { left: 0, top: 0, right: 0, bottom: 0 }, you: [0, 0], youDir: [0, 0] };
+  private readonly headState: HeadAnchors = { labels: [], cards: [], cardsInFront: [], spark: [0, 0], headBox: { left: 0, top: 0, right: 0, bottom: 0 }, you: [0, 0], youDir: [0, 0], scan: { y: 0, on: 0, head: 0 }, act: [] };
   private headShown = false;
   private pixelRatio = 1;
   private quality = journeyQuality(0, true);
@@ -369,7 +369,7 @@ export class TunnelScene {
   }
 
   /** Where the head is, for the proof harness. */
-  headReport(): { t: number; active: number; pressure: number } | null {
+  headReport(): { t: number; active: number; pressure: number; locale: string } | null {
     return this.headShown && this.head ? this.head.report() : null;
   }
 
