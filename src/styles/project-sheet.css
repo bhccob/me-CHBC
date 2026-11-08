@@ -227,7 +227,7 @@
   inset: 0;
   z-index: 5;
   overflow-y: auto;
-  background: #07060b;
+  background: var(--night);
 }
 
 .ps-page .ps-back {

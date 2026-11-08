@@ -106,13 +106,16 @@ export function buildTree(w: number, h: number): { segs: Segment[]; tips: [numbe
   return { segs: segs.map((s) => ({ ...s, w: s.w * THIN })), tips };
 }
 
+/** The page's ground, as tokens.css has it (--night): the one place script code takes it from. */
+export const GROUND = '#130724';
+
 function paintBase(w: number, h: number): HTMLCanvasElement {
   const r = seeded(90210);
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
   const x = c.getContext('2d') as CanvasRenderingContext2D;
-  x.fillStyle = '#07060b';
+  x.fillStyle = GROUND;
   x.fillRect(0, 0, w, h);
   mist(x, w, h, r, ['rgba(70,50,130,.15)', 'rgba(40,36,90,.16)', 'rgba(110,90,170,.07)'], 26);
   // A far hill and the sea line, on the left, in ink.

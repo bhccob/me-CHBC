@@ -27,7 +27,8 @@ describe('the other pages, in the new style', () => {
   it('are on the journey\'s colours: its ink, its one gold and its dark', () => {
     expect(tokens).toMatch(/--ink:\s*#f2efe8/);
     expect(tokens).toMatch(/--gold:\s*#e6b84a/);
-    expect(tokens).toMatch(/--night:\s*#07060b/);
+    // Dark purple since 2026-11-08 (Bob); palette.test.ts guards its contrast.
+    expect(tokens).toMatch(/--night:\s*#130724/);
   });
 
   it('have the journey\'s header, whatever the page', () => {

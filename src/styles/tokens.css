@@ -3,17 +3,20 @@
  * (docs/art-direction.md § 1, docs/art-direction/palette.json). The scene reads the same
  * values through the engine's palette module.
  *
- * The ratio rule: about 60 % near-black, 30 % purple, at most 6 % gold. Gold is
- * precious: if a screen shows more, something is lit that should not be.
+ * The ratio rule: about 60 % dark purple, 30 % deeper purple and near-black, at most 6 % gold.
+ * Gold is precious: if a screen shows more, something is lit that should not be. The ground
+ * moved from near-black to dark purple #130724 on 2026-11-08 (Bob: "make the portfolio more on
+ * dark purple color ... dont force too much only do if it make sense"); near-black stays only
+ * where a scene needs the contrast (docs/art-direction.md § 1, "Near-black on purpose").
  */
 :root {
   color-scheme: dark;
 
   /* void and atmosphere */
-  --night: #07060b; /* the page's night (palette.night): the poster's ground and the page chrome; the 3D scene stands on palette.black, the preview's */
-  --night-glow: rgb(7 6 11 / 0); /* the nebula's deep violet (palette.nebula), faint, for the poster's glow */
-  --void: #07060b;
-  --void-deep: #07060b;
+  --night: #130724; /* the page's night (palette.night), dark purple: the poster's ground and the page chrome */
+  --night-glow: rgb(19 7 36 / 0); /* the nebula's deep violet (palette.nebula), faint, for the poster's glow */
+  --void: #130724;
+  --void-deep: #0c0515;
   --nebula-deep: #0c0515;
   --nebula: #331846;
   --nebula-hi: #401f57;
@@ -27,17 +30,17 @@
   --brass-shadow: #331e12;
   --brass: #936233;
   --brass-hi: #b58854;
-  --gold-ink: #e6b84a; /* the name; 11.5:1 on --void */
-  --gold-ink-75: rgb(230 184 74 / 0.75); /* 6.6:1 on --void */
-  --gold-title: #f2efe8; /* heavy titles; 15.0:1 */
-  --ink: #f2efe8; /* reading text and labels; 17.3:1 */
-  --ink-dim: #a5a2ad; /* secondary text; 5.7:1 */
-  --lilac: #b8aad8; /* palette.lilac: the scene's quiet words; 9.6:1 on --night */
-  --dim: #9789bb; /* palette.dim: its quieter words, as the scroll cue; 6.5:1 on --night */
-  --cream: #f1e8d3; /* palette.cream: pale cream-gold; 16.9:1 on --night */
-  --gold: #e6b84a; /* palette.gold: the compass's own gold; 9.2:1 on --night */
+  --gold-ink: #e6b84a; /* the name; 10.4:1 on --void */
+  --gold-ink-75: rgb(230 184 74 / 0.75); /* 6.3:1 on --void */
+  --gold-title: #f2efe8; /* heavy titles; 16.9:1 */
+  --ink: #f2efe8; /* reading text and labels; 16.9:1 */
+  --ink-dim: #a5a2ad; /* secondary text; 7.7:1 */
+  --lilac: #b8aad8; /* palette.lilac: the scene's quiet words; 9.0:1 on --night */
+  --dim: #9789bb; /* palette.dim: its quieter words, as the scroll cue; 6.1:1 on --night */
+  --cream: #f1e8d3; /* palette.cream: pale cream-gold; 15.9:1 on --night */
+  --gold: #e6b84a; /* palette.gold: the compass's own gold; 10.4:1 on --night */
   --string-red: #7a2126;
-  --error: #ff9d8f; /* a field's error and the form's notice; 10:1 on --void */
+  --error: #ff9d8f; /* a field's error and the form's notice; 9.7:1 on --void */
 
   /* glow: emissive colours for the scene and for rules and focus rings, never for text */
   --amber-spill: #edab35;

@@ -33,6 +33,16 @@ Files beside this doc (`docs/art-direction/`):
 
 **Rule that falls out of it: about 60 % near-black, 30 % purple, at most 6 % gold.** Gold is precious in every frame. If a screenshot shows more gold than that, something is lit that should not be.
 
+**Changed on 2026-11-08: the ground is dark purple.** Bob: "make the portfolio more on dark purple color", then "yes whole site but dont force too much only do if it make sense". The page's ground (`--night`, `--void`) is now `#130724`, which sits between the references' own purples (`#190b26`, `#1f0e2c`) and their near-black. The rule now reads: about 60 % dark purple, 30 % deeper purple and near-black, at most 6 % gold. The samples above stay as measured.
+
+#### Near-black on purpose
+
+Where a surface keeps a near-black ground instead of the purple, and why:
+
+- **Inside the portal.** The canvas is opaque there, and the tunnel paints its own wash, tinted by the nearest project (`TunnelScene`, `washAt`). A purple ground would muddy each project's tint.
+- **The four field sheets.** Each keeps its own dark paper, as the rebuild spec gives them (navy `#0c0e1d`, plum `#150b1a`, teal `#07141a`, brown-black `#17100a`). They are each field's colour, and the machine stands on them up to the portal.
+- **The void, the gold-line Q&A and the old end page,** only until the Into my head plan replaces them with the X-ray head on the purple ground.
+
 ### Tokens
 
 CSS custom properties use these names; the scene reads the same values through the ported engine `palette` module.

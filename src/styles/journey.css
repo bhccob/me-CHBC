@@ -20,7 +20,7 @@
   --j-muted: rgba(242, 239, 232, 0.66);
   --j-line: rgba(242, 239, 232, 0.18);
   --j-gold: #e6b84a;
-  --j-bg: #07060b;
+  --j-bg: var(--night);
   --j-sans: 'Barlow', system-ui, sans-serif;
   --j-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --j-sheet-0-paper: #0c0e1d;
@@ -608,7 +608,7 @@ html[data-route='home'] .site-header {
   all: unset;
   cursor: pointer;
   font: 600 16px / 1 var(--j-sans);
-  color: #07060b;
+  color: var(--night);
   background: var(--j-gold);
   padding: 14px 22px;
   border-radius: 2px;
@@ -1182,7 +1182,7 @@ html[data-project-open] .j-bar {
   inset: 0;
   z-index: 5;
   overflow: hidden;
-  background: #07060b;
+  background: var(--night);
 }
 
 .j-open-view:focus {

@@ -23,6 +23,8 @@ describe("the journey's fonts", () => {
 
   it('names the colours of the spec', () => {
     const css = readFileSync('src/styles/journey.css', 'utf8');
-    for (const value of ['#f2efe8', '#e6b84a', '#07060b', '#0c0e1d', '#d4dbff', '#150b1a', '#f4cdec', '#07141a', '#bdf0e2', '#17100a', '#f5dcae']) expect(css).toContain(value);
+    // The ground is the tokens' --night, dark purple since 2026-11-08 (palette.test.ts).
+    expect(css).toMatch(/--j-bg:\s*var\(--night\)/);
+    for (const value of ['#f2efe8', '#e6b84a', '#0c0e1d', '#d4dbff', '#150b1a', '#f4cdec', '#07141a', '#bdf0e2', '#17100a', '#f5dcae']) expect(css).toContain(value);
   });
 });
