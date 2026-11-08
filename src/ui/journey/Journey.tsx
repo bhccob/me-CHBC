@@ -14,7 +14,8 @@ import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } f
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
 import { lightWaiting, playBang } from '~/journey/bang';
-import { canHold, driftAngles, endWordsAt, ORBIT_PITCH, ORBIT_YAW, touchPlan } from '~/journey/end';
+import { canHold, touchPlan } from '~/journey/end';
+import { softBangAt } from '~/journey/head/report';
 import { Sound } from '~/journey/sound/music';
 import { endClock, type EndClock, headT } from '~/journey/head/time';
 import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
@@ -24,7 +25,6 @@ import { journeyMode, type JourneyMode } from '~/journey/mode';
 import { webglSupport } from '~/scene/webgl';
 import { CalmJourney } from './CalmJourney';
 import { ChapterRail, updateRail } from './ChapterRail';
-import { EndWords } from './EndWords';
 import { closeProject, listenToHistory, openedProject, openProject } from './openProject';
 import { type PageRect, ProjectOverlay } from './ProjectOverlay';
 import { FieldSheet } from './FieldSheet';
@@ -35,10 +35,11 @@ import type { WorldState } from '~/journey/world/World';
 import { createPaper, createSparks } from './paper';
 import { PortalWord } from './PortalWord';
 import { ProjectLinks } from './ProjectLinks';
-import { applyHead, forgetHeadSizes, headEls } from './applyHead';
+import { applyHead, applyReport, forgetHeadSizes, headEls, measureReport, reportEls } from './applyHead';
 import { HeadAnswers } from './HeadAnswers';
 import { QaWords, qaWordsIn, updateQaWords } from './QaWords';
 import { ScanHud } from './ScanHud';
+import { ScanReport } from './ScanReport';
 import { StackWords } from './StackWords';
 import { Story, updateStory } from './Story';
 
@@ -46,8 +47,8 @@ import { Story, updateStory } from './Story';
 const JourneyCanvas = lazy(() => import('./JourneyCanvas'));
 
 /**
- * The old end page, its hint and its flash, from before Bob's head took the void's place: off, so they never show over the
- * head. Their code goes with the scan report that replaces them (Into my head plan, Tasks 11 and 12).
+ * The old end page's hint, its waiting light and its press, from before Bob's head took the void's place: off, so none of
+ * them acts over the head. Their code goes in the Into my head plan's Task 12.
  */
 const OLD_END = false;
 
@@ -120,15 +121,8 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     const portal = document.getElementById('j-portal');
     const flash = document.getElementById('j-flash');
     const hint = document.getElementById('j-hint');
-    const endPage = document.getElementById('j-end');
-    const endHub = document.getElementById('j-end-hub');
-    const endWord = document.getElementById('j-end-word');
-    const endToy = document.getElementById('j-end-toy');
-    let risen = false;
     let aimX = 0;
     let aimY = 0;
-    let tiltX = 0;
-    let tiltY = 0;
     let holding = false;
     // With no cursor: a slow drift, a sideways drag on top of it, and a finger that may yet be scrolling.
     const noCursor = matchMedia('(hover: none)').matches;
@@ -181,8 +175,24 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     // Bob's head: the scanner's frame and the six answers, and the ending's own clock from the spit on.
     const headParts = headEls();
     const clock: EndClock = { at: null };
+    let jumping = false;
+    let firstFrame = true;
+    const report = reportEls();
+    let rowTops: number[] = [];
+    let reportLocale: string | null = null;
+    let landingSent = false;
+    const measure = (): void => {
+      if (!report) return;
+      rowTops = measureReport(report);
+      reportLocale = localeNow.current;
+      landingSent = false;
+    };
+    measure();
+    // Its rows stand where the page's fonts put them.
+    void (document.fonts?.ready ?? Promise.resolve()).then(measure);
     const fitHead = (): void => {
       if (headParts) forgetHeadSizes(headParts);
+      measure();
     };
     addEventListener('resize', onResize);
     addEventListener('resize', fitHead);
@@ -215,42 +225,33 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet, sheetWords[n], wordClip(layers.sheets[n + 1])));
         applyLayer(stack, { opacity: layers.stack });
         applyLayer(portal, { opacity: layers.portal });
-        applyLayer(flash, { opacity: OLD_END ? layers.flash : 0 });
         applyLayer(hint, { opacity: OLD_END ? layers.hint : 0 });
-        const end = endWordsAt(f, timeline.shift);
-        // Its opacity alone: hidden, its links could not be reached by a keyboard.
-        // And only once its stage has come: till then the page stays dark.
-        const endCame = OLD_END && (canvas.current?.stageReady('end') ?? false);
-        if (endPage) endPage.style.opacity = endCame ? String(end.page) : '0';
-        if (end.rise !== risen) {
-          risen = end.rise;
-          endPage?.classList.toggle('on', risen);
-          document.documentElement.toggleAttribute('data-journey-end', risen);
-        }
-        if (noCursor && end.page > 0 && !holding) {
-          const { yaw, pitch } = driftAngles(now / 1000);
-          aimX = yaw / ORBIT_YAW + dragX;
-          aimY = -pitch / ORBIT_PITCH;
-          canvas.current?.drift(aimX, pitch / ORBIT_PITCH);
-        }
-        if (end.page > 0) {
-          if (endWord) {
-            endWord.style.opacity = end.word.opacity.toFixed(3);
-            endWord.style.filter = end.word.blur > 0 ? `blur(${end.word.blur.toFixed(1)}px)` : 'none';
-            endWord.style.letterSpacing = `${end.word.spacing.toFixed(3)}em`;
-          }
-          // The words lean a few degrees toward the cursor.
-          if (endHub && !reduce.current) {
-            tiltX += (aimX - tiltX) * Math.min(1, dt * 5);
-            tiltY += (aimY - tiltY) * Math.min(1, dt * 5);
-            endHub.style.transform = `translate(-50%, -50%) perspective(1100px) rotateY(${(tiltX * 7).toFixed(2)}deg) rotateX(${(tiltY * -5).toFixed(2)}deg)`;
-          }
-        }
         // While a project is open over it, the world waits.
         const paused = openedProject() !== null;
-        const tHead = endClock(clock, headT(f, timeline), now / 1000, false);
+        // From the spit the ending runs on its own clock; a jump to Contact, or a load there, lands on it finished.
+        const tHead = endClock(clock, headT(f, timeline), now / 1000, jumping || firstFrame);
+        if (clock.at !== null) jumping = false;
+        firstFrame = false;
         const state = paused ? null : canvas.current?.frame(f, dt, now, tHead);
         const headLabels = headParts ? applyHead(headParts, tHead, state?.head ?? null, { head: words.current.head, locale: localeNow.current }, innerWidth <= PHONE_WIDTH) : [];
+        // The scan report: measured again in another language, printed by the scan line, the 3D told where it stands.
+        if (report) {
+          if (reportLocale !== localeNow.current) measure();
+          if (!landingSent && canvas.current) {
+            canvas.current.setLanding(report.memo.landing[0], report.memo.landing[1]);
+            landingSent = true;
+          }
+          applyReport(report, tHead, rowTops);
+        }
+        // The soft big bang's faint flash, where the spark lands.
+        if (flash) {
+          const glow = softBangAt(tHead).flash;
+          flash.style.opacity = glow < 0.002 ? '0' : glow.toFixed(3);
+          if (glow > 0 && report) {
+            flash.style.setProperty('--fx', `${report.memo.landing[0].toFixed(0)}px`);
+            flash.style.setProperty('--fy', `${report.memo.landing[1].toFixed(0)}px`);
+          }
+        }
         if (state) showProject(state.flight.project, state.flight.link, state.hover);
         // On a phone the questions' words are type on the page, where the 3D says; only while the 3D holds the page.
         updateQaWords(qaWords, null, innerWidth);
@@ -319,6 +320,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       const chapter = link?.getAttribute('data-jump');
       if (!chapter) return;
       event.preventDefault();
+      jumping = chapter === 'contact';
       const go = (): void => glideTo(frameOfChapter(chapter as ChapterId, timeline), timeline, reduce.current);
       if (openedProject()) closeProject(go);
       else go();
@@ -331,7 +333,10 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       if (!el?.matches?.(':focus-visible')) return;
       const project = el.closest<HTMLElement>('.j-project')?.dataset.project;
       if (project) glideTo(timeline.reads[stopIds.indexOf(project)], timeline, reduce.current);
-      else if (el.closest('#j-end')) glideTo(timeline.last, timeline, reduce.current);
+      else if (el.closest('#j-end')) {
+        jumping = true;
+        glideTo(timeline.last, timeline, reduce.current);
+      }
     };
     document.addEventListener('focusin', focused);
 
@@ -367,7 +372,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       if (finger.plan === 'orbit') dragX = Math.max(-0.6, Math.min(0.6, dragFrom + dx / (innerWidth / 2)));
     };
     const press = (event: PointerEvent): void => {
-      if (event.button !== 0 || shown === null || reduce.current || !canHold(shown, timeline)) return;
+      if (!OLD_END || event.button !== 0 || shown === null || reduce.current || !canHold(shown, timeline)) return;
       if ((event.target as Partial<Pick<Element, 'closest'>> | null)?.closest?.('a, button')) return;
       if (event.pointerType !== 'touch') {
         startHold();
@@ -486,7 +491,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       <ScanHud />
       <HeadAnswers />
       <QaWords />
-      <EndWords />
+      <ScanReport />
       <div id="j-flash" className="j-flash" aria-hidden="true" />
       <p id="j-hint" className="j-hint">
         {t.journey.collapse.hint}

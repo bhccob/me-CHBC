@@ -136,6 +136,8 @@ export class TunnelScene {
   private readonly endView = new PerspectiveCamera();
   private readonly headState: HeadAnchors = { labels: [], cards: [], cardsInFront: [], spark: [0, 0], headBox: { left: 0, top: 0, right: 0, bottom: 0 }, you: [0, 0], youDir: [0, 0], scan: { y: 0, on: 0, head: 0 }, act: [] };
   private headShown = false;
+  /** Where the page says the scan report's top middle stands, CSS px. */
+  private landingPx: [number, number] | null = null;
   private pixelRatio = 1;
   private quality = journeyQuality(0, true);
   private readonly ray = new Raycaster();
@@ -341,8 +343,9 @@ export class TunnelScene {
   private fitHead(head: HeadScene): void {
     const fov = this.headFov();
     head.setPixels(this.height * this.pixelRatio, fov);
-    // Till the page measures its report (the scan report), the spark lands at the top middle.
-    head.setLanding(this.width / 2, this.height * 0.2, this.width, this.height, fov);
+    // Till the page has measured its report, the spark lands at the top middle.
+    const [x, y] = this.landingPx ?? [this.width / 2, this.height * 0.2];
+    head.setLanding(x, y, this.width, this.height, fov);
     head.placeCards(this.headTrack, this.width, this.height, this.phone, fov);
     this.bangPlaced = false;
   }
@@ -361,6 +364,12 @@ export class TunnelScene {
     this.walls.setShare(quality.wallScreens);
     this.head?.setQuality(quality);
     this.softBang?.setQuality(quality);
+  }
+
+  /** Where the page's scan report stands: the spark lands at its top middle. */
+  setLanding(x: number, y: number): void {
+    this.landingPx = [x, y];
+    if (this.head) this.fitHead(this.head);
   }
 
   /** Where the head's parts stand on the page this frame, while it shows. */

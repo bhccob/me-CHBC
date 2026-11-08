@@ -39,8 +39,12 @@ describe('the words in the HTML, before any script', () => {
     for (const q of en.end.questions) expect(html).toContain(escape(q.question));
   });
 
-  it('hold the way to reach him', () => {
-    expect(html).toContain('bhccob@gmail.com');
+  // The scan report's ways (spec 2026-11-08 "Into my head", 5.11): no Email, since Send a message is the same (Bob).
+  it('hold the ways to reach him', () => {
+    expect(html).toContain('github.com');
+    expect(html).toContain('instagram.com');
+    expect(html).toContain('href="/en/contact/"');
+    expect(html).not.toContain('mailto:');
   });
 
   it('say where to go without script', () => {

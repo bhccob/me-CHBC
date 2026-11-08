@@ -231,6 +231,12 @@ export class World {
     return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, head: this.tunnel.headReport() };
   }
 
+  /** Where the scan report's top middle stands on the page, CSS px: the spark lands there, and the soft bang stands round it. */
+  setLanding(x: number, y: number): void {
+    this.tunnel.setLanding(x, y);
+    this.dirty = true;
+  }
+
   /** Where the view turns to with no pointer on the page. */
   drift(x: number, y: number): void {
     this.tunnel.drift(x, y);

@@ -17,6 +17,8 @@ export interface CanvasHandle {
   screenRect(id: string): [number, number, number, number] | null;
   /** What stands in the flight, for those checking it. */
   report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number; locale: string } | null };
+  /** Where the scan report's top middle stands on the page, CSS px: the spark lands there. */
+  setLanding(x: number, y: number): void;
   /** Where a finger holds, and where the view drifts with no pointer on the page: each -1 to 1. */
   pointer(x: number, y: number): void;
   drift(x: number, y: number): void;
@@ -112,6 +114,7 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail, onPixelRa
           screenRect: (id) => made.screenRect(id),
           report: () => made.report(),
           pointer: (x, y) => made.pointer(x, y),
+          setLanding: (x, y) => made.setLanding(x, y),
           drift: (x, y) => made.drift(x, y),
           hold: () => {},
         });

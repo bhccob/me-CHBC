@@ -4,9 +4,10 @@ import type { Box } from '~/journey/layers';
 import { pressureAt } from '~/journey/head/cues';
 import { cardEntry, frameOpacity, glowOpacity, headingOpacity, hudOpacity, labelOpacity, layoutLabels, mapOpacity, readingAt, readoutOpacity, rulerOpacity, shadeOpacity, sliceNumber, statusWords } from '~/journey/head/hud';
 import { readoutAt } from '~/journey/head/readout';
+import { reportFrameOpacity, rowShown, scanLineAt } from '~/journey/head/report';
 import { headOutline, OUTLINE_BOX } from '~/journey/head/shape';
 import { answerShown, dwellWeights, NQ, THOUGHTS } from '~/journey/head/thoughts';
-import { clamp } from '~/journey/math';
+import { clamp, ease } from '~/journey/math';
 import type { HeadAnchors } from '~/journey/world/head/HeadScene';
 
 /**
@@ -276,4 +277,120 @@ function drawMap(els: HeadEls, anchors: HeadAnchors, t: number): void {
   ctx.beginPath();
   ctx.arc(px, py, 5, 0, Math.PI * 2);
   ctx.fill();
+}
+
+// ---------------------------------------------------------------- the scan report
+
+/** The report's date: the visitor's own now, as their language writes a day and a time ("08 Nov 2026 · 20:04"). */
+export function reportDate(now: Date, locale: Locale): string {
+  const tag = locale === 'nl' ? 'nl-NL' : 'en-GB';
+  const day = new Intl.DateTimeFormat(tag, { day: '2-digit', month: 'short', year: 'numeric' }).format(now).replace(/\.$/, '');
+  const time = new Intl.DateTimeFormat(tag, { hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+  return `${day} · ${time}`;
+}
+
+export interface ReportEls {
+  section: HTMLElement;
+  panel: HTMLElement;
+  frame: HTMLElement;
+  band: HTMLElement;
+  rows: HTMLElement[];
+  plate: HTMLElement;
+  plateCanvas: HTMLCanvasElement;
+  bar: HTMLElement;
+  time: HTMLElement;
+  /** Where the plate starts, as a share of the panel's height; the panel's height and top middle; whether the date is this play's. */
+  memo: { plate: number; height: number; landing: [number, number]; dated: boolean };
+}
+
+export function reportEls(doc: Document = document): ReportEls | null {
+  const section = doc.getElementById('j-end');
+  const panel = section?.querySelector<HTMLElement>('.j-report-panel');
+  if (!section || !panel) return null;
+  const one = <T extends Element>(selector: string): T => section.querySelector<T>(selector)!;
+  return {
+    section,
+    panel,
+    frame: one('.j-report-frame'),
+    band: one('.j-report-band'),
+    rows: Array.from(section.querySelectorAll<HTMLElement>('.j-report-row')),
+    plate: one('.j-report-plate'),
+    plateCanvas: one('.j-report-plate canvas'),
+    bar: one('.j-report-bar'),
+    time: one('.j-report-time'),
+    memo: { plate: 1, height: 1, landing: [innerWidth / 2, innerHeight * 0.2], dated: false },
+  };
+}
+
+/**
+ * Measures the report as it stands: each row's top as a share of the panel's height (where the scan line prints it), the
+ * plate's, and the panel's top middle, where the spark lands. Run on load, on a resize and on a change of language.
+ */
+export function measureReport(els: ReportEls): number[] {
+  const box = els.panel.getBoundingClientRect();
+  const height = Math.max(1, els.panel.offsetHeight);
+  els.memo.height = height;
+  els.memo.plate = (els.plate.getBoundingClientRect().top - box.top) / height;
+  els.memo.landing = [box.left + box.width / 2, box.top + 1];
+  drawPlate(els.plateCanvas);
+  return els.rows.map((row) => (row.getBoundingClientRect().top - box.top) / height);
+}
+
+/** The panel, the scan line and the rows printed as the line passes them, left to right, and the footer bar (mock lines 3656-3664). */
+export function applyReport(els: ReportEls, t: number, rowTops: readonly number[]): void {
+  const line = scanLineAt(t);
+  fade(els.frame, reportFrameOpacity(t));
+  fade(els.band, line.opacity);
+  if (line.opacity > 0) put(els.band, 'transform', `translateY(${(line.down * (els.memo.height - 2)).toFixed(1)}px) scaleX(${line.widen.toFixed(3)})`);
+  els.rows.forEach((row, i) => {
+    const shown = rowShown(t, rowTops[i] ?? 0);
+    put(row, 'clip-path', shown >= 1 ? 'none' : `inset(0 ${(100 - shown * 100).toFixed(2)}% 0 0)`);
+  });
+  fade(els.plate, clamp((line.down - els.memo.plate) / 0.12));
+  fade(els.bar, ease(t, 0.99, 1));
+  // Its links answer once it is all there.
+  const ready = t > 0.985;
+  if (els.section.classList.contains('on') !== ready) els.section.classList.toggle('on', ready);
+  // The date is this scan's: now, as the line starts.
+  if (t < 0.95) els.memo.dated = false;
+  else if (!els.memo.dated && t >= 0.958) {
+    els.memo.dated = true;
+    text(els.time, reportDate(new Date(), document.documentElement.lang === 'nl' ? 'nl' : 'en'));
+  }
+}
+
+/** The report's small drawing: his head's side outline with the brain in gold, on a faint grid (mock `drawPlate`). */
+function drawPlate(canvas: HTMLCanvasElement): void {
+  const dpr = Math.min(2, devicePixelRatio || 1), w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  const x = canvas.getContext('2d');
+  if (!x) return;
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  x.clearRect(0, 0, w, h);
+  const { z0, z1, y0, y1 } = OUTLINE_BOX;
+  const sc = Math.min(w / (z1 - z0), h / (y1 - y0)) * 0.92, ox = w / 2, oy = h / 2 + ((y0 + y1) / 2) * sc;
+  x.strokeStyle = 'rgba(242,239,232,0.07)';
+  x.lineWidth = 1;
+  x.beginPath();
+  for (let g = -1; g <= 1.001; g += 0.25) {
+    x.moveTo(ox + g * sc, 0);
+    x.lineTo(ox + g * sc, h);
+    x.moveTo(0, oy - g * sc);
+    x.lineTo(w, oy - g * sc);
+  }
+  x.stroke();
+  const { head, brain } = headOutline();
+  x.lineCap = 'round';
+  for (const [segs, style] of [[head, 'rgba(242,239,232,0.7)'], [brain, 'rgba(230,184,74,0.85)']] as const) {
+    x.strokeStyle = style;
+    x.lineWidth = 1.3;
+    x.beginPath();
+    for (const [a, b] of segs) {
+      x.moveTo(ox + a[0] * sc, oy - a[1] * sc);
+      x.lineTo(ox + b[0] * sc, oy - b[1] * sc);
+    }
+    x.stroke();
+  }
 }

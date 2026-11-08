@@ -30,7 +30,8 @@ const { flightLayout, timelineFor } = await tsImport('../../src/journey/flight/l
 const { profile } = await tsImport('../../src/data/profile.ts', import.meta.url);
 const profileAge = () => profile.ageOn();
 const { HITS } = await tsImport('../../src/journey/sound/score.ts', import.meta.url);
-const { headFrame } = await tsImport('../../src/journey/head/time.ts', import.meta.url);
+const { headFrame, SPIT_T, FINALE_S } = await tsImport('../../src/journey/head/time.ts', import.meta.url);
+const { dwellT } = await tsImport('../../src/journey/head/thoughts.ts', import.meta.url);
 const { en } = await tsImport('../../src/i18n/en.ts', import.meta.url);
 const HIT_NAMES = HITS.map(([, name]) => name);
 
@@ -1002,6 +1003,47 @@ async function headLanguage(browser, step) {
   return '';
 }
 
+/** A window turned to a phone mid-answer, and mid-print: the answer keeps its place on the page, and the report prints by its new rows. */
+async function headResize(browser, step) {
+  const wide = { width: 1280, height: 800 }, tall = { width: 390, height: 844 };
+  const { context, page } = await openJourney(browser, step, wide);
+  // The third answer, at its stop.
+  await goToFrame(page, headFrame(dwellT(2), timeline));
+  await page.waitForFunction(() => window.__journeyDebug.stops()?.head?.active === 2, null, { timeout: 30_000 });
+  await page.setViewportSize(tall);
+  await page.waitForTimeout(800);
+  const card = await page.evaluate(() => {
+    const el = document.querySelector('[data-answer="2"]'), r = el.getBoundingClientRect();
+    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, opacity: Number(getComputedStyle(el).opacity), width: innerWidth, height: innerHeight };
+  });
+  step.check(card.opacity > 0.9, `the answer still shows (${card.opacity})`);
+  step.check(card.left >= 0 && card.right <= card.width && card.top >= 0 && card.bottom <= card.height, `inside the page (${card.left.toFixed(0)}, ${card.top.toFixed(0)} to ${card.right.toFixed(0)}, ${card.bottom.toFixed(0)} in ${card.width} x ${card.height})`);
+  step.check(Math.abs(card.left - 18) < 3, `at its anchor, the phone's 18 px column (${card.left.toFixed(1)})`);
+  // Wide again, to the end; turned to a phone 0.3 s after the scan line starts printing.
+  await page.setViewportSize(wide);
+  await page.waitForTimeout(500);
+  const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  await page.evaluate((top) => scrollTo({ top, behavior: 'auto' }), scrollFromFrame(headFrame(0.9, timeline), max, timeline));
+  await page.waitForFunction(() => (window.__journeyDebug.stops()?.head?.t ?? 0) > 0.89, null, { timeout: 30_000 });
+  await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' }));
+  const printing = 0.962 + ((1 - SPIT_T) * 0.3) / FINALE_S;
+  await page.waitForFunction((want) => (window.__journeyDebug.stops()?.head?.t ?? 0) >= want, printing, { timeout: 30_000, polling: 'raf' });
+  await page.setViewportSize(tall);
+  await page.waitForTimeout(250);
+  const rows = await page.evaluate(() => {
+    const panel = document.querySelector('.j-report-panel').getBoundingClientRect();
+    const band = document.querySelector('.j-report-band');
+    const y = new DOMMatrixReadOnly(getComputedStyle(band).transform).m42;
+    const down = y / Math.max(1, panel.height - 2);
+    return { down, rows: [...document.querySelectorAll('.j-report-row')].map((row) => ({ top: (row.getBoundingClientRect().top - panel.top) / panel.height, printed: getComputedStyle(row).clipPath !== 'inset(0px 100% 0px 0px)' })) };
+  });
+  const wrong = rows.rows.filter((row) => (row.top < rows.down - 0.02 && !row.printed) || (row.top > rows.down + 0.02 && row.printed));
+  step.check(rows.down > 0 && rows.down < 1, `caught mid-print (the line ${(rows.down * 100).toFixed(0)} % down)`);
+  step.check(wrong.length === 0, `the printed rows are those above the line, in the phone's layout (${rows.rows.filter((r) => r.printed).length} of ${rows.rows.length}; wrong: ${wrong.map((r) => r.top.toFixed(2)).join(', ') || 'none'})`);
+  await context.close();
+  return '';
+}
+
 /** Every link reachable by Tab, the focus visible, and a link bringing its chapter into place. */
 async function keyboard(browser, step) {
   const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
@@ -1030,7 +1072,9 @@ async function keyboard(browser, step) {
   const keys = reached.map((r) => r.key);
   for (const chapter of ['who', 'software', 'games', 'security', 'mechatronics', 'stack', 'projects', 'qa', 'contact']) step.check(keys.includes(chapter), `the rail's ${chapter} can be reached`);
   for (const project of projects.byDate()) step.check(reached.some((r) => r.project === project.id), `${project.id}'s link can be reached`);
-  for (const href of ['mailto:bhccob@gmail.com', 'https://github.com/bhccob', 'https://www.instagram.com/bhccob/', '/en/contact/']) step.check(keys.includes(href), `${href} can be reached`);
+  // The scan report's three ways; no Email, since Send a message is the same (Bob, spec 2026-11-08 "Into my head", 5.11).
+  for (const href of ['https://github.com/bhccob', 'https://www.instagram.com/bhccob/', '/en/contact/']) step.check(keys.includes(href), `${href} can be reached`);
+  step.check(!keys.some((key) => String(key).startsWith('mailto:')), 'and no Email link is left');
   step.check(unseen === 0, `the focus is visible on every one (${unseen} of ${reached.length} not)`);
   await page.waitForFunction((last) => window.__journeyDebug.frame() > last - 2, timeline.last, { timeout: 25_000 });
   step.check(true, 'reaching the end page\'s links brings it into place');
@@ -1773,7 +1817,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, 'head-language': headLanguage, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, 'head-language': headLanguage, 'head-resize': headResize, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 
