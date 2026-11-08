@@ -1,7 +1,6 @@
 import { BloomEffect, DepthOfFieldEffect, EffectComposer, EffectPass, RenderPass, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
 import { HalfFloatType, NoToneMapping, Vector3, VSMShadowMap, type WebGLRenderer } from 'three';
 import { projects } from '~/data/projects';
-import { translatorFor } from '~/i18n/useTranslator';
 import type { Locale } from '~/i18n/Translator';
 import type { JourneyQuality } from '../quality';
 import { flightLayout } from '../flight/layout';
@@ -9,10 +8,10 @@ import type { TagName } from '../layers';
 import { cameraPose } from '../machine/camera';
 import { idleFrames, machinePose, nightShare } from '../machine/choreography';
 import type { Timeline } from '../timeline';
+import type { JourneyStage } from '../stages';
 import { type FlightProject, type FlightState, type StopReport, TunnelScene } from './flight/TunnelScene';
-import type { UniverseReport } from './end/Universe';
+import type { HeadAnchors } from './head/HeadScene';
 import { IrisWindow } from './IrisWindow';
-import type { QuestionReport } from './void/Questions';
 import { LookEffect } from './LookEffect';
 import { blurShare } from './looks';
 import { MachineScene } from './MachineScene';
@@ -31,8 +30,9 @@ export interface WorldState {
   anchors: Record<TagName, [number, number]>;
   hover: string | null;
   opaque: boolean;
-  fired: number;
   flight: FlightState;
+  /** Where the head's parts stand on the page, while it shows. */
+  head: HeadAnchors | null;
 }
 
 /** The blur below which depth of field is not worth drawing, as a share of the page's width: about a pixel at 1080p. */
@@ -77,14 +77,8 @@ export class World {
         nl: { kind: project.copy('nl').flightKind, line: project.copy('nl').flightLine },
       },
     }));
-    const wordsOf = (locale: Locale) => {
-      const { t } = translatorFor(locale);
-      return t.end.questions.map(({ question, answer }) => ({ question, answer: answer ?? t.end.placeholder }));
-    };
-    const questions = { en: wordsOf('en'), nl: wordsOf('nl') };
-    const qaWord = { en: translatorFor('en').t.journey.qaWord, nl: translatorFor('nl').t.journey.qaWord };
-    this.tunnel = new TunnelScene({ layout: flightLayout(dated), projects: flying, questions, qaWord, locale: input.locale, timeline: input.timeline, reduce: input.reduce });
-    this.state = { anchors: { armour: [0, 0], controls: [0, 0], brain: [0, 0], body: [0, 0] }, hover: null, opaque: false, fired: 0, flight: this.tunnel.state };
+    this.tunnel = new TunnelScene({ layout: flightLayout(dated), projects: flying, locale: input.locale, timeline: input.timeline, reduce: input.reduce });
+    this.state = { anchors: { armour: [0, 0], controls: [0, 0], brain: [0, 0], body: [0, 0] }, hover: null, opaque: false, flight: this.tunnel.state, head: null };
     renderer.toneMapping = NoToneMapping;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = VSMShadowMap;
@@ -100,21 +94,22 @@ export class World {
   }
 
   /** Loads a stage of the journey. */
-  async load(stage: 'machine' | 'flight' | 'void' | 'end', onProgress?: (share: number) => void): Promise<void> {
+  async load(stage: JourneyStage, onProgress?: (share: number) => void): Promise<void> {
     const draw = (): void => this.iris.drawTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
+    const compile = (): Promise<unknown> => this.iris.compileTunnel(this.renderer, this.tunnel.scene, this.tunnel.camera);
     if (stage === 'machine') {
       await this.machine.load(onProgress);
       this.machine.update(0);
       return;
     }
     if (stage === 'flight') await this.tunnel.loadFlight(this.renderer, draw);
-    else if (stage === 'void') await this.tunnel.loadVoid(this.renderer, draw);
-    else await this.tunnel.loadEnd(this.renderer, draw);
+    else if (stage === 'head') await this.tunnel.loadHead(draw, compile);
+    else await this.tunnel.loadEnd(draw, compile);
     this.dirty = true;
   }
 
   /** Draws everything once before anything shows, so that no shader or shadow is compiled in the middle of the journey. */
-  warm(f: number): void {
+  warm(f: number, t: number): void {
     this.machine.showAll();
     const asBefore = this.machine.drawEverything();
     this.renderer.compile(this.machine.scene, this.machine.camera);
@@ -125,10 +120,11 @@ export class World {
     asBefore();
     this.iris.present(this.renderer);
     this.drawn = -1;
-    this.update(f, 0, 0);
+    this.update(f, 0, 0, t);
   }
 
-  update(f: number, dt: number, now: number): WorldState {
+  /** `t` is the head's own time past the flight, with the ending's own clock: the page keeps it (head/time.ts). */
+  update(f: number, dt: number, now: number, t: number): WorldState {
     const moved = f !== this.drawn;
     const inside = canvasOpaque(f);
     const window = irisWindowOn(f);
@@ -149,12 +145,12 @@ export class World {
     }
     // The tunnel never stands still: its light runs on and its speed settles while you read. With less motion asked for, it moves only with you.
     if (window || inside) {
-      this.tunnel.update(f, dt, now);
+      this.tunnel.update(f, dt, now, t);
       if (!this.reduce) this.dirty = true;
     }
     this.state.opaque = inside;
     this.state.hover = inside ? this.tunnel.state.hover : null;
-    this.state.fired = this.tunnel.fired;
+    this.state.head = inside ? this.tunnel.headAnchors() : null;
     return this.state;
   }
 
@@ -230,20 +226,14 @@ export class World {
     return this.tunnel.screenRect(id);
   }
 
-  /** What stands in the flight, for those checking it. */
-  report(): { stops: StopReport[]; walls: number; questions: QuestionReport[]; end: UniverseReport | null } {
-    return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, questions: this.tunnel.questionReport(), end: this.tunnel.endReport() };
+  /** What stands in the flight, and where the head is, for those checking it. */
+  report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number } | null } {
+    return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, head: this.tunnel.headReport() };
   }
 
   /** Where the view turns to with no pointer on the page. */
   drift(x: number, y: number): void {
     this.tunnel.drift(x, y);
-  }
-
-  /** A press on the end page, and letting go; `cancelled` leaves nothing behind. */
-  hold(on: boolean, cancelled = false): void {
-    if (on) this.tunnel.press();
-    else this.tunnel.release(cancelled);
   }
 
   /** Where the pointer aims, -1 to 1 each way. */

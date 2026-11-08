@@ -1,4 +1,4 @@
-import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, Group, LineSegments, type Matrix4, Mesh, type Object3D, PerspectiveCamera, Points, Quaternion, ShaderMaterial, Sprite, SpriteMaterial, SRGBColorSpace, Vector3 } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, Group, LineSegments, type Matrix4, Mesh, type Object3D, PerspectiveCamera, Points, Quaternion, ShaderMaterial, Sprite, SRGBColorSpace, Vector3 } from 'three';
 import type { Locale } from '~/i18n/Translator';
 import type { JourneyQuality } from '../../quality';
 import { decodeHead } from '../../head/headBin';
@@ -9,7 +9,7 @@ import { answerShown, DOWN, dwellT, dwellWeights, HOLD, NQ, THOUGHTS } from '../
 import { HOLD_IN, SPIT_T } from '../../head/time';
 import { clamp, ease, mix, seeded } from '../../math';
 import type { Box } from '../../layers';
-import { dotsMaterial, type GlowPoints, glowPoints, lightSprite, lines } from './draw';
+import { dotsMaterial, type GlowPoints, glowPoints, headSprite, lightSprite, lines } from './draw';
 import { type Pose, S } from './track';
 import { headUniforms, xrayMaterial } from './xray';
 
@@ -133,6 +133,8 @@ export class HeadScene {
   private blinkAt = -10;
   private nextBlink = 1.5;
   private locale: Locale = 'nl';
+  private lastT = 0;
+  private lastPressure = 0;
   private loaded = false;
 
   constructor(parent: Object3D, place: Matrix4) {
@@ -608,6 +610,8 @@ export class HeadScene {
     const focusBrain = smooth(0.198, 0.235, t) * (1 - inside);
     const qaPhase = smooth(0.33, 0.35, t);
     const pressure = smooth(HOLD_IN[0], HOLD_IN[1], t) * (1 - smooth(SPIT_T, SPIT_T + 0.004, t));
+    this.lastT = t;
+    this.lastPressure = pressure;
     // The head shakes with the pressure once you are outside it.
     this.head.position.set(Math.sin(time * 53) * 0.07, Math.sin(time * 41 + 2) * 0.05, 0).multiplyScalar(reduce ? 0 : pressure * pressure * smooth(0.9, 0.91, t));
 
@@ -851,6 +855,13 @@ export class HeadScene {
     void dt;
   }
 
+  /** Where the head is, for the proof harness: its t, the answer being read (-1 for none), and the pressure behind the lips. */
+  report(): { t: number; active: number; pressure: number } {
+    let active = -1;
+    for (let i = 0; i < NQ; i++) if (answerShown(this.lastT, i) > 0.5) active = i;
+    return { t: this.lastT, active, pressure: this.lastPressure };
+  }
+
   dispose(): void {
     this.world.removeFromParent();
     this.world.traverse((object) => {
@@ -919,7 +930,7 @@ export class HeadScene {
       x.fillText(text, 20, 42);
       const texture = new CanvasTexture(c);
       texture.colorSpace = SRGBColorSpace;
-      const s = new Sprite(new SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending, opacity: 0 }));
+      const s = new Sprite(headSprite(texture));
       s.scale.set((worldH * w) / h, worldH, 1);
       this.world.add(s);
       return { s, p: { ...this.streamParticle(), r: 1.15, a0: i / words.length, sp: 0.032, k: i % 6 } };

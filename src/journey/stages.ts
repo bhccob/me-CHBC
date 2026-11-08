@@ -2,19 +2,19 @@ import type { Timeline } from './timeline';
 
 /** The journey loads in stages: the first view waits for nothing later. Pure. */
 
-export type JourneyStage = 'machine' | 'flight' | 'void' | 'end';
+export type JourneyStage = 'machine' | 'flight' | 'head' | 'end';
 
-const ORDER: readonly JourneyStage[] = ['machine', 'flight', 'void', 'end'];
+const ORDER: readonly JourneyStage[] = ['machine', 'flight', 'head', 'end'];
 
 /** How far ahead the next stage starts loading, in frames. */
 const AHEAD = 80;
 
-/** Where each stage starts. */
+/** Where each stage starts: the head where the flight leaves off, and the soft bang behind the report with the spit. */
 function startOf(stage: JourneyStage, tl: Timeline): number {
   if (stage === 'machine') return 0;
   if (stage === 'flight') return 340;
-  if (stage === 'void') return tl.void[0];
-  return tl.collapse[0];
+  if (stage === 'head') return tl.head[0];
+  return tl.chapters.at(-1)?.from ?? tl.last;
 }
 
 /** The stage frame `f` stands in. */

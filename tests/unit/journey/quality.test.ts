@@ -78,13 +78,19 @@ describe('the stages of the journey', () => {
     expect(stageFor(0, tl)).toBe('machine');
     expect(stageFor(339, tl)).toBe('machine');
     expect(stageFor(340, tl)).toBe('flight');
-    expect(stageFor(600, tl)).toBe('void');
-    expect(stageFor(900, tl)).toBe('end');
+    expect(stageFor(565, tl)).toBe('flight');
+    expect(stageFor(566, tl)).toBe('head');
+    expect(stageFor(1000, tl)).toBe('head');
+    // The soft bang behind the report comes with the spit.
+    const spit = tl.chapters.at(-1)!.from;
+    expect(stageFor(spit - 1, tl)).toBe('head');
+    expect(stageFor(spit, tl)).toBe('end');
   });
 
   it('load the current one first', () => {
     expect(stagesToLoad(0, tl, new Set())).toEqual(['machine']);
-    expect(stagesToLoad(900, tl, new Set(['machine']))[0]).toBe('end');
+    expect(stagesToLoad(1000, tl, new Set(['machine']))[0]).toBe('head');
+    expect(stagesToLoad(tl.last, tl, new Set(['machine']))[0]).toBe('end');
   });
 
   it('load nothing more at the first view', () => {
@@ -104,7 +110,8 @@ describe('the stages of the journey', () => {
 
   it('move with a longer flight', () => {
     const longer = buildTimeline(216);
-    expect(stageFor(600, longer)).toBe('flight');
-    expect(stageFor(640, longer)).toBe('void');
+    expect(longer.head[0]).toBeGreaterThan(tl.head[0]);
+    expect(stageFor(longer.head[0] - 1, longer)).toBe('flight');
+    expect(stageFor(longer.head[0], longer)).toBe('head');
   });
 });

@@ -15,9 +15,9 @@ export interface JourneyDebug {
   /** The sound: whether it is on, how loud, and which of its effects have played. */
   sound(): { on: boolean; running: boolean; context: string; level: number; counts: Record<string, number>; landed: boolean };
   /** How far along the flight, how fast, and through what lens. */
-  flight(): { s: number; speed: number; fov: number; calm: number; project: string | null; link: [number, number] | null; screen: [number, number] | null; hover: string | null; voidDistance: number; sparks: number; stars: number } | null;
+  flight(): { s: number; speed: number; fov: number; calm: number; project: string | null; link: [number, number] | null; screen: [number, number] | null; hover: string | null } | null;
   /** What stands in the flight: each stop's screens, pieces and words as drawn, and the screens on the walls. */
-  stops(): { stops: { id: string; screens: number; pieces: number; words: string[]; rect: [number, number, number, number]; foot: number }[]; walls: number; questions: { words: string[]; rect: [number, number, number, number]; gear: boolean; shown: boolean }[]; end: { stars: number; gas: number; yours: number; fired: number; charge: number; gate: { x: number; y: number; inner: number } } | null } | null;
+  stops(): { stops: { id: string; screens: number; pieces: number; words: string[]; rect: [number, number, number, number]; foot: number }[]; walls: number; head: { t: number; active: number; pressure: number } | null } | null;
 }
 
 declare global {

@@ -1,8 +1,8 @@
-import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Color, Group, Mesh, type Object3D, type PerspectiveCamera, PlaneGeometry, Points, ShaderMaterial, Sprite, SpriteMaterial, Vector3 } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Color, Group, Mesh, type Object3D, type PerspectiveCamera, PlaneGeometry, Points, ShaderMaterial, Sprite, Vector3 } from 'three';
 import type { JourneyQuality } from '../../quality';
 import { softBangAt, SOFT_BANG } from '../../head/report';
 import { ease, seeded } from '../../math';
-import { lines } from './draw';
+import { headSprite, lines } from './draw';
 
 /**
  * The soft big bang behind the scan report (spec 2026-11-08 "Into my head", section 5.11; Bob: "big bang in the background
@@ -89,7 +89,7 @@ export class SoftBang {
       const r = seeded(7070), tones = [[1, 0.58, 0.2], [0.82, 0.36, 0.3], [0.42, 0.3, 0.8], [0.3, 0.24, 0.62], [1, 0.72, 0.36]];
       for (let i = 0; i < 24; i++) {
         const tone = tones[Math.floor(r() * tones.length)];
-        const mat = new SpriteMaterial({ map: this.puffTex, color: new Color(tone[0], tone[1], tone[2]), ...ADD, opacity: 0 });
+        const mat = headSprite(this.puffTex, new Color(tone[0], tone[1], tone[2]));
         const turn = r() * Math.PI * 2;
         mat.rotation = turn;
         const sp = new Sprite(mat);

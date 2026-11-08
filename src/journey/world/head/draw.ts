@@ -1,4 +1,5 @@
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, type Color, DynamicDrawUsage, Float32BufferAttribute, LineSegments, type Object3D, Points, ShaderMaterial, Sprite, SpriteMaterial, SRGBColorSpace, type Texture } from 'three';
+import { displayReferred } from '../displayOutput';
 import type { HeadUniforms } from './xray';
 
 /**
@@ -114,6 +115,16 @@ export function lines(parent: Object3D, pos: ArrayLike<number>, shade: ArrayLike
   return { line, material };
 }
 
+/**
+ * A sprite's material as the head draws it: added on, never fogged, and encoded for the screen by itself, since the tunnel's
+ * picture is a render target that holds the screen's values (displayOutput.ts). Drawn so, it shows as the mock shows it.
+ */
+export function headSprite(map: Texture, color?: Color): SpriteMaterial {
+  const material = new SpriteMaterial({ map, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending, opacity: 0, fog: false });
+  if (color) material.color.copy(color);
+  return displayReferred(material, false);
+}
+
 let lightTexture: CanvasTexture | null = null;
 
 /** The soft round light every spark and glow is drawn with. */
@@ -134,7 +145,7 @@ function lightTex(): CanvasTexture {
 }
 
 export function lightSprite(parent: Object3D, scale: number): Sprite {
-  const s = new Sprite(new SpriteMaterial({ map: lightTex(), transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending, opacity: 0 }));
+  const s = new Sprite(headSprite(lightTex()));
   s.scale.set(scale, scale, 1);
   parent.add(s);
   return s;

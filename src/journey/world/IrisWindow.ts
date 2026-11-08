@@ -116,6 +116,18 @@ export class IrisWindow {
     renderer.setClearAlpha(0);
   }
 
+  /**
+   * Builds the shaders the tunnel's picture needs for `scene`, on the GPU's own threads where it can. They are built for this
+   * picture, a render target: a shader built for the screen is another program, which the first draw would then build again,
+   * on the page's thread.
+   */
+  compileTunnel(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera): Promise<unknown> {
+    renderer.setRenderTarget(this.target);
+    const ready = renderer.compileAsync(scene, camera);
+    renderer.setRenderTarget(null);
+    return ready;
+  }
+
   /** The tunnel alone on the canvas. */
   present(renderer: WebGLRenderer): void {
     renderer.setRenderTarget(null);

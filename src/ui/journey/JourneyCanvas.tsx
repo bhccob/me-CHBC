@@ -4,8 +4,6 @@ import codeScreenUrl from '~/assets/journey/code-screen.webp?url';
 import type { Locale } from '~/i18n/Translator';
 import type { Timeline } from '~/journey/timeline';
 import type { StopReport } from '~/journey/world/flight/TunnelScene';
-import type { UniverseReport } from '~/journey/world/end/Universe';
-import type { QuestionReport } from '~/journey/world/void/Questions';
 import { FrameJudge, startStep } from '~/engine/quality';
 import { journeyQuality, journeySteps } from '~/journey/quality';
 import { type JourneyStage, stagesToLoad } from '~/journey/stages';
@@ -13,12 +11,12 @@ import { World, type WorldState } from '~/journey/world/World';
 import { gpuSpeed } from '~/scene/webgl';
 
 export interface CanvasHandle {
-  /** Moves the world to frame `f` and draws it. */
-  frame(f: number, dt: number, now: number): WorldState;
+  /** Moves the world to frame `f`, with the head at its own time `t`, and draws it. */
+  frame(f: number, dt: number, now: number, t: number): WorldState;
   /** Where a project's screen stands on the page: left, top, width, height. */
   screenRect(id: string): [number, number, number, number] | null;
   /** What stands in the flight, for those checking it. */
-  report(): { stops: StopReport[]; walls: number; questions: QuestionReport[]; end: UniverseReport | null };
+  report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number } | null };
   /** Where a finger holds, and where the view drifts with no pointer on the page: each -1 to 1. */
   pointer(x: number, y: number): void;
   drift(x: number, y: number): void;
@@ -26,7 +24,7 @@ export interface CanvasHandle {
   stageReady(stage: JourneyStage): boolean;
   step(): number;
   dpr(): number;
-  /** A press on the end page, and letting go. */
+  /** @deprecated The old end page's press, gone with its universe; its callers go with that page (Into my head, Task 12). */
   hold(on: boolean, cancelled?: boolean): void;
 }
 
@@ -58,7 +56,7 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail, onPixelRa
         if (!live) return;
         world.current = made;
         made.resize(gl.domElement.clientWidth, gl.domElement.clientHeight);
-        made.warm(0);
+        made.warm(0, 0);
         // Where this GPU starts on the ladder, and whether its frames move it further down.
         const params = new URLSearchParams(location.search);
         const fine = matchMedia('(pointer: fine)').matches;
@@ -78,15 +76,23 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail, onPixelRa
         const ready = new Set<string>(['machine']);
         const load = (stage: JourneyStage): void => {
           loaded.add(stage);
-          // Without a later stage the journey still runs, with nothing standing in it.
-          made.load(stage).then(() => ready.add(stage), (error: unknown) => console.error(error));
+          // Without the flight the journey still runs, with nothing standing in it. Without his head there is no journey
+          // past the flight to run: the page falls back as it does when the 3D fails (spec 10).
+          made.load(stage).then(
+            () => ready.add(stage),
+            (error: unknown) => {
+              if (stage === 'head' || stage === 'end') {
+                if (live) onFail(error);
+              } else console.error(error);
+            },
+          );
         };
-        if (params.get('stages') === 'all') (['flight', 'void', 'end'] as const).forEach(load);
+        if (params.get('stages') === 'all') (['flight', 'head', 'end'] as const).forEach(load);
         let lastNow: number | null = null;
         onReady({
-          frame(f, dt, now) {
+          frame(f, dt, now, t) {
             for (const stage of stagesToLoad(f, timeline, loaded)) if (live) load(stage);
-            const state = made.update(f, dt, now);
+            const state = made.update(f, dt, now, t);
             advance(now);
             if (governed) {
               if (made.drew && lastNow !== null) {
@@ -107,7 +113,7 @@ function Host({ locale, timeline, reduce, onProgress, onReady, onFail, onPixelRa
           report: () => made.report(),
           pointer: (x, y) => made.pointer(x, y),
           drift: (x, y) => made.drift(x, y),
-          hold: (on, cancelled) => made.hold(on, cancelled),
+          hold: () => {},
         });
       })
       .catch((error: unknown) => {

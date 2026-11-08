@@ -947,6 +947,29 @@ async function contextLost(browser, step) {
   return '';
 }
 
+/** His head never comes: past the flight the page falls back as a failed 3D does, with Lite one link away (spec 10). */
+async function headMissing(browser, step) {
+  // As a visitor loads it: the head's stage is asked for as the flight nears its end.
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/', stages: '' });
+  await page.route('**/models/head.bin', (route) => route.abort());
+  await goToFrame(page, timeline.head[0] - 120);
+  await flightLoaded(page, projects.byDate().length);
+  // Into the last stretch of the flight, where the head's stage loads, and on past it.
+  const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  const past = scrollFromFrame(timeline.head[0] + 40, max, timeline);
+  for (let y = await page.evaluate(() => scrollY); y < past; y += 300) {
+    await page.mouse.wheel(0, 300);
+    await page.waitForTimeout(40);
+  }
+  await page.waitForSelector('.j-calm', { timeout: 20_000 });
+  await page.waitForTimeout(300);
+  step.check((await page.locator('.j-calm-note a').getAttribute('href')) === '/en/lite/', 'without his head it ends on the fallback, with Lite one link away');
+  // The head that never came is the one error this step expects.
+  step.errors.length = 0;
+  await context.close();
+  return '';
+}
+
 /** Every link reachable by Tab, the focus visible, and a link bringing its chapter into place. */
 async function keyboard(browser, step) {
   const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
@@ -1718,7 +1741,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

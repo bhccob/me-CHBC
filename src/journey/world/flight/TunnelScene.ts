@@ -1,20 +1,16 @@
-import { AdditiveBlending, BackSide, BoxGeometry, type BufferGeometry, Color, DoubleSide, FogExp2, FrontSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, type Object3D, PointLight, type Points, Raycaster, Scene, type ShaderMaterial, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
+import { AdditiveBlending, BackSide, BoxGeometry, Color, DoubleSide, FogExp2, FrontSide, type Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, type Object3D, PointLight, Raycaster, Scene, SphereGeometry, Sprite, SpriteMaterial, type Texture, Vector2, Vector3, type WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { Locale } from '~/i18n/Translator';
 import { journeyQuality, type JourneyQuality } from '../../quality';
 import { distanceAt, type DistanceTable, distanceTable, type FlightLayout } from '../../flight/layout';
 import { clamp, ease, ez, mix, ramp } from '../../math';
+import { pressureAt } from '../../head/cues';
 import type { Timeline } from '../../timeline';
+import { GROUND } from '~/ui/journey/paper';
 import { displayReferred, displayValue } from '../displayOutput';
-import { orbitAngles } from '../../end';
-import { Bang } from '../end/Bang';
-import { bangShare, collapseShare, fallPoint, voidLeftAfter } from '../end/Collapse';
-import { galaxy, Universe, type UniverseReport } from '../end/Universe';
-import { movingShare, starShare } from '../void/Dissolve';
-import { endFov, endFrame, voidDistanceAt, voidOpening, type VoidPose, voidPose, wallReach } from '../void/path';
-import type { QuestionText } from '../../qaType';
-import { type QuestionReport, Questions, type QuestionWords } from '../void/Questions';
-import { VoidScene } from '../void/VoidScene';
+import { type HeadAnchors, HeadScene } from '../head/HeadScene';
+import { SoftBang } from '../head/softBang';
+import { buildHeadTrack, headPlace, type Pose } from '../head/track';
 import { Gates } from './Gates';
 import { bankAt, center, fovAt, frameAt, nearestStop, type Rgb, tintAt, washAt } from './path';
 import { ProjectStop, type StopProject, type StopWords } from './ProjectStop';
@@ -33,9 +29,6 @@ export interface FlightProject extends StopProject {
 export interface TunnelInput {
   layout: FlightLayout;
   projects: readonly FlightProject[];
-  /** His questions and answers, and the big word over them, in each language. */
-  questions: Record<Locale, readonly QuestionWords[]>;
-  qaWord: Record<Locale, string>;
   locale: Locale;
   timeline: Timeline;
   reduce: boolean;
@@ -55,13 +48,6 @@ export interface FlightState {
   screen: [number, number] | null;
   /** The project whose screen is under the pointer, if any. */
   hover: string | null;
-  /** How far along the way through the void. */
-  voidDistance: number;
-  /** The tunnel breaking: the share of its points on their way, and the share already stars. */
-  sparks: number;
-  stars: number;
-  /** On a phone, where the page sets each question's words in type over the 3D; none shown anywhere else. */
-  words: QuestionText[];
 }
 
 /** What a stop holds, for those checking it. */
@@ -77,6 +63,14 @@ export interface StopReport {
 }
 
 const GATE_URL = '/models/gate.glb';
+const HEAD_URL = '/models/head.bin';
+/** The head's lens, as the mock's: wider on a tall phone. */
+const HEAD_FOV = 55;
+const HEAD_FOV_PHONE = 68;
+/** The head's ground, the page's dark purple, in the screen's values the tunnel's picture holds. */
+const GROUND_SCREEN = [1, 3, 5].map((at) => parseInt(GROUND.slice(at, at + 2), 16) / 255) as unknown as Rgb;
+/** Where the tunnel's own parts are left behind on the way down: the head's t. */
+const TUNNEL_GONE = 0.1;
 const ORB_AHEAD = 58;
 const LOOK_AHEAD = 9;
 const FULL_SPEED = 15;
@@ -109,9 +103,8 @@ function reflections(renderer: WebGLRenderer): Texture {
 
 const WORD_FONTS = ['800 168px Barlow', '500 56px Barlow', '500 46px "IBM Plex Mono"'];
 
-const WORLD_UP = new Vector3(0, 1, 0);
-const orbit = new Vector3();
 const place = new Vector3();
+const across = new Vector3();
 const point = new Vector3();
 const nextFrame = (): Promise<void> => new Promise((done) => requestAnimationFrame(() => done()));
 const look = new Vector3();
@@ -120,7 +113,7 @@ const look = new Vector3();
 export class TunnelScene {
   readonly scene = new Scene();
   readonly camera = new PerspectiveCamera(54, 16 / 9, 0.05, 900);
-  readonly state: FlightState = { s: 0, speed: 0, fov: 54, calm: 0, project: null, link: null, screen: null, hover: null, voidDistance: 0, sparks: 0, stars: 0, words: [] };
+  readonly state: FlightState = { s: 0, speed: 0, fov: 54, calm: 0, project: null, link: null, screen: null, hover: null };
   private readonly input: TunnelInput;
   private readonly table: DistanceTable;
   private readonly uniforms: TunnelUniforms = tunnelUniforms();
@@ -129,18 +122,25 @@ export class TunnelScene {
   private readonly orb: Sprite;
   private readonly glow = glowTexture();
   private readonly walls: WallScreens;
-  private readonly voidScene: VoidScene;
-  private readonly bang: Bang;
-  private readonly fallsTo: Vector3;
-  /** The end page's light. It stands from the start, since a lit material's shader depends on how many lights there are. */
-  private readonly endLight = new PointLight(0xffd6a0, 0, 320, 1);
-  private universe: Universe | null = null;
+  /** The tunnel's wires and rings, left behind on the way down. */
+  private readonly tunnelParts: Mesh[];
+  /** Bob's head, where the flight leaves off, and the soft bang behind the report. */
+  private readonly headPlace: Matrix4;
+  private readonly join: Pose;
+  private headTrack: (t: number, out: Pose) => Pose;
+  private readonly headPose: Pose = { pos: new Vector3(), look: new Vector3(), up: new Vector3() };
+  private head: HeadScene | null = null;
+  private headReady: Promise<HeadScene> | null = null;
+  private softBang: SoftBang | null = null;
+  private bangPlaced = false;
+  private readonly endView = new PerspectiveCamera();
+  private readonly headState: HeadAnchors = { labels: [], cards: [], cardsInFront: [], spark: [0, 0], headBox: { left: 0, top: 0, right: 0, bottom: 0 }, you: [0, 0], youDir: [0, 0] };
+  private headShown = false;
+  private pixelRatio = 1;
   private quality = journeyQuality(0, true);
-  private readonly pose: VoidPose = { place: new Vector3(), look: new Vector3(), T: new Vector3(), R: new Vector3(), U: new Vector3(), roll: 0, arrive: 0, sway: 1, lens: 1 };
   private readonly ray = new Raycaster();
   private readonly pointerAt = new Vector2(9, 9);
   private stops: ProjectStop[] = [];
-  private questions: Questions | null = null;
   private locale: Locale;
   private anisotropy = 1;
   private width = 1;
@@ -149,7 +149,7 @@ export class TunnelScene {
   private readonly headlamp = new PointLight(0xffffff, 22, 30, 1.4);
   private gates: Gates | null = null;
   /** Kept, with their materials, so that the shader they readied stays ready. */
-  private readonly specks: (Mesh<BoxGeometry, MeshStandardMaterial> | Points<BufferGeometry, ShaderMaterial>)[] = [];
+  private readonly specks: Mesh<BoxGeometry, MeshStandardMaterial>[] = [];
   private readonly fog = new FogExp2(0x000000, 0.017);
   private readonly background = new Color();
   private readonly mouse = new Vector2();
@@ -177,13 +177,13 @@ export class TunnelScene {
     const streaks = makeStreaks(this.uniforms);
     this.streaks = streaks.speed;
     this.meshes = [wires.mesh, rings.mesh, wires.mirror, rings.mirror, streaks.mesh];
+    this.tunnelParts = [wires.mesh, rings.mesh, wires.mirror, rings.mirror, streaks.mesh];
     this.scene.add(wires.mesh, rings.mesh, wires.mirror, rings.mirror);
     this.camera.add(streaks.mesh);
-    this.voidScene = new VoidScene(this.scene, this.uniforms, end, input.timeline, [wires.mirror, rings.mirror]);
-    this.fallsTo = fallPoint(end, new Vector3());
-    this.voidScene.sparkControls.uPoint.value.copy(this.fallsTo);
-    this.bang = new Bang(this.scene, this.uniforms, this.fallsTo, this.glow);
-    this.scene.add(this.endLight);
+    // Where the flight leaves off, the head's way begins: the flight's last view, looking ahead along the tunnel.
+    this.join = { pos: center(end, end, new Vector3()), look: center(end + LOOK_AHEAD, end, new Vector3()), up: frameAt(end, end).U.clone() };
+    this.headPlace = headPlace(this.join);
+    this.headTrack = buildHeadTrack(this.join, this.headPlace, false);
 
     this.orb = new Sprite(displayReferred(new SpriteMaterial({ map: this.glow, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending, toneMapped: false, fog: false }), false));
     this.orb.scale.setScalar(22);
@@ -208,14 +208,7 @@ export class TunnelScene {
         this.specks.push(speck);
       }
     }
-    const stars = galaxy(1, 1, 2, this.uniforms.uTime, this.voidScene.sparkPixels);
-    this.scene.add(stars);
-    this.specks.push(stars);
-    this.voidScene.show(true);
-    this.bang.show(true);
     draw();
-    this.voidScene.show(false);
-    this.bang.show(false);
     for (const speck of this.specks) speck.visible = false;
   }
 
@@ -293,73 +286,91 @@ export class TunnelScene {
     this.walls.show(false);
   }
 
-  /** The void's stage: his questions along the gold line. */
-  async loadVoid(renderer: WebGLRenderer, draw: () => void): Promise<void> {
-    const model = await this.standGates(renderer, draw);
-    if (this.gone) return;
-    const questions = new Questions(this.scene, model, this.input.layout.end);
-    questions.buildWord(this.input.qaWord[this.locale], this.phone, this.anisotropy);
-    await nextFrame();
-    for (const [i, words] of this.input.questions[this.locale].entries()) {
-      if (this.gone) return;
-      questions.buildQuestion(i, words, this.phone, this.anisotropy, this.camera.aspect);
+  /** The head's stage: Bob's head, baked once (tools/head/bake.mjs), and everything that pours into it. */
+  loadHead(draw: () => void, compile: () => Promise<unknown>): Promise<HeadScene> {
+    this.headReady ??= (async () => {
+      const head = new HeadScene(this.scene, this.headPlace);
+      try {
+        await head.load(HEAD_URL, this.locale);
+      } catch (error) {
+        head.dispose();
+        throw error;
+      }
+      if (this.gone) {
+        head.dispose();
+        return head;
+      }
+      head.setQuality(this.quality);
+      this.fitHead(head);
       await nextFrame();
-    }
-    if (this.gone) return;
-    await renderer.compileAsync(this.scene, this.camera);
-    for (const texture of questions.textures() as Texture[]) {
-      if (this.gone) return;
-      renderer.initTexture(texture);
-      await nextFrame();
-    }
-    if (this.gone) return;
-    questions.show(true);
-    draw();
-    questions.show(false);
-    this.questions = questions;
+      if (this.gone) return head;
+      // Its shaders readied and its points drawn once while nothing shows, so that the first time it is seen costs nothing.
+      head.show(true);
+      await compile();
+      draw();
+      head.show(false);
+      this.head = head;
+      this.bangPlaced = false;
+      return head;
+    })();
+    return this.headReady;
   }
 
-  /** The end's stage: the universe behind the words. */
-  async loadEnd(renderer: WebGLRenderer, draw: () => void): Promise<void> {
-    const model = await this.standGates(renderer, draw);
+  /** The end's stage: the soft big bang behind the scan report. It stands where the head's ride ends. */
+  async loadEnd(draw: () => void, compile: () => Promise<unknown>): Promise<void> {
+    await this.loadHead(draw, compile);
     if (this.gone) return;
-    const universe = new Universe(this.scene, model, this.input.layout.end, this.uniforms.uTime, this.voidScene.sparkPixels, this.voidScene.sparkControls, this.fallsTo, this.glow, this.endLight);
-    universe.setQuality(this.quality);
+    const bang = new SoftBang(this.scene);
+    bang.setQuality(this.quality);
+    this.softBang = bang;
+    this.placeBang();
     await nextFrame();
     if (this.gone) return;
-    await renderer.compileAsync(this.scene, this.camera);
-    universe.show(true);
+    bang.update(0.99, 0);
+    bang.show(true);
+    await compile();
     draw();
-    universe.show(false);
-    this.universe = universe;
+    bang.show(false);
+  }
+
+  private headFov(): number {
+    return this.phone ? HEAD_FOV_PHONE : HEAD_FOV;
+  }
+
+  /** The head's sizes for this page: its points, where the spark lands, and where each answer stands. */
+  private fitHead(head: HeadScene): void {
+    const fov = this.headFov();
+    head.setPixels(this.height * this.pixelRatio, fov);
+    // Till the page measures its report (the scan report), the spark lands at the top middle.
+    head.setLanding(this.width / 2, this.height * 0.2, this.width, this.height, fov);
+    head.placeCards(this.headTrack, this.width, this.height, this.phone, fov);
+    this.bangPlaced = false;
+  }
+
+  /** Stands the soft bang where the spark lands, once the head knows where that is. */
+  private placeBang(): void {
+    if (!this.head || !this.softBang || this.bangPlaced) return;
+    this.softBang.place(this.head.landingWorld(place), this.head.endView(this.endView));
+    this.softBang.setPixels(this.height * this.pixelRatio, this.headFov());
+    this.bangPlaced = true;
   }
 
   /** What every part draws at this step of the ladder. It all changes in place. */
   setQuality(quality: JourneyQuality): void {
     this.quality = quality;
-    this.voidScene.setQuality(quality);
-    this.bang.setClouds(quality.clouds);
     this.walls.setShare(quality.wallScreens);
-    this.universe?.setQuality(quality);
+    this.head?.setQuality(quality);
+    this.softBang?.setQuality(quality);
   }
 
-  /** A press on the end page: a light grows at the cursor. */
-  press(): void {
-    if (!this.input.reduce) this.universe?.press();
+  /** Where the head's parts stand on the page this frame, while it shows. */
+  headAnchors(): HeadAnchors | null {
+    return this.headShown ? this.headState : null;
   }
 
-  /** Let go, or the press given up. */
-  release(cancelled: boolean): void {
-    this.universe?.release(this.pointerAt, this.camera, cancelled, this.input.reduce);
-  }
-
-  endReport(): UniverseReport | null {
-    this.camera.updateMatrixWorld();
-    return this.universe?.report(this.camera, this.width, this.height) ?? null;
-  }
-
-  get fired(): number {
-    return this.universe?.fired ?? 0;
+  /** Where the head is, for the proof harness. */
+  headReport(): { t: number; active: number; pressure: number } | null {
+    return this.headShown && this.head ? this.head.report() : null;
   }
 
   /** The words in another language: the world stays, only they change. */
@@ -371,15 +382,7 @@ export class TunnelScene {
 
   private rebuildWords(): void {
     this.stops.forEach((stop, i) => stop.buildWords(this.input.projects[i].words[this.locale], this.phone, this.anisotropy));
-    const { questions } = this;
-    if (!questions) return;
-    questions.buildWord(this.input.qaWord[this.locale], this.phone, this.anisotropy);
-    this.input.questions[this.locale].forEach((words, i) => questions.buildQuestion(i, words, this.phone, this.anisotropy, this.camera.aspect));
-  }
-
-  questionReport(): QuestionReport[] {
-    this.camera.updateMatrixWorld();
-    return this.questions?.report(this.camera, this.width, this.height) ?? [];
+    this.head?.setLocale(this.locale);
   }
 
   /** Where a project's screen stands on the page: left, top, width, height. */
@@ -410,116 +413,103 @@ export class TunnelScene {
     this.aim.set(x, y);
   }
 
-  update(f: number, dt: number, now: number): void {
+  /** `t` is the head's own time (head/time.ts), past the flight; the page works it out, with the ending's own clock. */
+  update(f: number, dt: number, now: number, t: number): void {
     const { layout, projects, timeline, reduce } = this.input;
     const end = layout.end;
     const s = distanceAt(ramp(f, timeline.flight[0], timeline.flight[1]), this.table);
-    const beyond = voidDistanceAt(f, timeline);
-    const total = s + beyond;
-    const moved = this.last === null || dt <= 0 ? 0 : Math.abs(total - this.last) / dt;
-    this.last = total;
+    const inHead = f >= timeline.head[0];
+    const moved = this.last === null || dt <= 0 ? 0 : Math.abs(s - this.last) / dt;
+    this.last = s;
     const state = this.state;
     state.s = s;
-    state.voidDistance = beyond;
-    const dissolve = ramp(f, timeline.dissolve[0], timeline.dissolve[1]);
-    const opening = voidOpening(f, timeline);
-    state.sparks = movingShare(dissolve);
-    state.stars = starShare(dissolve);
-    const fall = collapseShare(f, timeline);
-    const bang = bangShare(f, timeline);
-    const voidLeft = voidLeftAfter(opening, fall);
-    this.uniforms.uDis.value = dissolve;
-    this.uniforms.uVoid.value = voidLeft;
-    this.uniforms.uFar.value = wallReach(opening);
     state.speed = reduce ? 0 : state.speed + (clamp(moved / FULL_SPEED, 0, 1.6) - state.speed) * (1 - Math.exp(-dt / 0.14));
     this.uniforms.uTime.value = reduce ? 0 : now / 1000;
 
     // The camera, leaning into bends, with a little of the pointer.
     this.mouse.lerp(this.aim, 1 - Math.exp(-dt / 0.28));
-    let m = reduce ? 0 : 1;
-    let roll: number;
-    let wantFov: number;
-    let right: Vector3;
-    let up: Vector3;
+    const m = reduce ? 0 : 1;
     const camera = this.camera;
-    if (beyond > 0) {
-      const pose = voidPose(beyond, end, this.pose);
-      m *= pose.sway;
-      place.copy(pose.place);
-      look.copy(pose.look);
-      // Settled in the dark, the cursor swings you round the point it all came from.
-      const round = reduce ? 0 : ease(bang, 0.42, 0.94);
-      if (round > 0) {
-        const { yaw, pitch } = orbitAngles(this.mouse.x, this.mouse.y);
-        orbit.subVectors(place, this.fallsTo).applyAxisAngle(WORLD_UP, -yaw * round).applyAxisAngle(endFrame(end).right, pitch * round);
-        place.copy(this.fallsTo).add(orbit);
-        look.lerp(this.fallsTo, round);
-      }
-      right = pose.R;
-      up = pose.U;
-      roll = pose.roll;
-      camera.up.set(0, 1, 0);
-      wantFov = fovAt(state.speed * pose.lens, this.phone) + (endFov(this.phone) - fovAt(0, this.phone)) * pose.arrive;
+    const frame = frameAt(s, end);
+    let wantFov: number;
+    if (inHead) {
+      // Past the flight, its last view bends down the shaft into his head (spec 5.1). Over the first steps the flight's
+      // lean and its way with the pointer hand over to the head's, so the join has no seam.
+      const pose = this.headTrack(t, this.headPose);
+      const k = ease(t, 0, 0.03);
+      const sway = ease(t, 0.27, 0.3);
+      camera.up.copy(pose.up);
+      camera.position.copy(pose.pos);
+      camera.lookAt(pose.look);
+      across.set(1, 0, 0).applyQuaternion(camera.quaternion);
+      const x = this.mouse.x * m, y = this.mouse.y * m;
+      place.copy(pose.pos).addScaledVector(across, x * mix(0.24, 0.9 * (1 - sway), k)).addScaledVector(pose.up, y * mix(0.14, 0.54 * (1 - sway), k));
+      look.copy(pose.look).addScaledVector(across, x * 0.62 * (1 - k)).addScaledVector(pose.up, y * 0.36 * (1 - k));
+      // Behind the lips the pressure shakes you; outside, it shakes him (the head scene does that).
+      const pressure = pressureAt(t);
+      const shake = reduce ? 0 : pressure * pressure * 0.09 * (1 - ease(t, 0.9, 0.91));
+      const time = now / 1000;
+      place.addScaledVector(across, Math.sin(time * 47) * shake).addScaledVector(pose.up, Math.sin(time * 39 + 1) * shake);
+      camera.position.copy(place);
+      camera.lookAt(look);
+      camera.rotateZ(bankAt(frame.T) * (1 - k));
+      wantFov = this.headFov();
     } else {
-      const frame = frameAt(s, end);
       center(s, end, place);
       center(s + LOOK_AHEAD, end, look);
-      right = frame.R;
-      up = frame.U;
-      roll = bankAt(frame.T);
+      place.addScaledVector(frame.R, this.mouse.x * 0.24 * m).addScaledVector(frame.U, this.mouse.y * 0.14 * m);
+      look.addScaledVector(frame.R, this.mouse.x * 0.62 * m).addScaledVector(frame.U, this.mouse.y * 0.36 * m);
       camera.up.copy(frame.U);
+      camera.position.copy(place);
+      camera.lookAt(look);
+      camera.rotateZ(bankAt(frame.T));
       wantFov = fovAt(state.speed, this.phone);
     }
-    place.addScaledVector(right, this.mouse.x * 0.24 * m).addScaledVector(up, this.mouse.y * 0.14 * m);
-    look.addScaledVector(right, this.mouse.x * 0.62 * m).addScaledVector(up, this.mouse.y * 0.36 * m);
-    camera.position.copy(place);
-    camera.lookAt(look);
-    camera.rotateZ(roll);
-    // The bang opens the lens wide for a moment, and throws the streaks past you.
-    if (!reduce) wantFov += 13 * Math.sin(Math.PI * clamp((bang - 0.01) / 0.4));
-    const burst = Math.sin(Math.PI * clamp((bang - 0.01) / 0.42));
     state.fov += (wantFov - state.fov) * (dt > 0 ? 1 - Math.exp(-dt / 0.16) : 1);
     camera.fov = state.fov;
     camera.updateProjectionMatrix();
-    this.streaks.uTravel.value = s + (reduce ? 0 : now / 6000) + bang * 300;
-    this.streaks.uSpeed.value = reduce ? 0 : Math.max(state.speed, burst * 1.15);
+    camera.updateMatrixWorld();
+    this.streaks.uTravel.value = s + (reduce ? 0 : now / 6000);
+    this.streaks.uSpeed.value = state.speed;
 
-    // The colour follows the nearest project.
+    // The colour follows the nearest project; past the flight the ground turns the page's dark purple.
     const { near } = nearestStop(s, layout);
     const tint = tintAt(s, layout, projects.map((project) => project.tint));
     this.uniforms.uTint.value.setRGB(tint[0], tint[1], tint[2]);
     this.headlamp.color.setRGB(tint[0], tint[1], tint[2]);
     const wash = washAt(tint, near);
-    this.background.setRGB(displayValue(wash[0]), displayValue(wash[1]), displayValue(wash[2]));
+    const ground = inHead ? ease(t, 0, 0.04) : 0;
+    this.background.setRGB(mix(displayValue(wash[0]), GROUND_SCREEN[0], ground), mix(displayValue(wash[1]), GROUND_SCREEN[1], ground), mix(displayValue(wash[2]), GROUND_SCREEN[2], ground));
     const calm = ez(near);
     this.uniforms.uCalm.value = calm;
     state.calm = calm;
-    this.fog.density = mix(mix(0.017, 0.085, calm), 0.0028, opening);
+    this.fog.density = mix(0.017, 0.085, calm);
 
+    // The light at the tunnel's end goes as you leave it; below, the tunnel is left behind.
     center(Math.min(s + ORB_AHEAD, end + ORB_AHEAD), end, this.orb.position);
     this.orb.material.color.setRGB(tint[0] * 0.6, tint[1] * 0.6, tint[2] * 0.6);
-    this.orb.material.opacity = 1 - opening;
-    this.orb.visible = opening < 0.99;
-    this.gates?.update(s, dissolve, opening);
-    this.walls.update(s, calm, dissolve);
-    this.voidScene.update({ f, distance: beyond, dissolve, opening, voidLeft, fall, bang, dt, camera: camera.position });
-    this.bang.update(fall, bang, now, camera.quaternion);
-    this.universe?.update({ bang, now, dt, pointer: this.pointerAt, mouse: this.mouse, camera, phone: this.phone, reduce });
-    this.questions?.update({ distance: beyond, now: reduce ? 0 : now, mouse: this.mouse, sway: m }, this.phone);
-    if (this.questions && this.phone) this.questions.pageWords(camera, this.width, this.height, state.words);
-    else for (const words of state.words) words.shown = false;
+    const left = inHead ? ease(t, 0, 0.04) : 0;
+    this.orb.material.opacity = 1 - left;
+    this.orb.visible = left < 0.99;
+    const tunnelOn = !inHead || t < TUNNEL_GONE;
+    for (const part of this.tunnelParts) part.visible = tunnelOn;
+    if (tunnelOn) {
+      this.gates?.update(s, 0, 0);
+      this.walls.update(s, calm, 0);
+    }
 
     // Each project swings out of the wall as you near it.
     let at: ProjectStop | null = null;
-    for (const stop of this.stops) {
-      if (stop.update({ s, now: reduce ? 0 : now, mouse: this.mouse, sway: m, dissolve })) at = stop;
+    if (tunnelOn) {
+      for (const stop of this.stops) {
+        if (stop.update({ s, now: reduce ? 0 : now, mouse: this.mouse, sway: m, dissolve: 0 })) at = stop;
+      }
     }
     state.project = at ? at.project.id : null;
     state.link = null;
     state.screen = null;
     state.hover = null;
     if (at) {
-      camera.updateMatrixWorld();
       at.linkPoint(point).project(camera);
       state.link = [(point.x * 0.5 + 0.5) * this.width, (-point.y * 0.5 + 0.5) * this.height];
       at.main.getWorldPosition(point).project(camera);
@@ -527,19 +517,37 @@ export class TunnelScene {
       this.ray.setFromCamera(this.pointerAt, camera);
       if (at.hit(this.ray)) state.hover = at.project.id;
     }
+
+    // His head: from a little before the flight leaves off, so the shaft is there as you come out of the tunnel.
+    const head = this.head;
+    this.headShown = head !== null && f >= timeline.head[0] - 30;
+    head?.show(this.headShown);
+    if (head && this.headShown) {
+      head.setPixels(this.height * this.pixelRatio, camera.fov);
+      head.update({ t, time: now / 1000, dt, camera, phone: this.phone, reduce });
+      head.anchors(camera, this.width, this.height, this.headState);
+    }
+    this.placeBang();
+    const bangOn = this.softBang !== null && inHead && t >= 0.95;
+    this.softBang?.show(bangOn);
+    if (bangOn) this.softBang?.update(t, reduce ? 0 : now / 1000);
   }
 
   resize(width: number, height: number, pixelRatio: number): void {
-    this.voidScene.setPixels(pixelRatio, height);
     const narrowed = width !== this.width;
     this.width = width;
     this.height = height;
+    this.pixelRatio = pixelRatio;
     this.camera.aspect = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
     const phone = this.camera.aspect < 0.8;
-    // A phone's address bar changes only the height: that draws no words again.
-    if (phone === this.phone && !(phone && narrowed)) return;
+    const turned = phone !== this.phone;
     this.phone = phone;
+    // On a tall phone the camera stands further back while it looks at the whole head.
+    if (turned) this.headTrack = buildHeadTrack(this.join, this.headPlace, phone);
+    if (this.head) this.fitHead(this.head);
+    // A phone's address bar changes only the height: that draws no words again.
+    if (!turned && !(phone && narrowed)) return;
     for (const stop of this.stops) stop.layout(phone);
     this.rebuildWords();
   }
@@ -552,10 +560,8 @@ export class TunnelScene {
     }
     this.gates?.dispose();
     this.walls.dispose();
-    this.voidScene.dispose();
-    this.bang.dispose();
-    this.universe?.dispose();
-    this.questions?.dispose();
+    this.head?.dispose();
+    this.softBang?.dispose();
     for (const stop of this.stops) stop.dispose();
     this.scene.environment?.dispose();
     for (const mesh of this.meshes) {

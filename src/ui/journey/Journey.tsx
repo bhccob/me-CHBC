@@ -16,6 +16,7 @@ import { startLoop } from '~/journey/loop';
 import { lightWaiting, playBang } from '~/journey/bang';
 import { canHold, driftAngles, endWordsAt, ORBIT_PITCH, ORBIT_YAW, touchPlan } from '~/journey/end';
 import { Sound } from '~/journey/sound/music';
+import { headT } from '~/journey/head/time';
 import { type ChapterId, trackHeightPx, scrollFromFrame } from '~/journey/timeline';
 import { applyLayer, applySheet, wordClip } from './applyLayers';
 import { type BandKind, paintBand } from './bands';
@@ -41,6 +42,12 @@ import { Story, updateStory } from './Story';
 
 // three.js and R3F load after hydration, in their own chunk; the prerendered page holds the words alone.
 const JourneyCanvas = lazy(() => import('./JourneyCanvas'));
+
+/**
+ * The old end page, its hint and its flash, from before Bob's head took the void's place: off, so they never show over the
+ * head. Their code goes with the scan report that replaces them (Into my head plan, Tasks 11 and 12).
+ */
+const OLD_END = false;
 
 /** The home page's journey: live where it can run, calm where it should not, and never a blank page. */
 export function Journey(): JSX.Element {
@@ -197,12 +204,12 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet, sheetWords[n], wordClip(layers.sheets[n + 1])));
         applyLayer(stack, { opacity: layers.stack });
         applyLayer(portal, { opacity: layers.portal });
-        applyLayer(flash, { opacity: layers.flash });
-        applyLayer(hint, { opacity: layers.hint });
+        applyLayer(flash, { opacity: OLD_END ? layers.flash : 0 });
+        applyLayer(hint, { opacity: OLD_END ? layers.hint : 0 });
         const end = endWordsAt(f, timeline.shift);
         // Its opacity alone: hidden, its links could not be reached by a keyboard.
         // And only once its stage has come: till then the page stays dark.
-        const endCame = canvas.current?.stageReady('end') ?? false;
+        const endCame = OLD_END && (canvas.current?.stageReady('end') ?? false);
         if (endPage) endPage.style.opacity = endCame ? String(end.page) : '0';
         if (end.rise !== risen) {
           risen = end.rise;
@@ -230,12 +237,11 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         }
         // While a project is open over it, the world waits.
         const paused = openedProject() !== null;
-        const state = paused ? null : canvas.current?.frame(f, dt, now);
+        const state = paused ? null : canvas.current?.frame(f, dt, now, headT(f, timeline));
         if (state) showProject(state.flight.project, state.flight.link, state.hover);
         // On a phone the questions' words are type on the page, where the 3D says; only while the 3D holds the page.
-        updateQaWords(qaWords, state?.opaque ? state.flight.words : null, innerWidth);
-        if (state && state.fired > 0 && endToy) endToy.style.opacity = '0';
-        else if (paused) cool();
+        updateQaWords(qaWords, null, innerWidth);
+        if (paused) cool();
         tags.forEach((tag) => applyLayer(tag, { opacity: state ? layers.stack : 0 }));
         let tagsOnRail = false;
         if (state && layers.stack > 0.002) {
@@ -287,7 +293,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         return;
       }
       // The light, waiting: a click lets it go.
-      if (shown !== null && lightWaiting(shown, timeline.shift) && !target?.closest?.('a, button')) {
+      if (OLD_END && shown !== null && lightWaiting(shown, timeline.shift) && !target?.closest?.('a, button')) {
         playBang(timeline);
         return;
       }
