@@ -22,6 +22,10 @@ describe('the dark purple ground (Bob, 2026-11-08)', () => {
     for (const name of ['ink-dim', 'dim']) expect(ratio(token(name), token('night'))).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("tints a phone's browser bar the same, so no seam shows at the top", () => {
+    expect(readFileSync('src/app/root.tsx', 'utf8')).toContain(`<meta name="theme-color" content="${GROUND}" />`);
+  });
+
   it('leaves no stray near-black ground in the styles or the page code', () => {
     const files = [...readdirSync('src/styles').map((f) => join('src/styles', f)), 'src/ui/journey/paper.ts'];
     for (const file of files) expect(readFileSync(file, 'utf8').toLowerCase(), file).not.toContain('#07060b');
