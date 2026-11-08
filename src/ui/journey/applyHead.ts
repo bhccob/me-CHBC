@@ -166,7 +166,8 @@ export function applyHead(els: HeadEls, t: number, anchors: HeadAnchors | null, 
     const at = `translateY(${(y - top).toFixed(1)}px)`;
     put(els.rulerMark, 'transform', at);
     put(els.rulerText, 'transform', `${at} translateY(-50%)`);
-    const mark = across ? Math.min(1, anchors.scan.on * 1.5) : 0;
+    // The slice gives way to the heading, which stands over the ruler's side while things pour in.
+    const mark = across ? Math.min(1, anchors.scan.on * 1.5) * (1 - headingOpacity(t)) : 0;
     fade(els.rulerMark, mark);
     fade(els.rulerText, mark);
     text(els.rulerText, words.head.ruler.replace('{n}', String(sliceNumber(anchors.scan.head))));
