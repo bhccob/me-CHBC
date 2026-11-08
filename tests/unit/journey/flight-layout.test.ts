@@ -43,7 +43,8 @@ describe('the flight, from the project data', () => {
     expect(tl.shift).toBeLessThan(0);
     expect(tl.flight[0]).toBe(350);
     expect(tl.flight[1]).toBe(566 + tl.shift);
-    expect(tl.last).toBe(934 + tl.shift);
+    expect(tl.last).toBe(1496 + tl.shift);
+    expect(tl.head).toEqual([566 + tl.shift, 1496 + tl.shift]);
   });
 });
 
@@ -107,7 +108,7 @@ describe('a project added to the data alone', () => {
 
   it('keeps the timeline it has with the mock-up\'s four', () => {
     const tl = timelineFor(mock);
-    expect([tl.shift, tl.last, tl.flight]).toEqual([0, 934, [350, 566]]);
+    expect([tl.shift, tl.last, tl.flight]).toEqual([0, 1496, [350, 566]]);
   });
 });
 

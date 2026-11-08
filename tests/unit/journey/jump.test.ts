@@ -7,7 +7,8 @@ const tl = buildTimeline();
 describe('where a hash goes', () => {
   it('knows the two chapters a link may name', () => {
     expect(frameForHash('#projects', tl)).toBe(392);
-    expect(frameForHash('#contact', tl)).toBe(934);
+    // The finished scan report (spec 2026-11-08 5.12).
+    expect(frameForHash('#contact', tl)).toBe(1496);
   });
 
   it('knows a project by its stop', () => {
@@ -23,7 +24,7 @@ describe('where a hash goes', () => {
 
 describe('the chapters', () => {
   it('lands each on its frame', () => {
-    expect([frameOfChapter('who', tl), frameOfChapter('stack', tl), frameOfChapter('qa', tl), frameOfChapter('contact', tl)]).toEqual([0, 302, 668, 934]);
+    expect([frameOfChapter('who', tl), frameOfChapter('stack', tl), frameOfChapter('qa', tl), frameOfChapter('contact', tl)]).toEqual([0, 302, 977, 1496]);
   });
 
   it('the first view is the very top, not the end of its hold', () => {
@@ -42,8 +43,9 @@ describe('the chapters', () => {
 });
 
 describe('the rail', () => {
-  it('fades in after the first view and out at the collapse', () => {
-    expect([railOpacity(0, tl), railOpacity(22, tl), railOpacity(859, tl), railOpacity(870, tl)]).toEqual([0, 1, 1, 0]);
+  it('fades in after the first view and out at the spit, where Contact starts', () => {
+    const contact = tl.chapters.at(-1)!.from;
+    expect([railOpacity(0, tl), railOpacity(22, tl), railOpacity(contact + 1, tl), railOpacity(contact + 12, tl)]).toEqual([0, 1, 1, 0]);
   });
 
   it('keeps only its current word while the machine stands up under it', () => {
@@ -51,7 +53,8 @@ describe('the rail', () => {
   });
 
   it('fades out later when the flight is longer', () => {
-    expect(railOpacity(870, buildTimeline(216))).toBe(1);
+    const contact = tl.chapters.at(-1)!.from;
+    expect(railOpacity(contact + 12, buildTimeline(216))).toBe(1);
   });
 });
 

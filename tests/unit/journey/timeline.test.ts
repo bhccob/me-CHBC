@@ -1,29 +1,34 @@
 import { describe, expect, it } from 'vitest';
 import { band, backOut, catmullRom, clamp, ease, ez, mix, ramp, seeded } from '~/journey/math';
-import { buildTimeline, chapterAt, frameFromScroll, HOLD, QA_PACE, SCROLL_PX_PER_FRAME, scrollFromFrame, SMOOTH_S, smoothFrame, STUDIES_PACE, trackHeightPx } from '~/journey/timeline';
+import { dwellT } from '~/journey/head/thoughts';
+import { headT, SPIT_T } from '~/journey/head/time';
+import { buildTimeline, chapterAt, frameFromScroll, HOLD, SCROLL_PX_PER_FRAME, scrollFromFrame, SMOOTH_S, smoothFrame, STUDIES_PACE, trackHeightPx } from '~/journey/timeline';
 
-describe('the timeline, as spec section 4 has it', () => {
+describe('the timeline, as spec section 4 has it, with the head after the flight (spec 2026-11-08)', () => {
   const tl = buildTimeline();
 
   it('holds the journey in frames', () => {
-    expect([tl.last, tl.shift, tl.flight, tl.void, tl.dissolve, tl.collapse, tl.bang, tl.settled]).toEqual([934, 0, [350, 566], [566, 888], [630, 690], [858, 880], [880, 928], 934]);
+    expect([tl.last, tl.shift, tl.flight, tl.head, tl.settled]).toEqual([1496, 0, [350, 566], [566, 1496], 1496]);
     expect(tl.reads).toEqual([399, 448, 493, 537]);
-    expect(tl.lookBack).toBe(642);
-    expect(tl.qaReads).toEqual([707, 736, 765, 795, 824, 853]);
   });
 
   it('names the nine chapters, where each starts and where its link lands', () => {
     expect(tl.chapters.map((c) => c.id)).toEqual(['who', 'software', 'games', 'security', 'mechatronics', 'stack', 'projects', 'qa', 'contact']);
-    expect(tl.chapters.map((c) => c.from)).toEqual([0, 46, 102, 154, 206, 278, 340, 640, 856]);
-    expect(tl.chapters.map((c) => c.jump)).toEqual([0, 72, 124, 188, 250, 302, 392, 668, 934]);
-    expect([chapterAt(45, tl), chapterAt(46, tl), chapterAt(339, tl), chapterAt(340, tl), chapterAt(856, tl)]).toEqual(['who', 'software', 'stack', 'projects', 'contact']);
+    expect(tl.chapters.slice(0, 7).map((c) => c.from)).toEqual([0, 46, 102, 154, 206, 278, 340]);
+    expect(tl.chapters.slice(0, 7).map((c) => c.jump)).toEqual([0, 72, 124, 188, 250, 302, 392]);
+    const [qa, contact] = tl.chapters.slice(7);
+    expect(qa.from).toBe(566);
+    expect(headT(qa.jump, tl)).toBeCloseTo(dwellT(0), 2);
+    expect(headT(contact.from, tl)).toBeCloseTo(SPIT_T, 2);
+    expect(contact.jump).toBe(1496);
+    expect([chapterAt(45, tl), chapterAt(46, tl), chapterAt(339, tl), chapterAt(340, tl), chapterAt(contact.from, tl)]).toEqual(['who', 'software', 'stack', 'projects', 'contact']);
   });
 
   it('pushes everything after the flight along by 1.2 frames per unit of a longer flight', () => {
     const longer = buildTimeline(216);
-    expect([longer.shift, longer.flight[1], longer.last, longer.qaReads[0], longer.lookBack]).toEqual([43, 609, 977, 750, 685]);
-    expect(longer.chapters.map((c) => c.from)).toEqual([0, 46, 102, 154, 206, 278, 340, 683, 899]);
-    expect(longer.chapters.at(-1)?.jump).toBe(977);
+    expect([longer.shift, longer.flight[1], longer.last, longer.head]).toEqual([43, 609, 1539, [609, 1539]]);
+    expect(longer.chapters.at(7)?.from).toBe(609);
+    expect(longer.chapters.at(-1)?.jump).toBe(1539);
     expect(longer.reads).toEqual([399, 448, 493, 537]);
   });
 
@@ -39,7 +44,7 @@ describe('scroll to frame', () => {
     expect(HOLD).toBe(0.035);
     expect(frameFromScroll(0, 1000, tl)).toBe(0);
     expect(frameFromScroll(35, 1000, tl)).toBeCloseTo(0, 6);
-    expect(frameFromScroll(1000, 1000, tl)).toBe(934);
+    expect(frameFromScroll(1000, 1000, tl)).toBe(1496);
   });
 
   it('goes there and back', () => {
@@ -49,8 +54,8 @@ describe('scroll to frame', () => {
 
   it('never leaves the journey', () => {
     expect(frameFromScroll(-50, 1000, tl)).toBe(0);
-    expect(frameFromScroll(2000, 1000, tl)).toBe(934);
-    expect(frameFromScroll(10, 0, tl)).toBe(934);
+    expect(frameFromScroll(2000, 1000, tl)).toBe(1496);
+    expect(frameFromScroll(10, 0, tl)).toBe(1496);
   });
 
   it('eases toward the scroll over about 0.13 s, whatever the frame rate', () => {
@@ -62,9 +67,9 @@ describe('scroll to frame', () => {
 
   it('sizes the track from the frames, so a resize keeps the frame', () => {
     expect(SCROLL_PX_PER_FRAME).toBe(30.6);
-    // The sheets' 234 frames take 1.4 times the scroll, and the questions' 168 frames twice.
-    expect(trackHeightPx(tl)).toBeCloseTo((934 + 0.4 * 234 + 168) * 30.6, 3);
-    expect(trackHeightPx(buildTimeline(216))).toBeCloseTo((977 + 0.4 * 234 + 168) * 30.6, 3);
+    // The sheets' 234 frames take 1.4 times the scroll; the head paces itself (head/time.ts).
+    expect(trackHeightPx(tl)).toBeCloseTo((1496 + 0.4 * 234) * 30.6, 3);
+    expect(trackHeightPx(buildTimeline(216))).toBeCloseTo((1539 + 0.4 * 234) * 30.6, 3);
   });
 });
 
@@ -74,14 +79,14 @@ describe('the sheets take the scroll a little slower (Bob, 2026-11-07: "slightly
   const scrollFor = (from: number, to: number, timeline = tl) => scrollFromFrame(to, max, timeline) - scrollFromFrame(from, max, timeline);
   const plain = () => scrollFor(300, 301);
 
-  it('runs from the first sheet to the stack, 1.4 times over, ahead of the questions', () => {
+  it('runs from the first sheet to the stack, 1.4 times over', () => {
     expect(STUDIES_PACE).toBe(1.4);
-    expect(tl.paces).toEqual([{ from: 44, to: 278, times: 1.4 }, { from: 690, to: 858, times: 2 }]);
+    expect(tl.paces).toEqual([{ from: 44, to: 278, times: 1.4 }]);
   });
 
   it('stays where it is when more or fewer projects make the flight longer or shorter', () => {
     expect(buildTimeline(216).paces[0]).toEqual({ from: 44, to: 278, times: 1.4 });
-    expect(buildTimeline(180, [399, 448], 127).paces).toEqual([{ from: 44, to: 278, times: 1.4 }, { from: 601, to: 769, times: 2 }]);
+    expect(buildTimeline(180, [399, 448], 127).paces).toEqual([{ from: 44, to: 278, times: 1.4 }]);
   });
 
   it('gives a frame of the sheets 1.4 times the scroll of a plain one, and the frames either side none extra', () => {
@@ -100,36 +105,6 @@ describe('the sheets take the scroll a little slower (Bob, 2026-11-07: "slightly
     for (const f of [0, 20, 44, 45.5, 150, 278, 300, 690, 777.5, 858, 934]) {
       expect(frameFromScroll(scrollFromFrame(f, max, tl), max, tl)).toBeCloseTo(f, 6);
     }
-  });
-});
-
-describe('the questions take the scroll slower (Bob, 2026-11-07: "the Q&A scrolling is too fast")', () => {
-  const tl = buildTimeline();
-  const max = 10_000;
-  const scrollFor = (from: number, to: number, timeline = tl) => scrollFromFrame(to, max, timeline) - scrollFromFrame(from, max, timeline);
-
-  it('runs from the end of the break to the collapse, twice over', () => {
-    expect(QA_PACE).toBe(2);
-    expect(tl.paces[1]).toEqual({ from: 690, to: 858, times: 2 });
-    expect(buildTimeline(216).paces[1]).toEqual({ from: 733, to: 901, times: 2 });
-  });
-
-  it('gives a frame of the questions twice the scroll of any other frame', () => {
-    expect(scrollFor(720, 721)).toBeCloseTo(2 * scrollFor(300, 301), 6);
-    expect(scrollFor(870, 871)).toBeCloseTo(scrollFor(300, 301), 6);
-  });
-
-  it('gives each question about 1800 px of scroll, where it had about 900', () => {
-    const page = trackHeightPx(tl) / (1 - HOLD);
-    const perQuestion = scrollFromFrame(736, page, tl) - scrollFromFrame(707, page, tl);
-    expect(perQuestion).toBeCloseTo(29 * 2 * SCROLL_PX_PER_FRAME, 0);
-  });
-
-  it('still goes there and back, inside the questions and past them', () => {
-    for (const f of [0, 300, 690, 700, 777.5, 858, 900, 934]) {
-      expect(frameFromScroll(scrollFromFrame(f, max, tl), max, tl)).toBeCloseTo(f, 6);
-    }
-    expect(frameFromScroll(max, max, tl)).toBe(934);
   });
 });
 

@@ -1,3 +1,5 @@
+import { dwellT } from './head/thoughts';
+import { HEAD_FRAMES, headFrameIn, SPIT_T } from './head/time';
 import { ramp } from './math';
 
 /**
@@ -15,15 +17,9 @@ export const SMOOTH_S = 0.13;
 export const SCROLL_PX_PER_FRAME = 30.6;
 
 /**
- * How many times the scroll a frame of the questions takes: a phone's swipe carried past a question or two before (Bob,
- * 2026-11-07: "the Q&A scrolling is too fast"). Every frame plays as before; only the scroll between them is longer.
- */
-export const QA_PACE = 2;
-
-/**
  * How many times the scroll a frame of the four field sheets takes, Software Engineering to Mechatronics (Bob, 2026-11-07:
- * "scrolling through the studies make it slightly slower so it feels more premium"). As with the questions, every frame
- * plays as before.
+ * "scrolling through the studies make it slightly slower so it feels more premium"). Every frame plays as before; only the
+ * scroll between them is longer. The head journey paces itself (head/time.ts).
  */
 export const STUDIES_PACE = 1.4;
 
@@ -60,6 +56,9 @@ export interface Timeline {
   flight: [number, number];
   /** The frame each project is read at, oldest first. */
   reads: number[];
+  /** The head journey, from the flight's end: the X-ray scan to the scan report (spec 2026-11-08 "Into my head"). */
+  head: [number, number];
+  /** @deprecated The old void and end page, until their code goes (Into my head plan, Task 12). */
   void: [number, number];
   dissolve: [number, number];
   lookBack: number;
@@ -68,7 +67,7 @@ export interface Timeline {
   bang: [number, number];
   settled: number;
   chapters: readonly Chapter[];
-  /** The stretches the scroll takes slower, in frames, in order and apart: the sheets, then the questions. */
+  /** The stretches the scroll takes slower, in frames, in order and apart: the sheets. */
   paces: readonly Pace[];
 }
 
@@ -76,12 +75,14 @@ export interface Timeline {
 export function buildTimeline(flightEnd = BASE_FLIGHT_END, reads: readonly number[] = [399, 448, 493, 537], flightFrames?: number): Timeline {
   // The flight's own frame count when its layout gives one (`flightFrames` in flight/layout.ts), else as far as it goes.
   const shift = flightFrames === undefined ? Math.round((flightEnd - BASE_FLIGHT_END) * FRAMES_PER_UNIT) : flightFrames - BASE_FLIGHT_FRAMES;
-  const last = 934 + shift;
+  const head: [number, number] = [566 + shift, 566 + shift + HEAD_FRAMES];
+  const last = head[1];
   return {
     last,
     shift,
     flight: [350, 566 + shift],
     reads: [...reads],
+    head,
     void: [566 + shift, 888 + shift],
     dissolve: [630 + shift, 690 + shift],
     lookBack: 642 + shift,
@@ -97,14 +98,13 @@ export function buildTimeline(flightEnd = BASE_FLIGHT_END, reads: readonly numbe
       { id: 'mechatronics', from: 206, jump: 250 },
       { id: 'stack', from: 278, jump: 302 },
       { id: 'projects', from: 340, jump: 392 },
-      { id: 'qa', from: 640 + shift, jump: 668 + shift },
-      { id: 'contact', from: 856 + shift, jump: last },
+      // Q&A from the shaft over his head to the spit, its link on the first answer; Contact from the spit.
+      { id: 'qa', from: head[0], jump: Math.round(headFrameIn(dwellT(0), head)) },
+      { id: 'contact', from: Math.round(headFrameIn(SPIT_T, head)), jump: last },
     ],
     paces: [
       // The four field sheets, which a longer flight does not move.
       { from: STUDIES[0], to: STUDIES[1], times: STUDIES_PACE },
-      // The questions, from the end of the break to the collapse.
-      { from: 690 + shift, to: 858 + shift, times: QA_PACE },
     ],
   };
 }

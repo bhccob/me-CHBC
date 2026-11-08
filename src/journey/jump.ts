@@ -27,9 +27,9 @@ export function glideTo(f: number, tl: Timeline, reduce: boolean, win: ScrollWin
   win.scrollTo({ top: f <= 0 ? 0 : scrollFromFrame(f, max, tl), behavior: reduce ? 'auto' : 'smooth' });
 }
 
-/** The rail: in after the first view, out at the collapse. */
+/** The rail: in after the first view, out at the spit, where Contact starts. */
 export function railOpacity(f: number, tl: Timeline): number {
-  const out = tl.collapse[0] + 2;
+  const out = (tl.chapters.at(-1)?.from ?? tl.last) + 2;
   return ease(f, 8, 22) * (1 - ease(f, out, out + 10));
 }
 
