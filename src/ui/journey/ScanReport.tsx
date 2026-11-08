@@ -10,9 +10,10 @@ import { reportDate } from './applyHead';
  * The end of the journey: the scan report, printed by the scan line the spark opens into, over a soft big bang (spec
  * 2026-11-08 "Into my head", section 5.11; mock-up 20's ending 12). What the scan found, with his heritage, then "Let's
  * talk." and the ways to reach him: GitHub, Instagram and Send a message (Bob: no Email, "send a message is the same").
- * The page prints and shows it each frame (applyHead.ts).
+ * The page prints and shows it each frame (applyHead.ts); `printed` stands it finished on the calm page, every row shown and
+ * no scan line.
  */
-export function ScanReport(): JSX.Element {
+export function ScanReport({ printed = false }: { printed?: boolean }): JSX.Element {
   const i18n = useTranslator();
   const { t, locale } = i18n;
   const words = t.journey.head.report;
@@ -32,7 +33,7 @@ export function ScanReport(): JSX.Element {
     [words.stillMissing, <i key="missing">{words.stillMissingValue}</i>],
   ];
   return (
-    <section id="j-end" className="j-report" aria-labelledby="j-end-word">
+    <section id="j-end" className={printed ? 'j-report is-printed' : 'j-report'} aria-labelledby="j-end-word">
       <div className="j-report-panel">
         <div className="j-report-frame" aria-hidden="true" />
         <p className="j-report-row j-report-head">
@@ -72,7 +73,7 @@ export function ScanReport(): JSX.Element {
             </Link>
           </nav>
         </div>
-        <div className="j-report-band" aria-hidden="true" />
+        {printed ? null : <div className="j-report-band" aria-hidden="true" />}
       </div>
       <p className="j-report-bar">
         <span suppressHydrationWarning>

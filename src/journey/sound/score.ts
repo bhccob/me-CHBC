@@ -1,9 +1,9 @@
 import { clamp, ramp } from '../math';
 
 /**
- * What plays where on the scroll, as Bob approved it by ear on 2026-11-06: no music before the ending, the sounds of the
- * machine, the portal's one rush, and the way into Let's talk. Frames after the flight move along by `shift` when more
- * projects make it longer. Pure: no audio.
+ * What plays where on the scroll, as Bob approved it by ear on 2026-11-06: no music, the sounds of the machine and the
+ * portal's one rush. Past the flight, Bob's head has its own sounds on its own clock (head/cues.ts). Frames after the flight
+ * move along by `shift` when more projects make it longer. Pure: no audio.
  */
 
 /** Hits and runs are skipped at this many frames a second or more: a long jump plays nothing. */
@@ -17,8 +17,7 @@ export type HitName =
   | 'wake' | 'code-drop' | 'code-on' | 'code-land' | 'pad-drop' | 'pad-land' | 'pad-a' | 'pad-b'
   | 'armour-move' | 'wall-1' | 'lid-move' | 'wall-2' | 'wall-3' | 'wall-4' | 'lid-seat' | 'lock'
   | 'ring-spin' | 'legs-slide' | 'ring-seat' | 'drive-1' | 'drive-2' | 'drive-3' | 'legs-seat' | 'stand-up' | 'stands'
-  | 'stack-open' | 'stack-stop' | 'stack-1' | 'stack-2' | 'stack-3' | 'stack-4' | 'shield-off' | 'iris-open'
-  | 'break' | 'break-end' | 'qa-word' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'q6';
+  | 'stack-open' | 'stack-stop' | 'stack-1' | 'stack-2' | 'stack-3' | 'stack-4' | 'shield-off' | 'iris-open';
 
 export const HITS: readonly (readonly [number, HitName])[] = [
   [8, 'wake'],
@@ -28,16 +27,13 @@ export const HITS: readonly (readonly [number, HitName])[] = [
   [208, 'ring-spin'], [212, 'legs-slide'], [220, 'ring-seat'], [224, 'drive-1'], [226, 'drive-2'], [228, 'drive-3'], [236, 'legs-seat'], [240, 'stand-up'], [262, 'stands'],
   [278, 'stack-open'], [296, 'stack-stop'], [318, 'stack-1'], [321, 'stack-2'], [324, 'stack-3'], [326, 'stack-4'],
   [333, 'shield-off'], [356, 'iris-open'],
-  [630, 'break'], [668, 'qa-word'], [688, 'break-end'], [701, 'q1'], [730, 'q2'], [759, 'q3'], [789, 'q4'], [818, 'q5'], [847, 'q6'],
 ];
 
-export type RunName = 'typing' | 'iris-teeth' | 'wires' | 'gears';
+export type RunName = 'typing' | 'iris-teeth';
 
 export const RUNS: readonly { a: number; b: number; every: number; name: RunName }[] = [
   { a: 72, b: 96, every: 1.5, name: 'typing' },
   { a: 338, b: 356, every: 1.1, name: 'iris-teeth' },
-  { a: 630, b: 690, every: 1.1, name: 'wires' },
-  { a: 692, b: 858, every: 1.7, name: 'gears' },
 ];
 
 /** Where parts are moving, so the motor runs only then and only while the visitor scrolls. */
@@ -65,15 +61,6 @@ export function dueRuns(prev: number, f: number, framesPerSec: number, shift = 0
   return due;
 }
 
-/** The two sounds of the way into Let's talk, going forward only. */
-export function dueEnding(prev: number, f: number, shift = 0): ('fall' | 'bang')[] {
-  if (f <= prev) return [];
-  const due: ('fall' | 'bang')[] = [];
-  if (prev < 860 + shift && f >= 860 + shift) due.push('fall');
-  if (prev < 881 + shift && f >= 881 + shift) due.push('bang');
-  return due;
-}
-
 export function motorLevel(f: number): number {
   let moving = 0;
   for (const [a, b] of MOVES) moving = Math.max(moving, ramp(f, a, a + 2) * (1 - ramp(f, b - 2, b)));
@@ -84,9 +71,9 @@ export function motorOn(f: number, framesPerSec: number): boolean {
   return framesPerSec > 0 && motorLevel(f) > 0;
 }
 
-/** The machine's hum: quiet at first, fuller as it gets built, gone in the flight, then the power in the gold line. */
-export function humLevel(f: number, shift = 0): number {
-  return (0.34 + 0.66 * ramp(f, 26, 276)) * (1 - ramp(f, 340, 360)) + 0.6 * ramp(f, 600 + shift, 650 + shift) * (1 - ramp(f, 856 + shift, 880 + shift));
+/** The machine's hum: quiet at first, fuller as it gets built, gone in the flight. */
+export function humLevel(f: number): number {
+  return (0.34 + 0.66 * ramp(f, 26, 276)) * (1 - ramp(f, 340, 360));
 }
 
 /** How much of the flight's sound there is at this frame. */
@@ -97,11 +84,6 @@ export function flightLevel(f: number, shift = 0): number {
 /** The rush: the flight's one sound, following the scroll's speed, 0 to 1. */
 export function rushLevel(f: number, speed: number, shift = 0): number {
   return flightLevel(f, shift) * (0.025 + 0.085 * speed);
-}
-
-/** The quiet pad of the end page, and only there. */
-export function padLevel(f: number, shift = 0): number {
-  return 0.42 * ramp(f, 893 + shift, 926 + shift);
 }
 
 /** The sweep that rises into the iris. */
@@ -117,16 +99,4 @@ export function scrollSpeed(framesPerSec: number): number {
 /** Browsers start sound only on a click or a key: after a reload it waits for the next one, if he had sound on. */
 export function soundAfterReload(wanted: boolean, gesture: boolean): 'silent' | 'playing' {
   return wanted && gesture ? 'playing' : 'silent';
-}
-
-/** A sound of holding on the end page: which, how loud, how long in seconds. */
-export interface HoldSound {
-  name: 'whoosh';
-  level: number;
-  seconds: number;
-}
-
-/** What holding and letting go on the end page play: nothing while held, and on letting go only the soft whoosh. */
-export function holdSounds(on: boolean, wasHolding: boolean): readonly HoldSound[] {
-  return !on && wasHolding ? [{ name: 'whoosh', level: 0.05, seconds: 1.6 }] : [];
 }

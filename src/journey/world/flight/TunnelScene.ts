@@ -417,11 +417,6 @@ export class TunnelScene {
     this.pointerAt.set(x, y);
   }
 
-  /** Where the view turns to with no pointer on the page: the stars are left as they are. */
-  drift(x: number, y: number): void {
-    this.aim.set(x, y);
-  }
-
   /** `t` is the head's own time (head/time.ts), past the flight; the page works it out, with the ending's own clock. */
   update(f: number, dt: number, now: number, t: number): void {
     const { layout, projects, timeline, reduce } = this.input;

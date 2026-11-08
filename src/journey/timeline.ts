@@ -58,13 +58,7 @@ export interface Timeline {
   reads: number[];
   /** The head journey, from the flight's end: the X-ray scan to the scan report (spec 2026-11-08 "Into my head"). */
   head: [number, number];
-  /** @deprecated The old void and end page, until their code goes (Into my head plan, Task 12). */
-  void: [number, number];
-  dissolve: [number, number];
-  lookBack: number;
-  qaReads: number[];
-  collapse: [number, number];
-  bang: [number, number];
+  /** Where everything has come to rest: the end. */
   settled: number;
   chapters: readonly Chapter[];
   /** The stretches the scroll takes slower, in frames, in order and apart: the sheets. */
@@ -83,12 +77,6 @@ export function buildTimeline(flightEnd = BASE_FLIGHT_END, reads: readonly numbe
     flight: [350, 566 + shift],
     reads: [...reads],
     head,
-    void: [566 + shift, 888 + shift],
-    dissolve: [630 + shift, 690 + shift],
-    lookBack: 642 + shift,
-    qaReads: [707, 736, 765, 795, 824, 853].map((f) => f + shift),
-    collapse: [858 + shift, 880 + shift],
-    bang: [880 + shift, 928 + shift],
     settled: last,
     chapters: [
       { id: 'who', from: 0, jump: 0 },

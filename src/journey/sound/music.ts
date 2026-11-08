@@ -1,14 +1,16 @@
 import { tabStore } from '~/app/tabStore';
-import { clamp, ramp, seeded } from '../math';
+import { dueCues, printCues } from '../head/cues';
+import { clamp, ramp } from '../math';
 import { type Audio, audioLevel, currentAudio, startAudio } from './engine';
-import { bell, burst, fall, gong, hello, HIT_SOUNDS, RUN_SOUNDS, snap, thump } from './effects';
-import { dueEnding, dueHits, dueRuns, flightLevel, holdSounds, humLevel, motorLevel, padLevel, risingSweep, scrollSpeed } from './score';
+import { hello, HIT_SOUNDS, RUN_SOUNDS } from './effects';
+import { playHeadCue, pourTick, pourTickChance, rumbleLevel, setRumble, stopRumble } from './headEffects';
+import { dueHits, dueRuns, flightLevel, humLevel, motorLevel, risingSweep, scrollSpeed } from './score';
 
-/** The chords under the end page: D minor, B flat, F, C, in MIDI notes; and the few high notes over them. */
-const CHORDS = [[38, 50, 53, 57], [34, 50, 53, 58], [41, 48, 53, 57], [36, 48, 52, 55]] as const;
-const HIGH_NOTES = [62, 65, 67, 69, 72, 74, 77, 79, 81, 84] as const;
-const EIGHTH = 60 / 66 / 2;
 const WANTED_KEY = 'journey-sound';
+/** A step of the head's `t` this large in one frame is a jump: it plays nothing, rather than every cue at once. */
+const T_JUMP = 0.05;
+/** Scrolled this fast, frames a second, it is a jump too (as the machine's hits read it). */
+const JUMP_FRAMES_PER_SECOND = 170;
 /** The master level while the sound is on. */
 const LEVEL = 0.8;
 /**
@@ -16,7 +18,6 @@ const LEVEL = 0.8;
  * way up (pointerup, touchend), not on its way down, so pointerdown alone never woke a phone.
  */
 const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'] as const;
-const midi = (note: number): number => 440 * Math.pow(2, (note - 69) / 12);
 
 /** The switch as he left it in this tab; storage a browser has blocked reads as off and writes nothing. */
 function wanted(storage: Pick<Storage, 'getItem'>): boolean {
@@ -36,8 +37,6 @@ const pageHidden = (): boolean => typeof document !== 'undefined' && document.hi
 type NoiseVoice = { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode };
 
 interface Voices {
-  padGain: GainNode;
-  pad: { osc: OscillatorNode }[];
   humGain: GainNode;
   humFilter: BiquadFilterNode;
   hum: OscillatorNode[];
@@ -54,19 +53,17 @@ class Music {
   on = false;
   readonly counts: Record<string, number> = {};
   private voices: Voices | null = null;
-  private timer = 0;
-  private nextNote = 0;
-  private note = 0;
   private f = 0;
+  /** The head's own time, as last heard. */
+  private t = 0;
   private speed = 0;
   private sp = 0;
-  private breakNow = 0;
-  private endLevel = 0;
   private startedAt = 0;
   private shift = 0;
   private landed = false;
-  private holding = false;
-  private readonly random = seeded(424242);
+  /** The scan report's rows, as the page measured them, and which is the title's. */
+  private rowTops: readonly number[] = [];
+  private titleRow = -1;
   private readonly listeners = new Set<() => void>();
   /** Takes away the listeners that wait for a tap to wake the sound; null while none wait. */
   private unarm: (() => void) | null = null;
@@ -82,6 +79,12 @@ class Music {
 
   setShift(shift: number): void {
     this.shift = shift;
+  }
+
+  /** The scan report's rows, each top a share of its height, and the title's row: the line ticks as it prints each. */
+  setReportRows(rowTops: readonly number[], titleRow: number): void {
+    this.rowTops = rowTops;
+    this.titleRow = titleRow;
   }
 
   /** The door: sound on or off, from his click or key. It starts playing once the page has risen. */
@@ -222,25 +225,6 @@ class Music {
     if (!a || this.voices) return;
     const { ctx } = a;
     this.startedAt = ctx.currentTime;
-    const padGain = ctx.createGain();
-    padGain.gain.value = 0;
-    padGain.connect(a.bus);
-    const pad = ([[38, 0.085, 'sine', 0], [50, 0.04, 'triangle', 520], [53, 0.036, 'triangle', 520], [57, 0.032, 'triangle', 520]] as const).map(([note, level, type, cut]) => {
-      const osc = ctx.createOscillator(), g = ctx.createGain();
-      osc.type = type;
-      osc.frequency.value = midi(note);
-      g.gain.value = level;
-      if (cut) {
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = cut;
-        osc.connect(filter);
-        filter.connect(g);
-      } else osc.connect(g);
-      g.connect(padGain);
-      osc.start();
-      return { osc };
-    });
     // The machine's own hum: one steady electrical note, not a chord.
     const humGain = ctx.createGain();
     humGain.gain.value = 0;
@@ -272,8 +256,6 @@ class Music {
     motorGain.connect(a.fx);
     motorOsc.start();
     this.voices = {
-      padGain,
-      pad,
       humGain,
       humFilter,
       hum,
@@ -284,89 +266,72 @@ class Music {
       low: this.noiseVoice(a, 'lowpass', 170, 0.3),
       riser: this.noiseVoice(a, 'bandpass', 300, 1.6),
     };
-    this.nextNote = ctx.currentTime + 0.1;
-    this.note = 0;
-    this.timer = window.setInterval(() => this.pump(a), 60);
     hello(a);
   }
 
   private stopVoices(): void {
     const a = currentAudio();
     if (!a || !this.voices) return;
-    clearInterval(this.timer);
     const t = a.ctx.currentTime, v = this.voices;
-    v.padGain.gain.setTargetAtTime(0, t, 0.35);
+    stopRumble(a);
     v.humGain.gain.setTargetAtTime(0, t, 0.25);
     v.motorGain.gain.setTargetAtTime(0, t, 0.1);
     for (const noise of [v.wind, v.low, v.riser]) {
       noise.gain.gain.setTargetAtTime(0, t, 0.2);
       noise.source.stop(t + 1.6);
     }
-    for (const { osc } of v.pad) osc.stop(t + 2.2);
     for (const osc of v.hum) osc.stop(t + 1.6);
     v.motorOsc.stop(t + 1);
     this.voices = null;
   }
 
-  private pump(a: Audio): void {
-    if (!this.voices) return;
-    // A timer held back (a background tab runs it once a second) plays the notes from now, not every one it missed.
-    if (this.nextNote < a.ctx.currentTime) this.nextNote = a.ctx.currentTime + 0.05;
-    while (this.nextNote < a.ctx.currentTime + 0.18) {
-      const step = this.note, t = this.nextNote;
-      if (step % 16 === 0) {
-        const chord = CHORDS[Math.floor(step / 16) % 4];
-        this.voices.pad.forEach(({ osc }, i) => osc.frequency.setTargetAtTime(midi(chord[i]), t, 0.5));
-      }
-      if (this.endLevel > 0.03 && step % 12 === 0 && this.random() > 0.5) bell(a, midi(HIGH_NOTES[Math.floor(this.random() * HIGH_NOTES.length)] + 12), 0.024 * this.endLevel, { at: t, duration: 5, attack: 0.04 });
-      this.nextNote += EIGHTH;
-      this.note++;
-    }
-    // Between the wires' snaps, the sparks keep crackling by themselves.
-    if (this.breakNow > 0.02 && this.random() < this.breakNow * (0.22 + 0.5 * this.sp)) snap(a, 0.3 + 0.35 * this.random());
-  }
-
-  /** The sound at frame `f`, `dt` seconds on. */
-  frame(f: number, dt: number): void {
-    const prev = this.f;
+  /**
+   * The sound at frame `f`, `dt` seconds on, with the head at its own time `t`: the machine's and the flight's by the scroll,
+   * the head's by `t`, so the ending's sounds keep in step with its picture.
+   */
+  frame(f: number, dt: number, t = 0): void {
+    const prev = this.f, prevT = this.t;
     this.f = f;
+    this.t = t;
     this.speed += (Math.abs(f - prev) / Math.max(0.004, dt) - this.speed) * 0.08;
     const a = currentAudio();
     const v = this.voices;
     if (!a || !v) return;
-    const t = a.ctx.currentTime, fadeIn = ramp(t - this.startedAt, 0, 1.8), shift = this.shift;
+    const now = a.ctx.currentTime, fadeIn = ramp(now - this.startedAt, 0, 1.8), shift = this.shift;
     this.sp = scrollSpeed(this.speed);
-    this.endLevel = ramp(f, 905 + shift, 926 + shift);
     const flight = flightLevel(f, shift);
-    v.padGain.gain.setTargetAtTime(padLevel(f, shift), t, 0.25);
-    v.humGain.gain.setTargetAtTime(humLevel(f, shift) * 0.34 * fadeIn, t, 0.2);
-    v.humFilter.frequency.setTargetAtTime(f > 500 ? 720 : 300 + 160 * ramp(f, 26, 276), t, 0.3);
-    v.wind.gain.gain.setTargetAtTime(flight * (0.025 + 0.085 * this.sp), t, 0.12);
-    v.wind.filter.frequency.setTargetAtTime(320 + 2800 * this.sp, t, 0.12);
-    v.low.gain.gain.setTargetAtTime(flight * (0.05 + 0.1 * this.sp), t, 0.14);
-    v.riser.gain.gain.setTargetAtTime(risingSweep(f), t, 0.1);
-    v.riser.filter.frequency.setTargetAtTime(280 + ramp(f, 322, 362) * 3600, t, 0.1);
-    v.motorGain.gain.setTargetAtTime(motorLevel(f) * this.sp * 0.03, t, 0.07);
-    v.motorOsc.frequency.setTargetAtTime(90 + 300 * this.sp + f * 0.16, t, 0.08);
-    v.motorFilter.frequency.setTargetAtTime(600 + 1000 * this.sp, t, 0.1);
-    this.breakNow = ramp(f, 630 + shift, 640 + shift) * (1 - ramp(f, 680 + shift, 692 + shift));
+    v.humGain.gain.setTargetAtTime(humLevel(f) * 0.34 * fadeIn, now, 0.2);
+    v.humFilter.frequency.setTargetAtTime(f > 500 ? 720 : 300 + 160 * ramp(f, 26, 276), now, 0.3);
+    v.wind.gain.gain.setTargetAtTime(flight * (0.025 + 0.085 * this.sp), now, 0.12);
+    v.wind.filter.frequency.setTargetAtTime(320 + 2800 * this.sp, now, 0.12);
+    v.low.gain.gain.setTargetAtTime(flight * (0.05 + 0.1 * this.sp), now, 0.14);
+    v.riser.gain.gain.setTargetAtTime(risingSweep(f), now, 0.1);
+    v.riser.filter.frequency.setTargetAtTime(280 + ramp(f, 322, 362) * 3600, now, 0.1);
+    v.motorGain.gain.setTargetAtTime(motorLevel(f) * this.sp * 0.03, now, 0.07);
+    v.motorOsc.frequency.setTargetAtTime(90 + 300 * this.sp + f * 0.16, now, 0.08);
+    v.motorFilter.frequency.setTargetAtTime(600 + 1000 * this.sp, now, 0.1);
     for (const hit of dueHits(prev, f, this.speed, shift)) {
       this.counts[hit.name] = (this.counts[hit.name] ?? 0) + 1;
       HIT_SOUNDS[hit.name](a, hit.level);
     }
     for (const run of dueRuns(prev, f, this.speed, shift)) {
       this.counts[run.name] = (this.counts[run.name] ?? 0) + 1;
-      RUN_SOUNDS[run.name](a, run.level, run.at - (run.name === 'wires' ? shift : 0));
+      RUN_SOUNDS[run.name](a, run.level, run.at);
     }
-    for (const name of dueEnding(prev, f, shift)) {
-      this.counts[name] = (this.counts[name] ?? 0) + 1;
-      if (name === 'fall') fall(a);
-      else {
-        gong(a, 55, 0.26, 7);
-        burst(a, 0.1, 2.6);
-        thump(a, 0.3);
-      }
+    // His head: its cues as `t` passes them, soft ticks while things pour in, the rumble of the pressure, the report's lines.
+    setRumble(a, rumbleLevel(t));
+    const jumped = Math.abs(t - prevT) > T_JUMP || this.speed >= JUMP_FRAMES_PER_SECOND;
+    for (const { cue, n } of dueCues(prevT, t, jumped)) this.play(a, cue, n);
+    if (!jumped) for (const { cue, n } of printCues(prevT, t, this.rowTops, this.titleRow)) this.play(a, cue, n);
+    if (Math.random() < pourTickChance(t, dt)) {
+      pourTick(a);
+      this.counts.pour = (this.counts.pour ?? 0) + 1;
     }
+  }
+
+  private play(a: Audio, cue: Parameters<typeof playHeadCue>[1], n: number): void {
+    this.counts[cue] = (this.counts[cue] ?? 0) + 1;
+    playHeadCue(a, cue, n);
   }
 
   /**
@@ -389,18 +354,6 @@ class Music {
     }
     this.arm();
     void a.ctx.resume().then(() => this.woke(a), () => {});
-  }
-
-  /** Holding on the end page is quiet; letting go makes the soft whoosh, and nothing else. */
-  hold(on: boolean): void {
-    const sounds = holdSounds(on, this.holding);
-    this.holding = on;
-    const a = currentAudio();
-    if (!a || !this.voices) return;
-    for (const sound of sounds) {
-      burst(a, sound.level, sound.seconds);
-      this.counts[sound.name] = (this.counts[sound.name] ?? 0) + 1;
-    }
   }
 
   /** What the proof harness reads. */

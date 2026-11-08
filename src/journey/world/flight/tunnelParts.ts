@@ -1,7 +1,9 @@
 import { AdditiveBlending, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, type IUniform, Mesh, ShaderMaterial } from 'three';
 import { clamp, seeded, TAU } from '../../math';
-import { FLOOR } from '../void/path';
 import { frameAt, type PathFrame } from './path';
+
+/** The mirror floor under the tunnel: its reflection stands mirrored across it. */
+const FLOOR = -7;
 
 /** What every part of the tunnel reads, set once a frame. */
 export interface TunnelUniforms {

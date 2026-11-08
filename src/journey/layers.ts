@@ -1,4 +1,3 @@
-import { flashAt, hintOpacity } from './bang';
 import { band, ease, ramp } from './math';
 import type { Timeline } from './timeline';
 
@@ -99,12 +98,9 @@ export interface LayerStates {
   stack: number;
   /** The word over the opening iris. */
   portal: number;
-  /** The page's flash at the bang, and the hint beside the waiting light. */
-  flash: number;
-  hint: number;
 }
 
-export function layersAt(f: number, tl: Timeline, _tall: boolean): LayerStates {
+export function layersAt(f: number, _tl: Timeline, _tall: boolean): LayerStates {
   const heroOut = ease(f, 3, 22);
   return {
     hero: { opacity: 1 - heroOut, y: -heroOut * 40 },
@@ -117,7 +113,5 @@ export function layersAt(f: number, tl: Timeline, _tall: boolean): LayerStates {
     sheets: sheetWindows.map((_, n) => sheetAt(f, n)),
     stack: band(f, 280, 292, 312, 322),
     portal: band(f, 338, 344, 354, 360),
-    flash: flashAt(f, tl),
-    hint: hintOpacity(f, tl.shift),
   };
 }

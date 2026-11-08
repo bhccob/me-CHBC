@@ -39,14 +39,18 @@ describe("the journey's words: Bob's own, exact", () => {
     expect(en.journey.hero.cta).toBe('See my projects');
   });
 
-  it('keeps the end page', () => {
+  it('keeps the way to reach him', () => {
     expect(en.journey.end.title).toBe("Let's talk.");
-    expect(en.journey.end.kicker).toBe('End of portfolio');
-    expect(en.journey.end.promise).toBe('Every universe starts small. So does every project.');
-    expect(en.journey.end.note).toBe('If any of this gave you an idea, a project or a question, I would like to hear it.');
-    expect(en.journey.end.toy).toBe('Move to pull the stars. Hold anywhere and let go to start your own universe.');
     expect(en.journey.end.message).toBe('Send a message');
-    expect(en.journey.collapse.hint).toBe('Click the light to let it go, or keep scrolling');
+  });
+
+  // The scan report says it all (spec 2026-11-08 "Into my head", 5.11): the old end page's words go, and its Email (Bob).
+  it('drops the old end page words and Email', () => {
+    for (const dictionary of [en, nl]) {
+      for (const gone of ['kicker', 'promise', 'note', 'toy', 'email']) expect(dictionary.journey.end).not.toHaveProperty(gone);
+      expect(dictionary.journey).not.toHaveProperty('collapse');
+      expect(dictionary.journey).not.toHaveProperty('qaWord');
+    }
   });
 
   it('keeps the way in, and the stack', () => {

@@ -237,11 +237,6 @@ export class World {
     this.dirty = true;
   }
 
-  /** Where the view turns to with no pointer on the page. */
-  drift(x: number, y: number): void {
-    this.tunnel.drift(x, y);
-  }
-
   /** Where the pointer aims, -1 to 1 each way. */
   pointer(x: number, y: number): void {
     this.tunnel.pointer(x, y);

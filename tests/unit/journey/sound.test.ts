@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dueEnding, dueHits, dueRuns, HITS, holdSounds, humLevel, MOVES, motorOn, padLevel, risingSweep, rushLevel, scrollSpeed, soundAfterReload } from '~/journey/sound/score';
+import { dueHits, dueRuns, HITS, humLevel, MOVES, motorOn, risingSweep, rushLevel, scrollSpeed, soundAfterReload } from '~/journey/sound/score';
 
 describe('what plays as the scroll passes it', () => {
   it('plays a part as the scroll passes its frame', () => {
@@ -21,17 +21,16 @@ describe('what plays as the scroll passes it', () => {
     expect(dueHits(193, 195, 169)).toHaveLength(1);
   });
 
-  it('moves the frames after the flight along when the flight is longer', () => {
-    expect(dueHits(629, 631, 30).map((hit) => hit.name)).toEqual(['break']);
-    expect(dueHits(629, 631, 30, 43)).toEqual([]);
-    expect(dueHits(672, 674, 30, 43).map((hit) => hit.name)).toEqual(['break']);
+  it('keeps the machine’s parts where they are when the flight is longer', () => {
     expect(dueHits(193, 195, 30, 43).map((hit) => hit.name)).toEqual(['lid-seat']);
   });
 
   it('has the sounds of all four things he asked for', () => {
     const names = HITS.map(([, name]) => name);
-    for (const name of ['wake', 'code-land', 'pad-a', 'wall-1', 'lock', 'stand-up', 'stands', 'shield-off', 'iris-open', 'break', 'break-end', 'q1', 'q6']) expect(names).toContain(name);
+    for (const name of ['wake', 'code-land', 'pad-a', 'wall-1', 'lock', 'stand-up', 'stands', 'shield-off', 'iris-open']) expect(names).toContain(name);
     expect(dueHits(0, 934, 30).map((hit) => hit.name)).toHaveLength(HITS.length);
+    // Past the flight the scroll plays none: his head has its own sounds, on its own clock (head-sound.test.ts).
+    expect(dueHits(566, 1600, 30)).toEqual([]);
   });
 });
 
@@ -41,24 +40,22 @@ describe('the small runs that follow the scroll', () => {
     expect(dueRuns(72, 73, 30)).toEqual([]);
   });
 
-  it('snaps wires as the tunnel breaks, and ticks gears along the Q&A', () => {
-    expect(dueRuns(640, 641.2, 30).map((run) => run.name)).toEqual(['wires']);
-    expect(dueRuns(700, 702, 30).map((run) => run.name)).toEqual(['gears']);
+  it('runs nothing past the flight', () => {
+    expect(dueRuns(566, 1600, 30)).toEqual([]);
   });
 
   it('is silent on a jump', () => {
     expect(dueRuns(72, 73.6, 200)).toEqual([]);
   });
 
-  it('gives the frame it stands at, so the wires can swell', () => {
-    expect(dueRuns(640, 641.2, 30)[0].at).toBeCloseTo(641.2);
+  it('gives the frame it stands at', () => {
+    expect(dueRuns(72, 73.6, 30)[0].at).toBeCloseTo(73.6);
   });
 });
 
 describe('what runs all along', () => {
   it('has no music, chords or hum in the flight: only the rush', () => {
     expect(humLevel(450)).toBe(0);
-    expect(padLevel(450)).toBe(0);
     expect(rushLevel(450, 0.5)).toBeGreaterThan(0);
   });
 
@@ -71,16 +68,10 @@ describe('what runs all along', () => {
     expect(rushLevel(450, 1)).toBeGreaterThan(rushLevel(450, 0));
   });
 
-  it('hums while the machine is built, fuller as it grows, and again along the gold line', () => {
+  it('hums while the machine is built, fuller as it grows, and not after', () => {
     expect(humLevel(26)).toBeCloseTo(0.34);
     expect(humLevel(276)).toBeCloseTo(1);
-    expect(humLevel(720)).toBeCloseTo(0.6);
-    expect(humLevel(880)).toBe(0);
-  });
-
-  it('has no music before the ending', () => {
-    expect(padLevel(892)).toBe(0);
-    expect(padLevel(926)).toBeCloseTo(0.42);
+    expect(humLevel(720)).toBe(0);
   });
 
   it('sweeps up once, into the iris', () => {
@@ -97,19 +88,6 @@ describe('what runs all along', () => {
   });
 });
 
-describe('the way to the end page', () => {
-  it('falls, then bangs, going forward only', () => {
-    expect(dueEnding(859, 861)).toEqual(['fall']);
-    expect(dueEnding(880, 882)).toEqual(['bang']);
-    expect(dueEnding(882, 880)).toEqual([]);
-  });
-
-  it('moves along with a longer flight', () => {
-    expect(dueEnding(859, 861, 43)).toEqual([]);
-    expect(dueEnding(902, 904, 43)).toEqual(['fall']);
-  });
-});
-
 describe('after a reload', () => {
   it('stays silent until the next click or key, as browsers ask, then goes on if he had sound on', () => {
     expect(soundAfterReload(true, false)).toBe('silent');
@@ -121,19 +99,5 @@ describe('after a reload', () => {
     expect(scrollSpeed(0)).toBe(0);
     expect(scrollSpeed(13)).toBe(0.5);
     expect(scrollSpeed(100)).toBe(1);
-  });
-});
-
-describe('holding and letting go on the end page (round 21)', () => {
-  it('makes no sound while you hold', () => {
-    expect(holdSounds(true, false)).toEqual([]);
-  });
-
-  it('plays only the soft whoosh as you let go: no tone, thump or bell', () => {
-    expect(holdSounds(false, true)).toEqual([{ name: 'whoosh', level: 0.05, seconds: 1.6 }]);
-  });
-
-  it('plays nothing on a let go that had no hold before it', () => {
-    expect(holdSounds(false, false)).toEqual([]);
   });
 });

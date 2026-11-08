@@ -594,285 +594,6 @@ async function projectsStep(browser, step) {
   return '';
 }
 
-/** Out of the portal: the whole tunnel over its reflection, seen from outside. */
-async function lookBack(browser, step) {
-  const { context, page } = await openJourney(browser, step);
-  const dir = join(OUT, 'stills');
-  mkdirSync(dir, { recursive: true });
-  await flightLoaded(page, projects.byDate().length);
-  await goToFrame(page, 372);
-  await goToFrame(page, timeline.lookBack, 220);
-  await page.waitForTimeout(1000);
-  const shot = await page.screenshot({ type: 'png' });
-  writeFileSync(join(dir, 'look-back.jpg'), await sharp(shot).jpeg({ quality: 88 }).toBuffer());
-  const upper = await sharp(shot).extract({ left: 300, top: 120, width: 840, height: 220 }).stats();
-  const lower = await sharp(shot).extract({ left: 300, top: 480, width: 840, height: 220 }).stats();
-  step.check(upper.channels[0].max > 120, `the tunnel hangs in the upper half (the brightest red ${upper.channels[0].max})`);
-  step.check(lower.channels[0].max > 60, `its reflection lies in the lower half (the brightest red ${lower.channels[0].max})`);
-  step.check(lower.channels[0].mean < upper.channels[0].mean + 6, `the reflection is no brighter than the tunnel (${lower.channels[0].mean.toFixed(1)} to ${upper.channels[0].mean.toFixed(1)})`);
-  const state = await page.evaluate(() => window.__journeyDebug.flight());
-  step.check(state.voidDistance > 40, `you are out in the void (${state.voidDistance.toFixed(0)} along)`);
-  await context.close();
-  return '';
-}
-
-/** The tunnel breaking: wires, then sparks, then only stars. */
-async function dissolveStep(browser, step) {
-  const { context, page } = await openJourney(browser, step);
-  const dir = join(OUT, 'stills');
-  mkdirSync(dir, { recursive: true });
-  await flightLoaded(page, projects.byDate().length);
-  await goToFrame(page, 372);
-  const [from, to] = timeline.dissolve;
-  const read = () => page.evaluate(() => window.__journeyDebug.flight());
-  await goToFrame(page, from, 220);
-  await page.waitForTimeout(700);
-  writeFileSync(join(dir, `dissolve-${from}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
-  const start = await read();
-  step.check(start.stars === 0 && start.sparks < 0.05, `at ${from}, wires: no stars yet (${start.sparks.toFixed(2)} on their way)`);
-  await goToFrame(page, from + 30, 160);
-  await page.waitForTimeout(700);
-  writeFileSync(join(dir, `dissolve-${from + 30}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
-  const middle = await read();
-  step.check(middle.sparks > 0.5, `at ${from + 30}, sparks: ${middle.sparks.toFixed(2)} on their way`);
-  await goToFrame(page, to + 1, 160);
-  await page.waitForTimeout(700);
-  writeFileSync(join(dir, `dissolve-${to}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
-  const done = await read();
-  step.check(done.sparks === 0 && done.stars === 1, `at ${to}, only stars (${done.stars}), the sparks fall to none (${done.sparks})`);
-  const ground = await page.evaluate(() => {
-    const canvas = document.querySelector('.journey-canvas canvas');
-    return canvas ? getComputedStyle(canvas).opacity : null;
-  });
-  step.check(ground !== null, 'the canvas is there');
-  await context.close();
-  return '';
-}
-
-/** Bob's questions along the gold line: each one read inside the page, on 1440x810 and 1280x720, in both languages. */
-async function qaStep(browser, step) {
-  const { en } = await tsImport('../../src/i18n/en.ts', import.meta.url);
-  const { nl } = await tsImport('../../src/i18n/nl.ts', import.meta.url);
-  const { qaReadFrames } = await tsImport('../../src/journey/world/void/path.ts', import.meta.url);
-  const dir = join(OUT, 'stills');
-  mkdirSync(dir, { recursive: true });
-  const reads = qaReadFrames(timeline);
-  for (const [viewport, route, words, tag] of [
-    [{ width: 1440, height: 810 }, '/en/', en, 'en'],
-    [{ width: 1440, height: 810 }, '/', nl, 'nl'],
-    [{ width: 1280, height: 720 }, '/en/', en, 'en-720'],
-    [{ width: 1280, height: 720 }, '/', nl, 'nl-720'],
-  ]) {
-    const { context, page } = await openJourney(browser, step, viewport, { route });
-    await flightLoaded(page, projects.byDate().length);
-    await page.waitForFunction(() => window.__journeyDebug.stops()?.questions.every((q) => q.words.length > 0), null, { timeout: 30_000 });
-    await goToFrame(page, 372);
-    if (tag === 'en') {
-      await goToFrame(page, 668 + timeline.shift, 260);
-      await page.waitForTimeout(800);
-      writeFileSync(join(dir, 'qa-word.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
-    }
-    for (let i = 0; i < reads.length; i++) {
-      await goToFrame(page, reads[i], 220);
-      await page.waitForTimeout(tag === 'en' ? 900 : 500);
-      if (tag === 'en' || tag === 'nl') writeFileSync(join(dir, `qa-${tag}-${i + 1}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
-      const { questions } = await page.evaluate(() => window.__journeyDebug.stops());
-      const q = questions[i];
-      const written = q.words.join(' ');
-      const want = words.end.questions[i];
-      step.check(q.shown && q.gear, `${tag} ${i + 1}: the question and its gear show`);
-      step.check(written === `${want.question.toUpperCase()} ${want.answer}`, `${tag} ${i + 1}: the words are his, unchanged`);
-      const [l, t, r, b] = q.rect;
-      step.check(l >= 0 && t >= 0 && r <= viewport.width && b <= viewport.height, `${tag} ${i + 1}: its words are inside the page (${l.toFixed(0)}, ${t.toFixed(0)} to ${r.toFixed(0)}, ${b.toFixed(0)} of ${viewport.width}x${viewport.height})`);
-    }
-    await context.close();
-  }
-  return '';
-}
-
-/** The light waits with its hint; a click plays the bang to the end by itself. */
-async function bangClick(browser, step) {
-  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
-  const dir = join(OUT, 'stills');
-  mkdirSync(dir, { recursive: true });
-  await flightLoaded(page, projects.byDate().length);
-  await goToFrame(page, 372);
-  const waiting = timeline.collapse[0] + 16;
-  await goToFrame(page, waiting, 260);
-  await page.waitForTimeout(700);
-  writeFileSync(join(dir, 'bang-waiting.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
-  const hint = await page.evaluate(() => {
-    const el = document.getElementById('j-hint');
-    const style = getComputedStyle(el);
-    return { text: el.textContent, opacity: Number(style.opacity), visibility: style.visibility };
-  });
-  step.check(hint.text.trim() === 'Click the light to let it go, or keep scrolling' && hint.opacity > 0.5 && hint.visibility === 'visible', `the hint shows beside the light (${hint.opacity})`);
-  const start = Date.now();
-  await page.mouse.click(700, 500);
-  await page.waitForFunction((last) => window.__journeyDebug.frame() > last - 0.5, timeline.last, { timeout: 12_000 });
-  const took = (Date.now() - start) / 1000;
-  step.check(took >= 3.6 && took <= 5.5, `a click plays to the end by itself, in about 4 seconds (${took.toFixed(1)} s)`);
-  await context.close();
-  return `${took.toFixed(1)} s`;
-}
-
-/** Scrolling scrubs the bang, and it is never brighter than the approved mock-up's at the same moment. */
-async function bangScroll(browser, step) {
-  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
-  const dir = join(OUT, 'stills');
-  mkdirSync(dir, { recursive: true });
-  await flightLoaded(page, projects.byDate().length);
-  await goToFrame(page, 372);
-  await goToFrame(page, timeline.collapse[0], 280);
-  // The mean brightness of the mock-up's page at these moments, 0 to 255, measured on 2026-11-06 from .superpowers/rebuild-mock.
-  const MOCK = { 883: 45.4, 888: 46.7, 896: 28.0, 905: 19.6 };
-  let previous = -1;
-  for (const [moment, mock] of Object.entries(MOCK)) {
-    const f = Number(moment) + timeline.shift;
-    await goToFrame(page, f, 90);
-    await page.waitForTimeout(600);
-    const at = await page.evaluate(() => window.__journeyDebug.frame());
-    step.check(at > previous, `scrolling moves it on (${at.toFixed(1)})`);
-    previous = at;
-    const shot = await page.screenshot({ type: 'jpeg', quality: 88 });
-    writeFileSync(join(dir, `bang-${moment}.jpg`), shot);
-    const { channels } = await sharp(shot).stats();
-    const mean = channels.reduce((sum, c) => sum + c.mean, 0) / 3;
-    step.check(mean <= mock * 1.05, `frame ${moment}: no brighter than the mock-up plus 5% (${mean.toFixed(1)}, the mock-up ${mock})`);
-  }
-  await context.close();
-  return '';
-}
-
-/** To the end page, settled. */
-async function openEnd(browser, step, viewport = VIEW, route = '/en/') {
-  const opened = await openJourney(browser, step, viewport, { route });
-  await flightLoaded(opened.page, projects.byDate().length);
-  await opened.page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
-  await goToFrame(opened.page, 372);
-  await goToFrame(opened.page, timeline.last, 300);
-  await opened.page.waitForTimeout(1200);
-  return opened;
-}
-
-/** How far the furthest word stands from the gate's middle, and how far its inner edge reaches at its nearest. */
-const wordsAndGate = (page) => page.evaluate(() => {
-  const { x, y, inner } = window.__journeyDebug.stops().end.gate;
-  let furthest = 0;
-  for (const el of document.getElementById('j-end-hub').children) {
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    const box = range.getBoundingClientRect();
-    // The letters, not their line box: a line stands about a fifth of its size clear of its tallest letter, and a tenth of its lowest.
-    const size = parseFloat(getComputedStyle(el).fontSize);
-    const top = box.top + size * 0.2;
-    const bottom = box.bottom - size * 0.1;
-    for (const [px, py] of [[box.left, top], [box.right, top], [box.left, bottom], [box.right, bottom]]) furthest = Math.max(furthest, Math.hypot(px - x, py - y));
-  }
-  return { furthest, inner };
-});
-
-/** "Let's talk." sharpens out of a blur, with the words inside the gate's inner edge. */
-async function endPage(browser, step) {
-  const dir = join(OUT, 'stills');
-  mkdirSync(dir, { recursive: true });
-  for (const [viewport, tag] of [[{ width: 1440, height: 810 }, '1440'], [{ width: 1920, height: 1080 }, '1920']]) {
-    const { context, page } = await openEnd(browser, step, viewport);
-    writeFileSync(join(dir, `end-${tag}.jpg`), await page.screenshot({ type: 'jpeg', quality: 88 }));
-    const seen = await page.evaluate(() => {
-      const report = window.__journeyDebug.stops().end;
-      const word = document.getElementById('j-end-word');
-      return { report, blur: getComputedStyle(word).filter, opacity: getComputedStyle(word).opacity, text: document.getElementById('j-end').textContent };
-    });
-    step.check(seen.blur === 'none' && Number(seen.opacity) === 1, `${tag}: "Let's talk." has settled, sharp`);
-    step.check(seen.report.stars === 4 && seen.report.gas > 0, `${tag}: four galaxies and the gas stand behind it (${seen.report.stars}, ${seen.report.gas})`);
-    const { furthest, inner } = await wordsAndGate(page);
-    step.check(furthest < inner, `${tag}: the words stay inside the gate's inner edge (${furthest.toFixed(0)} of ${inner.toFixed(0)} px from its middle)`);
-    for (const words of ['bhccob@gmail.com', '@bhccob', 'Send a message', 'Back to the start', 'Rotterdam, born in Aruba']) step.check(seen.text.includes(words), `${tag}: "${words}" shows`);
-    if (tag === '1440') {
-      // Back in the blast, it is still pulling itself together.
-      await goToFrame(page, timeline.bang[0] + 22, 90);
-      await page.waitForTimeout(500);
-      const earlier = await page.evaluate(() => getComputedStyle(document.getElementById('j-end-word')).filter);
-      step.check(earlier.startsWith('blur('), `"Let's talk." starts as a blur (${earlier})`);
-      writeFileSync(join(dir, 'end-blur.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
-    }
-    await context.close();
-  }
-  return '';
-}
-
-/** The cursor swings the camera round. */
-async function endOrbit(browser, step) {
-  const { context, page } = await openEnd(browser, step);
-  const shot = () => page.screenshot({ type: 'png' });
-  await page.mouse.move(720, 405);
-  await page.waitForTimeout(1200);
-  const middle = await sharp(await shot()).greyscale().resize(320, 180).raw().toBuffer();
-  await page.mouse.move(1400, 60);
-  await page.waitForTimeout(1500);
-  const shotCorner = await shot();
-  writeFileSync(join(OUT, 'stills', 'end-orbit.jpg'), await sharp(shotCorner).jpeg({ quality: 88 }).toBuffer());
-  const corner = await sharp(shotCorner).greyscale().resize(320, 180).raw().toBuffer();
-  let sum = 0;
-  for (let i = 0; i < corner.length; i++) sum += Math.abs(corner[i] - middle[i]);
-  const moved = sum / corner.length;
-  step.check(moved > 2, `the cursor swings the view round (changed by ${moved.toFixed(1)})`);
-  const lean = await page.evaluate(() => document.getElementById('j-end-hub').style.transform);
-  step.check(/rotateY\(-?[1-9]/.test(lean), `and the words lean with it (${lean})`);
-  // However far it swings, the words never cross the gate's metal.
-  for (const [x, y] of [[1430, 10], [10, 10], [10, 800], [1430, 800], [720, 405]]) {
-    await page.mouse.move(x, y);
-    await page.waitForTimeout(1600);
-    const { furthest, inner } = await wordsAndGate(page);
-    step.check(furthest < inner, `with the cursor at ${x}, ${y}, the words stay inside the gate (${furthest.toFixed(0)} of ${inner.toFixed(0)} px)`);
-  }
-  await context.close();
-  return '';
-}
-
-/** Hold and let go: a galaxy of your own, at most eight. A press on a link is only a press on a link. */
-async function endHold(browser, step) {
-  const { context, page } = await openEnd(browser, step);
-  const end = () => page.evaluate(() => window.__journeyDebug.stops().end);
-  const toy = () => page.evaluate(() => getComputedStyle(document.getElementById('j-end-toy')).opacity);
-  step.check(Number(await toy()) > 0.5, 'the hint shows before you have tried it');
-  await page.mouse.move(420, 240);
-  await page.mouse.down();
-  await page.waitForTimeout(900);
-  step.check((await end()).charge > 0.4, `holding grows a light (${(await end()).charge.toFixed(2)})`);
-  writeFileSync(join(OUT, 'stills', 'end-hold.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
-  await page.mouse.up();
-  await page.waitForTimeout(250);
-  step.check((await end()).fired === 1 && (await end()).yours === 1, 'letting go leaves a galaxy');
-  await page.waitForTimeout(900);
-  step.check(Number(await toy()) < 0.05, 'and the hint goes after the first');
-  writeFileSync(join(OUT, 'stills', 'end-shock.jpg'), await page.screenshot({ type: 'jpeg', quality: 88 }));
-  for (let i = 0; i < 9; i++) {
-    await page.mouse.move(200 + i * 110, 220 + (i % 3) * 120);
-    await page.mouse.down();
-    await page.waitForTimeout(40);
-    await page.mouse.up();
-    await page.waitForTimeout(40);
-  }
-  const many = await end();
-  step.check(many.fired === 10 && many.yours === 8, `at most eight stay (${many.yours} of ${many.fired})`);
-  // Links keep working while the toy is live.
-  const before = many.fired;
-  const link = page.locator('.j-end-bar a[data-jump]');
-  const box = await link.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.waitForTimeout(60);
-  step.check((await end()).charge === 0, 'a press on a link does not start a hold');
-  await page.mouse.up();
-  step.check((await end()).fired === before, 'and leaves no galaxy');
-  await page.waitForFunction(() => window.__journeyDebug.frame() < 40, null, { timeout: 15_000 });
-  step.check(true, '"Back to the start" goes back to the start');
-  await context.close();
-  return '';
-}
-
 /** Less motion asked for: the same words and links on a page that simply scrolls. */
 async function reducedMotion(browser, step) {
   const { context, page } = await openPage(browser, step, VIEW, { reducedMotion: 'reduce' });
@@ -881,14 +602,16 @@ async function reducedMotion(browser, step) {
   await page.waitForTimeout(500);
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
-  const seen = await page.evaluate(() => ({ canvases: document.querySelectorAll('.journey-canvas, #j-paper, #j-end').length, text: document.querySelector('.j-calm').innerText, tall: document.documentElement.scrollHeight > innerHeight * 2, links: document.querySelectorAll('.j-calm a').length, sound: getComputedStyle(document.querySelector('.j-sound') ?? document.body).display }));
-  step.check(seen.canvases === 0, 'no flight, no bang, no canvas');
+  const seen = await page.evaluate(() => ({ canvases: document.querySelectorAll('.journey-canvas, #j-paper').length, text: document.querySelector('.j-calm').innerText, tall: document.documentElement.scrollHeight > innerHeight * 2, links: document.querySelectorAll('.j-calm a').length, sound: getComputedStyle(document.querySelector('.j-sound') ?? document.body).display }));
+  step.check(seen.canvases === 0, 'no flight, no head, no canvas');
   const header = await page.evaluate(() => getComputedStyle(document.querySelector('.site-header')).backgroundColor);
-  step.check(header === 'rgb(7, 6, 11)', `the words scroll under a solid header (${header})`);
+  // The site's night, dark purple since 2026-11-08 (Plan 1, tokens.css --night).
+  step.check(header === 'rgb(19, 7, 36)', `the words scroll under a solid header (${header})`);
   step.check(seen.tall, 'it scrolls as a normal page');
-  for (const words of ['Software Engineering', 'Cookies Clicker', 'Jontai Energy', 'What is your plan after MBO?', "Let's talk.", 'bhccob@gmail.com']) step.check(seen.text.toLowerCase().includes(words.toLowerCase()), `"${words}" reads there`);
+  for (const words of ['Software Engineering', 'Cookies Clicker', 'Jontai Energy', 'What is your plan after MBO?', 'Prefrontal cortex', 'Scan complete', 'Chinese', "Let's talk."]) step.check(seen.text.toLowerCase().includes(words.toLowerCase()), `"${words}" reads there`);
   // Each project's, and the six of the rail, the contact and the header.
-  step.check(seen.links >= 6 + projects.all().length, `its links are there (${seen.links})`);
+  // The report's three ways and the way back up: no Email since 2026-11-08 (Bob: "send a message is the same").
+  step.check(seen.links >= 5 + projects.all().length, `its links are there (${seen.links})`);
   // Its pictures come as they are reached.
   const whole = await page.evaluate(() => document.documentElement.scrollHeight);
   for (let at = 0; at < whole; at += 500) {
@@ -1077,7 +800,7 @@ async function keyboard(browser, step) {
   step.check(!keys.some((key) => String(key).startsWith('mailto:')), 'and no Email link is left');
   step.check(unseen === 0, `the focus is visible on every one (${unseen} of ${reached.length} not)`);
   await page.waitForFunction((last) => window.__journeyDebug.frame() > last - 2, timeline.last, { timeout: 25_000 });
-  step.check(true, 'reaching the end page\'s links brings it into place');
+  step.check(true, 'reaching the scan report\'s links brings it into place');
   await context.close();
   return `${reached.length} stops`;
 }
@@ -1113,6 +836,9 @@ async function noScript(browser, step) {
   await context.close();
   return '';
 }
+
+/** The scan report, finished: the ending runs on its own clock from the spit, so a scroll to the end waits for it. */
+const reportPrinted = (page) => page.waitForFunction(() => (window.__journeyDebug.stops()?.head?.t ?? 0) >= 0.999, null, { timeout: 20_000 });
 
 const jumpTo = async (page, f) => {
   const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
@@ -1181,21 +907,20 @@ async function smallScreen(browser, step, viewport, tag) {
     if (i === 1) writeFileSync(join(dir, `${tag}-project.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
     step.check(await inside(page, '.j-open.on'), `${tag}: project ${i + 1}'s link stays on the page`);
   }
-  const { qaReadFrames } = await tsImport('../../src/journey/world/void/path.ts', import.meta.url);
-  for (const [i, f] of qaReadFrames(timeline).entries()) {
-    await jumpTo(page, f);
+  for (let i = 0; i < 6; i++) {
+    await jumpTo(page, headFrame(dwellT(i), timeline));
     await page.waitForTimeout(500);
     if (i === 0) writeFileSync(join(dir, `${tag}-qa.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
-    const { questions } = await page.evaluate(() => window.__journeyDebug.stops());
-    const [l, t, r, b] = questions[i].rect;
-    step.check(l >= 0 && r <= viewport.width && t >= 0 && b <= viewport.height, `${tag}: question ${i + 1}'s words stay on the page (${l.toFixed(0)} to ${r.toFixed(0)}, ${t.toFixed(0)} to ${b.toFixed(0)})`);
+    const card = await page.evaluate((n) => { const el = document.querySelector(`[data-answer="${n}"]`), r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, shown: Number(getComputedStyle(el).opacity) }; }, i);
+    step.check(card.shown > 0.9 && card.l >= 0 && card.r <= viewport.width && card.t >= 0 && card.b <= viewport.height, `${tag}: answer ${i + 1} shows on the page (${card.l.toFixed(0)} to ${card.r.toFixed(0)}, ${card.t.toFixed(0)} to ${card.b.toFixed(0)})`);
   }
   await jumpTo(page, timeline.last);
-  await page.waitForTimeout(1500);
+  await reportPrinted(page);
+  await page.waitForTimeout(300);
   writeFileSync(join(dir, `${tag}-end.jpg`), await page.screenshot({ type: 'jpeg', quality: 82 }));
-  step.check(await inside(page, '.j-end nav a'), `${tag}: the end page's links stay on the page`);
-  step.check(await inside(page, '.j-end-hub h2, .j-end-hub p'), `${tag}: and its words`);
-  const bar = await page.evaluate(() => [...document.querySelectorAll('.j-end-bar > *')].map((e) => { const r = e.getBoundingClientRect(); return { height: r.height, left: r.left, right: r.right }; }));
+  step.check(await inside(page, '.j-report nav a'), `${tag}: the report's links stay on the page`);
+  step.check(await inside(page, '.j-report-panel'), `${tag}: and the report`);
+  const bar = await page.evaluate(() => [...document.querySelectorAll('.j-report-bar > *')].map((e) => { const r = e.getBoundingClientRect(); return { height: r.height, left: r.left, right: r.right }; }));
   step.check(bar.every((b) => b.height < 24 && b.left >= 0 && b.right <= innerWidthOf(viewport)), `${tag}: its bottom line does not wrap (${bar.map((b) => b.height.toFixed(0)).join(', ')})`);
   await context.close();
   return '';
@@ -1245,7 +970,6 @@ const standsIn = (sentence, text) => {
 /** Everything a Dutch visitor reads: inside the page, over nothing, and none of it still in English. */
 async function dutchFit(browser, step) {
   const { en } = await tsImport('../../src/i18n/en.ts', import.meta.url);
-  const { qaReadFrames } = await tsImport('../../src/journey/world/void/path.ts', import.meta.url);
   const dated = projects.byDate();
   const dir = join(OUT, 'stills');
   mkdirSync(dir, { recursive: true });
@@ -1261,7 +985,7 @@ async function dutchFit(browser, step) {
 
     const { context, page } = await openJourney(browser, step, viewport, { route: '/', ...options });
     await flightLoaded(page, dated.length);
-    await page.waitForFunction(() => window.__journeyDebug.stops()?.questions.every((q) => q.words.length > 0) && window.__journeyDebug.stops().end !== null, null, { timeout: 30_000 });
+    await page.waitForFunction(() => window.__journeyDebug.stops() !== null, null, { timeout: 30_000 });
     await page.waitForTimeout(600);
     await partsFit(page, step, `${tag}, the first view`, ['.j-hero h1', '.j-hero p', '.j-go']);
     const rolling = await page.evaluate(() => [...document.querySelectorAll('.j-swap > *')].map((e) => { const r = document.createRange(); r.selectNodeContents(e); const box = r.getBoundingClientRect(); return { word: e.textContent, right: box.right }; }));
@@ -1291,20 +1015,20 @@ async function dutchFit(browser, step) {
       step.check(link && link.top >= stops[i].foot - 2 && link.bottom <= viewport.height, `${tag}, ${dated[i].id}: its link stands under them (${link?.top.toFixed(0)} under ${stops[i].foot?.toFixed(0)})`);
       read.push(stops[i].words.join(' '));
     }
-    for (const [i, f] of qaReadFrames(timeline).entries()) {
-      await jumpTo(page, f);
+    for (let i = 0; i < 6; i++) {
+      await jumpTo(page, headFrame(dwellT(i), timeline));
       await page.waitForTimeout(600);
       if (tag === 'phone' || i === 0) writeFileSync(join(dir, `nl-${tag}-qa-${i + 1}.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
-      const { questions } = await page.evaluate(() => window.__journeyDebug.stops());
-      const [l, t, r, b] = questions[i].rect;
-      step.check(l >= -1 && t >= -1 && r <= viewport.width + 1 && b <= viewport.height + 1, `${tag}, question ${i + 1}: its words stay on the page (${[l, t, r, b].map((v) => v.toFixed(0)).join(', ')})`);
-      read.push(questions[i].words.join(' '));
+      await partsFit(page, step, `${tag}, answer ${i + 1}`, [`[data-answer="${i}"] h3`, `[data-answer="${i}"] .j-answer-say`]);
+      read.push(await page.evaluate((n) => document.querySelector(`[data-answer="${n}"]`).textContent, i));
     }
     await jumpTo(page, timeline.last);
-    await page.waitForTimeout(1500);
+    await reportPrinted(page);
+    await page.waitForTimeout(300);
     writeFileSync(join(dir, `nl-${tag}-end.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
-    await partsFit(page, step, `${tag}, the end page`, ['.j-end-hub h2', '.j-end-hub p', '.j-end nav', '.j-end-bar']);
-    read.push(await page.evaluate(() => [document.body.textContent, ...[...document.querySelectorAll('[aria-label], [alt], [title]')].flatMap((e) => [e.getAttribute('aria-label'), e.getAttribute('alt'), e.getAttribute('title')])].join(' ')));
+    await partsFit(page, step, `${tag}, the scan report`, ['.j-report-panel h2', '.j-report-rows', '.j-report nav', '.j-report-bar']);
+    // The words, not the page's scripts: the router's inline script says ".slice(", which is not the English "Slice".
+    read.push(await page.evaluate(() => [(() => { const body = document.body.cloneNode(true); body.querySelectorAll('script, style').forEach((e) => e.remove()); return body.textContent; })(), ...[...document.querySelectorAll('[aria-label], [alt], [title]')].flatMap((e) => [e.getAttribute('aria-label'), e.getAttribute('alt'), e.getAttribute('title')])].join(' ')));
     await context.close();
   }
 
@@ -1335,52 +1059,6 @@ async function rotateStep(browser, step) {
   await page.waitForTimeout(1200);
   const back = await atFrame(page);
   step.check(Math.abs(back - before) <= 2, `and back (${back.toFixed(1)})`);
-  await context.close();
-  return '';
-}
-
-/** The end page by touch: a drift in the cursor's place, and a long press that holds and nothing else. */
-async function endTouch(browser, step) {
-  const { context, page } = await openJourney(browser, step, { width: 390, height: 844 }, { route: '/en/', hasTouch: true, isMobile: true });
-  await flightLoaded(page, projects.byDate().length);
-  await page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
-  await jumpTo(page, timeline.last);
-  await page.waitForTimeout(1500);
-  const small = async () => sharp(await page.screenshot({ type: 'png' })).greyscale().resize(160, 346).raw().toBuffer();
-  const first = await small();
-  await page.waitForTimeout(3000);
-  const later = await small();
-  let moved = 0;
-  for (let i = 0; i < first.length; i++) moved += Math.abs(first[i] - later[i]);
-  step.check(moved / first.length > 0.3, `with no cursor, the view drifts by itself (changed by ${(moved / first.length).toFixed(2)})`);
-  const cdp = await context.newCDPSession(page);
-  const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
-  await page.evaluate(() => {
-    window.__menu = 0;
-    addEventListener('contextmenu', (event) => { if (!event.defaultPrevented) window.__menu += 1; });
-  });
-  const before = (await page.evaluate(() => window.__journeyDebug.stops().end)).fired;
-  await touch('touchStart', 195, 500);
-  await page.waitForTimeout(900);
-  step.check((await page.evaluate(() => window.__journeyDebug.stops().end)).charge > 0.2, 'a long press grows a light');
-  await touch('touchEnd');
-  await page.waitForTimeout(300);
-  const after = await page.evaluate(() => ({ fired: window.__journeyDebug.stops().end.fired, selected: String(getSelection()), menu: window.__menu }));
-  step.check(after.fired === before + 1, `letting go leaves a galaxy (${before} to ${after.fired})`);
-  step.check(after.selected === '', 'it selects no text');
-  step.check(after.menu === 0, 'and opens no menu');
-  // A sideways drag moves the view and leaves no galaxy.
-  const y0 = await page.evaluate(() => scrollY);
-  await touch('touchStart', 80, 500);
-  for (let x = 90; x <= 300; x += 30) {
-    await touch('touchMove', x, 502);
-    await page.waitForTimeout(16);
-  }
-  await touch('touchEnd');
-  await page.waitForTimeout(250);
-  const dragged = await page.evaluate(() => ({ fired: window.__journeyDebug.stops().end.fired, y: scrollY }));
-  step.check(dragged.fired === after.fired, 'a sideways drag leaves no galaxy');
-  step.check(Math.abs(dragged.y - y0) < 4, 'and does not scroll');
   await context.close();
   return '';
 }
@@ -1447,7 +1125,7 @@ async function walkDown(browser, step) {
   return `step ${start.step} to ${end.step}`;
 }
 
-/** Pressing End at the very start on a slow line: dark, with no error, until the end has come, and no pile of sounds. */
+/** Pressing End at the very start on a slow line: no error, the scan report printed on its own clock, and no pile of sounds. */
 async function jumpEarly(browser, step) {
   const { context, page } = await openJourney(browser, step, undefined, { route: '/en/', stages: '' });
   const cdp = await context.newCDPSession(page);
@@ -1459,12 +1137,10 @@ async function jumpEarly(browser, step) {
   const before = await hits();
   await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' }));
   await page.waitForFunction((last) => window.__journeyDebug.frame() > last - 1, timeline.last, { timeout: 15_000 });
-  const early = await page.evaluate(() => ({ came: window.__journeyDebug.stops()?.end !== null, opacity: getComputedStyle(document.getElementById('j-end')).opacity }));
-  step.check(early.came || Number(early.opacity) === 0, `while the end is on its way, its words wait (${early.opacity})`);
-  await page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 60_000 });
-  await page.waitForTimeout(800);
-  const end = await page.evaluate(() => ({ opacity: getComputedStyle(document.getElementById('j-end')).opacity, word: getComputedStyle(document.getElementById('j-end-word')).opacity }));
-  step.check(Number(end.opacity) === 1 && Number(end.word) === 1, 'then the end page shows');
+  // The report is the page's own: it prints on the ending's clock, whether or not the 3D has come yet.
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.j-report-next')).clipPath === 'none', null, { timeout: 15_000 });
+  const end = await page.evaluate(() => ({ frame: getComputedStyle(document.querySelector('.j-report-frame')).opacity, word: document.getElementById('j-end-word').textContent }));
+  step.check(Number(end.frame) === 1 && end.word.length > 0, `then the scan report stands printed (${end.word})`);
   const after = await hits();
   step.check(after - before <= 6, `and the sounds of the jump do not pile up (${after - before})`);
   await context.close();
@@ -1733,12 +1409,17 @@ async function soundStep(browser, step) {
     await page.waitForTimeout(90);
     peak = Math.max(peak, await page.evaluate(() => window.__journeyDebug.sound().level));
   }
-  await page.waitForTimeout(800);
+  // The ending runs on its own clock: its sounds are all in once the report is printed.
+  await page.waitForFunction(() => (window.__journeyDebug.stops()?.head?.t ?? 0) >= 0.999, null, { timeout: 15_000 });
+  await page.waitForTimeout(400);
   const { counts } = await page.evaluate(() => window.__journeyDebug.sound());
   const missing = HIT_NAMES.filter((name) => counts[name] !== 1);
   step.check(missing.length === 0, `every part of the machine played once (not: ${missing.map((n) => `${n}=${counts[n] ?? 0}`).join(', ') || 'none'})`);
   step.check(peak <= 0.6, `nothing distorts (the loudest ${peak.toFixed(3)})`);
-  step.check(counts.fall === 1 && counts.bang === 1, 'the way into the end plays once');
+  const once = ['scan', 'lid', 'dive', 'spit', 'gather', 'softBang', 'printTitle'].filter((cue) => counts[cue] !== 1);
+  step.check(once.length === 0, `his head's sounds play once each (not: ${once.map((c) => `${c}=${counts[c] ?? 0}`).join(', ') || 'none'})`);
+  step.check(counts.label === 6 && counts.thought === 7, `a ping for each of the six labels and a tone for each of the seven thoughts (${counts.label}, ${counts.thought})`);
+  step.check((counts.print ?? 0) >= 7, `and the report ticks as it prints (${counts.print ?? 0})`);
   await page.locator('.j-sound').click();
   await page.waitForTimeout(1200);
   const off = await page.evaluate(() => window.__journeyDebug.sound());
@@ -1817,7 +1498,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'end-touch': endTouch, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, 'head-language': headLanguage, 'head-resize': headResize, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, 'end-page': endPage, 'end-orbit': endOrbit, 'end-hold': endHold, 'bang-click': bangClick, 'bang-scroll': bangScroll, qa: qaStep, 'look-back': lookBack, dissolve: dissolveStep, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, 'head-language': headLanguage, 'head-resize': headResize, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

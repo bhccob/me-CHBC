@@ -5,12 +5,11 @@ import { PAGES } from '~/data/pages';
 import { profile } from '~/data/profile';
 import { projects } from '~/data/projects';
 import { useTranslator } from '~/i18n/useTranslator';
+import { objectSvgPath } from '~/journey/head/objects';
+import { NQ, THOUGHTS } from '~/journey/head/thoughts';
+import { ScanReport } from './ScanReport';
 
-const ARROW = (
-  <i className="j-arrow" aria-hidden="true">
-    ↗
-  </i>
-);
+type TopicKey = 'plans' | 'career' | 'hobbies' | 'places' | 'skills' | 'site';
 
 /**
  * The journey without its motion: a normal page that scrolls, with the same words and links on the same colours, and stills
@@ -20,8 +19,7 @@ export function CalmJourney({ litePointer = false }: { litePointer?: boolean }):
   const i18n = useTranslator();
   const { t, locale } = i18n;
   const words = t.journey;
-  const github = profile.socials.find((social) => social.id === 'github')!;
-  const instagram = profile.socials.find((social) => social.id === 'instagram')!;
+  const head = words.head;
 
   return (
     <div id="top" className="j-calm">
@@ -95,59 +93,30 @@ export function CalmJourney({ litePointer = false }: { litePointer?: boolean }):
         })}
       </section>
 
-      <section className="j-calm-qa">
-        <h2>{words.qaWord}</h2>
-        <dl>
-          {t.end.questions.map(({ question, answer }) => (
-            <div key={question}>
-              <dt>{question}</dt>
-              <dd>{answer ?? t.end.placeholder}</dd>
-            </div>
-          ))}
-        </dl>
+      <section className="j-calm-qa" aria-labelledby="j-calm-qa-title">
+        <p className="j-calm-eyebrow">{head.heading.eyebrow}</p>
+        <h2 id="j-calm-qa-title">{head.heading.title}</h2>
+        {t.end.questions.slice(0, NQ).map(({ question, answer }, i) => {
+          const thought = THOUGHTS[i];
+          return (
+            <article key={question} className="j-calm-answer">
+              <svg className="j-calm-object" viewBox="0 0 100 100" aria-hidden="true">
+                <path d={objectSvgPath(thought.object!)} />
+              </svg>
+              <div>
+                <p className="j-calm-num" aria-hidden="true">
+                  {String(i + 1).padStart(2, '0')}
+                </p>
+                <p className="j-calm-where">{`${head.topics[thought.key as TopicKey]} · ${head.regions[thought.region]}`}</p>
+                <h3>{question}</h3>
+                <p>{answer ?? t.end.placeholder}</p>
+              </div>
+            </article>
+          );
+        })}
       </section>
 
-      <section id="contact" className="j-calm-end">
-        <p className="j-end-kicker">{words.end.kicker}</p>
-        <h2>{words.end.title}</h2>
-        <p className="j-end-promise">{words.end.promise}</p>
-        <p className="j-end-note">{words.end.note}</p>
-        <nav aria-label={words.end.reach}>
-          <a href={`mailto:${profile.email}`}>
-            <span>{words.end.email}</span>
-            <b>
-              {profile.email} {ARROW}
-            </b>
-          </a>
-          <a href={github.url} target="_blank" rel="noopener noreferrer">
-            <span>{words.end.github}</span>
-            <b>
-              {github.handle} {ARROW}
-            </b>
-          </a>
-          <a href={instagram.url} target="_blank" rel="noopener noreferrer">
-            <span>{words.end.instagram}</span>
-            <b>
-              {instagram.handle} {ARROW}
-            </b>
-          </a>
-          <Link to={i18n.path(PAGES.contact)}>
-            <span>{words.rail.contact}</span>
-            <b>
-              {words.end.message} {ARROW}
-            </b>
-          </Link>
-        </nav>
-        <div className="j-calm-bar">
-          <span suppressHydrationWarning>
-            © {new Date().getFullYear()} {profile.name}
-          </span>
-          <span>{words.end.place}</span>
-          <a href="#top">
-            {words.end.top} <span aria-hidden="true">↑</span>
-          </a>
-        </div>
-      </section>
+      <ScanReport printed />
     </div>
   );
 }

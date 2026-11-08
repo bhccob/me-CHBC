@@ -13,8 +13,6 @@ import { boxesMeet, keepOnPage, layersAt, PHONE_WIDTH, RAIL_WIDTH, TAG_NAMES, ta
 import { type DoorChoice, loadedShare, type LoaderPlan, loaderPlan, SEEN_KEY } from '~/journey/loader/plan';
 import { pageFit } from '~/journey/machine/camera';
 import { startLoop } from '~/journey/loop';
-import { lightWaiting, playBang } from '~/journey/bang';
-import { canHold, touchPlan } from '~/journey/end';
 import { softBangAt } from '~/journey/head/report';
 import { Sound } from '~/journey/sound/music';
 import { endClock, type EndClock, headT } from '~/journey/head/time';
@@ -37,7 +35,6 @@ import { PortalWord } from './PortalWord';
 import { ProjectLinks } from './ProjectLinks';
 import { applyHead, applyReport, forgetHeadSizes, headEls, measureReport, reportEls } from './applyHead';
 import { HeadAnswers } from './HeadAnswers';
-import { QaWords, qaWordsIn, updateQaWords } from './QaWords';
 import { ScanHud } from './ScanHud';
 import { ScanReport } from './ScanReport';
 import { StackWords } from './StackWords';
@@ -45,12 +42,6 @@ import { Story, updateStory } from './Story';
 
 // three.js and R3F load after hydration, in their own chunk; the prerendered page holds the words alone.
 const JourneyCanvas = lazy(() => import('./JourneyCanvas'));
-
-/**
- * The old end page's hint, its waiting light and its press, from before Bob's head took the void's place: off, so none of
- * them acts over the head. Their code goes in the Into my head plan's Task 12.
- */
-const OLD_END = false;
 
 /** The home page's journey: live where it can run, calm where it should not, and never a blank page. */
 export function Journey(): JSX.Element {
@@ -120,16 +111,6 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     const stack = document.getElementById('j-stack');
     const portal = document.getElementById('j-portal');
     const flash = document.getElementById('j-flash');
-    const hint = document.getElementById('j-hint');
-    let aimX = 0;
-    let aimY = 0;
-    let holding = false;
-    // With no cursor: a slow drift, a sideways drag on top of it, and a finger that may yet be scrolling.
-    const noCursor = matchMedia('(hover: none)').matches;
-    let dragX = 0;
-    let dragFrom = 0;
-    let finger: { x: number; y: number; plan: 'orbit' | 'scroll' | null } | null = null;
-    let holdSoon = 0;
     const openLinks = new Map(Array.from(document.querySelectorAll<HTMLElement>('.j-project')).map((el) => [el.dataset.project ?? '', el.querySelector<HTMLElement>('.j-open')]));
     let projectNow: string | null = null;
     let hotNow = false;
@@ -157,7 +138,6 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       hotNow = false;
     };
     const tags = TAG_NAMES.map((name) => document.querySelector<HTMLElement>(`[data-tag="${name}"]`));
-    const qaWords = qaWordsIn(document.getElementById('j-qa-words'));
     const paintBands = (): void => {
       for (const band of document.querySelectorAll<HTMLCanvasElement>('.j-band')) paintBand(band, band.dataset.kind as BandKind);
     };
@@ -184,6 +164,8 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     const measure = (): void => {
       if (!report) return;
       rowTops = measureReport(report);
+      // The title's row, "Let's talk.", second to last: its sound is a ping.
+      Sound.setReportRows(rowTops, rowTops.length - 2);
       reportLocale = localeNow.current;
       landingSent = false;
     };
@@ -212,7 +194,11 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       reduce: reduce.current,
       onFrame: (f, dt, now) => {
         shown = f;
-        Sound.frame(f, dt);
+        // From the spit the ending runs on its own clock; a jump to Contact, or a load there, lands on it finished.
+        const tHead = endClock(clock, headT(f, timeline), now / 1000, jumping || firstFrame);
+        if (clock.at !== null) jumping = false;
+        firstFrame = false;
+        Sound.frame(f, dt, tHead);
         const layers = layersAt(f, timeline, innerHeight > innerWidth);
         applyLayer(hero, layers.hero);
         if (hero) hero.style.pointerEvents = layers.hero.opacity < 0.5 ? 'none' : 'auto';
@@ -225,13 +211,8 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         layers.sheets.forEach((sheet, n) => applySheet(sheets[n], sheet, sheetWords[n], wordClip(layers.sheets[n + 1])));
         applyLayer(stack, { opacity: layers.stack });
         applyLayer(portal, { opacity: layers.portal });
-        applyLayer(hint, { opacity: OLD_END ? layers.hint : 0 });
         // While a project is open over it, the world waits.
         const paused = openedProject() !== null;
-        // From the spit the ending runs on its own clock; a jump to Contact, or a load there, lands on it finished.
-        const tHead = endClock(clock, headT(f, timeline), now / 1000, jumping || firstFrame);
-        if (clock.at !== null) jumping = false;
-        firstFrame = false;
         const state = paused ? null : canvas.current?.frame(f, dt, now, tHead);
         const headLabels = headParts ? applyHead(headParts, tHead, state?.head ?? null, { head: words.current.head, locale: localeNow.current }, innerWidth <= PHONE_WIDTH) : [];
         // The scan report: measured again in another language, printed by the scan line, the 3D told where it stands.
@@ -253,8 +234,6 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
           }
         }
         if (state) showProject(state.flight.project, state.flight.link, state.hover);
-        // On a phone the questions' words are type on the page, where the 3D says; only while the 3D holds the page.
-        updateQaWords(qaWords, null, innerWidth);
         if (paused) cool();
         tags.forEach((tag) => applyLayer(tag, { opacity: state ? layers.stack : 0 }));
         let tagsOnRail = false;
@@ -311,11 +290,6 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
         openProject(hoverNow, shown ?? 0);
         return;
       }
-      // The light, waiting: a click lets it go.
-      if (OLD_END && shown !== null && lightWaiting(shown, timeline.shift) && !target?.closest?.('a, button')) {
-        playBang(timeline);
-        return;
-      }
       const link = target?.closest?.('[data-jump]');
       const chapter = link?.getAttribute('data-jump');
       if (!chapter) return;
@@ -344,70 +318,6 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
     const seen = (): void => Sound.watchVisibility(document.hidden);
     document.addEventListener('visibilitychange', seen);
 
-    // The end page: the cursor leans the words; hold anywhere but on a link to start a universe.
-    const startHold = (): void => {
-      holding = true;
-      canvas.current?.hold(true);
-      Sound.hold(true);
-    };
-    const toPage = (event: PointerEvent): [number, number] => [(event.clientX / innerWidth) * 2 - 1, 1 - (event.clientY / innerHeight) * 2];
-    const aim = (event: PointerEvent): void => {
-      if (event.pointerType !== 'touch') {
-        aimX = (event.clientX / innerWidth) * 2 - 1;
-        aimY = (event.clientY / innerHeight) * 2 - 1;
-        return;
-      }
-      if (!finger) return;
-      if (holding) {
-        const [x, y] = toPage(event);
-        canvas.current?.pointer(x, y);
-        return;
-      }
-      const dx = event.clientX - finger.x;
-      const dy = event.clientY - finger.y;
-      if (!finger.plan && Math.hypot(dx, dy) > 10) {
-        finger.plan = touchPlan(dx, dy);
-        clearTimeout(holdSoon);
-      }
-      if (finger.plan === 'orbit') dragX = Math.max(-0.6, Math.min(0.6, dragFrom + dx / (innerWidth / 2)));
-    };
-    const press = (event: PointerEvent): void => {
-      if (!OLD_END || event.button !== 0 || shown === null || reduce.current || !canHold(shown, timeline)) return;
-      if ((event.target as Partial<Pick<Element, 'closest'>> | null)?.closest?.('a, button')) return;
-      if (event.pointerType !== 'touch') {
-        startHold();
-        return;
-      }
-      // A finger may be about to scroll or to drag: it holds only once it has stayed put a moment.
-      finger = { x: event.clientX, y: event.clientY, plan: null };
-      dragFrom = dragX;
-      const [x, y] = toPage(event);
-      holdSoon = window.setTimeout(() => {
-        canvas.current?.pointer(x, y);
-        startHold();
-      }, 220);
-    };
-    const letGo = (cancelled: boolean): void => {
-      clearTimeout(holdSoon);
-      const tapped = finger !== null && finger.plan === null && !holding && !cancelled;
-      finger = null;
-      if (tapped) startHold();
-      if (!holding) return;
-      holding = false;
-      canvas.current?.hold(false, cancelled);
-      Sound.hold(false);
-    };
-    const up = (): void => letGo(false);
-    const given = (): void => letGo(true);
-    // A long press on the end page is a hold, not a menu.
-    const noMenu = (event: Event): void => {
-      if (document.documentElement.hasAttribute('data-journey-end') && !(event.target as Partial<Pick<Element, 'closest'>> | null)?.closest?.('a, button')) event.preventDefault();
-    };
-    addEventListener('contextmenu', noMenu);
-    addEventListener('pointermove', aim, { passive: true });
-    addEventListener('pointerdown', press);
-    addEventListener('pointerup', up);
-    addEventListener('pointercancel', given);
     document.addEventListener('click', onClick);
 
     return () => {
@@ -424,13 +334,6 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       cool();
       document.removeEventListener('focusin', focused);
       document.removeEventListener('visibilitychange', seen);
-      removeEventListener('pointermove', aim);
-      removeEventListener('contextmenu', noMenu);
-      clearTimeout(holdSoon);
-      document.documentElement.removeAttribute('data-journey-end');
-      removeEventListener('pointerdown', press);
-      removeEventListener('pointerup', up);
-      removeEventListener('pointercancel', given);
     };
   }, [timeline, stopIds]);
 
@@ -490,12 +393,8 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       <ProjectLinks />
       <ScanHud />
       <HeadAnswers />
-      <QaWords />
       <ScanReport />
       <div id="j-flash" className="j-flash" aria-hidden="true" />
-      <p id="j-hint" className="j-hint">
-        {t.journey.collapse.hint}
-      </p>
       {started ? (
         <Suspense fallback={null}>
           <JourneyCanvas locale={locale} timeline={timeline} reduce={reduce.current} label={t.journey.hero.machineAlt} onProgress={onProgress} onReady={onReady} onFail={onFail} />

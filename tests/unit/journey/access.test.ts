@@ -81,9 +81,14 @@ describe('the calm journey', () => {
     }
   });
 
-  it('has the end page\'s words and every way to reach him', () => {
-    for (const words of ["Let's talk.", 'Every universe starts small.', 'bhccob@gmail.com', '@bhccob', 'Send a message', 'Rotterdam, born in Aruba']) expect(english).toContain(escape(words));
+  // It ends on the scan report, printed (spec 2026-11-08 "Into my head", sections 5.11 and 10): no Email (Bob).
+  it('ends on the printed report, with every way to reach him', () => {
+    for (const words of ['Scan complete', 'Chinese', "Let's talk.", 'Send a message', 'Rotterdam, born in Aruba']) expect(english).toContain(escape(words));
     expect(english).toContain('href="/en/contact/"');
+    expect(english).toContain('github.com/bhccob');
+    expect(english).toContain('instagram.com/bhccob');
+    expect(english).not.toContain('mailto:');
+    expect(english).not.toContain('Every universe starts small.');
   });
 
   it('has nothing of the toy, which is not there', () => {
