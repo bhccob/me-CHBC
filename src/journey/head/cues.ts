@@ -11,7 +11,7 @@ import { HOLD_IN, SPIT_T } from './time';
 
 export type HeadCue = 'scan' | 'lid' | 'label' | 'dive' | 'thought' | 'corridor' | 'down' | 'spit' | 'gather' | 'softBang' | 'print' | 'printTitle';
 
-export const HEAD_CUES: readonly { t: number; cue: HeadCue; n: number }[] = [
+const CUES: { t: number; cue: HeadCue; n: number }[] = [
   { t: 0.093, cue: 'scan', n: 0 },
   { t: 0.115, cue: 'lid', n: 0 },
   ...[0, 1, 2, 3, 4, 5].map((k) => ({ t: 0.205 + 0.008 * k, cue: 'label' as const, n: k })),
@@ -22,7 +22,9 @@ export const HEAD_CUES: readonly { t: number; cue: HeadCue; n: number }[] = [
   { t: SPIT_T, cue: 'spit', n: 0 },
   { t: 0.95, cue: 'gather', n: 0 },
   { t: 0.958, cue: 'softBang', n: 0 },
-].sort((a, b) => a.t - b.t);
+];
+
+export const HEAD_CUES: readonly { t: number; cue: HeadCue; n: number }[] = CUES.sort((a, b) => a.t - b.t);
 
 /** The cues passed from `prevT` to `t`: going forward only, and none on a jump, which would play them all at once. */
 export function dueCues(prevT: number, t: number, jumped: boolean): { cue: HeadCue; n: number }[] {
