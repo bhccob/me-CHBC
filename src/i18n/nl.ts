@@ -223,7 +223,7 @@ export const nl: Dictionary = {
       {
         status: 'Stevig',
         title: 'Full-stack basis',
-        text: 'Een gedegen beheersing van de basisprogrammeertalen, relationele databases met SQL, gameontwikkeling in Godot en moderne frameworks: genoeg om een project te bouwen van de database tot en met de interface.'
+        text: 'Een gedegen beheersing van de basisprogrammeertalen, relationele databases met SQL, gameontwikkeling in Godot en Roblox Studio, en moderne frameworks: genoeg om een project te bouwen van de database tot en met de interface.'
       },
       {
         status: 'Bezig',
@@ -377,7 +377,7 @@ export const nl: Dictionary = {
       },
       {
         question: 'Wat zijn je hobby’s?',
-        answer: 'Ik hardloop, train met gewichten en game. Eerder kwam ik op hoog niveau uit in powerliften en tafeltennis.'
+        answer: 'Ik hardloop, train met gewichten en game. Ik kwam op hoog niveau uit in powerliften en tafeltennis, en ben inmiddels met beide gestopt.'
       },
       {
         question: 'Waar zie je jezelf wonen en werken?',
@@ -386,7 +386,7 @@ export const nl: Dictionary = {
       {
         question: 'Waar werk je op dit moment mee?',
         answer:
-          'Ik heb een full-stack basis: een gedegen beheersing van de basisprogrammeertalen, relationele databases met SQL, gameontwikkeling in Godot en moderne frameworks. Genoeg om een project te bouwen van de database tot en met de interface.'
+          'Ik heb een full-stack basis: een gedegen beheersing van de basisprogrammeertalen, relationele databases met SQL, gameontwikkeling in Godot en Roblox Studio, en moderne frameworks. Genoeg om een project te bouwen van de database tot en met de interface.'
       },
       {
         question: 'Waar is deze site mee gemaakt?',

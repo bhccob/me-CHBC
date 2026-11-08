@@ -70,3 +70,18 @@ describe("the journey's words: Bob's own, exact", () => {
     for (const sheet of nl.journey.sheets) expect(sheet.titleBlock).toContain('Systems Builder');
   });
 });
+
+describe("Bob's answer edits (2026-11-08)", () => {
+  const answer = (t: typeof en, q: string) => t.end.questions.find((x) => x.question === q)!.answer;
+
+  it('says he has retired from powerlifting and table tennis', () => {
+    expect(answer(en, 'What are your hobbies?')).toBe('I run, lift weights and play games. I competed at a high level in powerlifting and table tennis, and have since retired from both.');
+    expect(answer(nl, 'Wat zijn je hobby’s?')).toBe('Ik hardloop, train met gewichten en game. Ik kwam op hoog niveau uit in powerliften en tafeltennis, en ben inmiddels met beide gestopt.');
+  });
+
+  it('names Roblox Studio next to Godot, wherever the sentence stands', () => {
+    expect(answer(en, 'What do you work with at the moment?')).toContain('game development in Godot and Roblox Studio, and modern frameworks');
+    expect(answer(nl, 'Waar werk je op dit moment mee?')).toContain('gameontwikkeling in Godot en Roblox Studio, en moderne frameworks');
+    for (const text of [JSON.stringify(en), JSON.stringify(nl)]) expect(text).not.toMatch(/in Godot (and|en) modern/);
+  });
+});

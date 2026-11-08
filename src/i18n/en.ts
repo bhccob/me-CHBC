@@ -235,7 +235,7 @@ export const en = {
       {
         status: 'Solid',
         title: 'Full-stack foundation',
-        text: 'A working command of the core programming languages, relational databases with SQL, game development in Godot and modern frameworks: enough to build a project from the database all the way to the interface.'
+        text: 'A working command of the core programming languages, relational databases with SQL, game development in Godot and Roblox Studio, and modern frameworks: enough to build a project from the database all the way to the interface.'
       },
       {
         status: 'In progress',
@@ -395,7 +395,7 @@ export const en = {
       },
       {
         question: 'What are your hobbies?',
-        answer: 'I run, lift weights and play games. Earlier, I competed at a high level in powerlifting and table tennis.'
+        answer: 'I run, lift weights and play games. I competed at a high level in powerlifting and table tennis, and have since retired from both.'
       },
       {
         question: 'Where do you see yourself living and working?',
@@ -404,7 +404,7 @@ export const en = {
       {
         question: 'What do you work with at the moment?',
         answer:
-          'I have a full-stack foundation: a working command of the core programming languages, relational databases with SQL, game development in Godot and modern frameworks. That is enough to build a project from the database all the way to the interface.'
+          'I have a full-stack foundation: a working command of the core programming languages, relational databases with SQL, game development in Godot and Roblox Studio, and modern frameworks. That is enough to build a project from the database all the way to the interface.'
       },
       {
         question: 'What is this site built with?',
