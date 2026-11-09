@@ -8,7 +8,7 @@ import { pressureAt } from '../../head/cues';
 import type { Timeline } from '../../timeline';
 import { GROUND } from '~/ui/journey/paper';
 import { displayReferred, displayValue } from '../displayOutput';
-import { type HeadAnchors, HeadScene } from '../head/HeadScene';
+import { type HeadAnchors, type HeadReport, HeadScene } from '../head/HeadScene';
 import { SoftBang } from '../head/softBang';
 import { buildHeadTrack, headPlace, type Pose } from '../head/track';
 import { Gates } from './Gates';
@@ -293,7 +293,9 @@ export class TunnelScene {
     this.headReady ??= (async () => {
       const head = new HeadScene(this.scene, this.headPlace);
       try {
-        await head.load(HEAD_URL, this.locale);
+        // A part a frame, as the flight's own stage loads: the flight goes on meanwhile.
+        await head.build(nextFrame);
+        await head.load(HEAD_URL, this.locale, nextFrame);
       } catch (error) {
         head.dispose();
         throw error;
@@ -306,11 +308,12 @@ export class TunnelScene {
       this.fitHead(head);
       await nextFrame();
       if (this.gone) return head;
-      // Its shaders readied and its points drawn once while nothing shows, so that the first time it is seen costs nothing.
+      // Its shaders readied and its parts drawn once while nothing shows, a batch a frame, so that the first time it is seen
+      // costs nothing.
       head.show(true);
       await compile();
-      draw();
-      head.show(false);
+      if (this.gone) return head;
+      await head.warm(draw, nextFrame);
       this.head = head;
       this.bangPlaced = false;
       return head;
@@ -378,8 +381,8 @@ export class TunnelScene {
   }
 
   /** Where the head is, for the proof harness. */
-  headReport(): { t: number; active: number; pressure: number; locale: string } | null {
-    return this.headShown && this.head ? this.head.report() : null;
+  headReport(): HeadReport | null {
+    return this.headShown && this.head ? this.head.report(this.headState.spark) : null;
   }
 
   /** The words in another language: the world stays, only they change. */

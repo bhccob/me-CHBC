@@ -72,6 +72,8 @@ export interface GlowPoints {
   size: Float32Array;
   glyph: Float32Array;
   n: number;
+  /** Puts point `i` at `v`, with no array made for it: many thousands are placed every frame. */
+  at(i: number, v: { x: number; y: number; z: number }): void;
   touch(sizes?: boolean): void;
   dispose(): void;
 }
@@ -90,6 +92,11 @@ export function glowPoints(parent: Object3D, u: HeadUniforms, n: number, maxPx =
   parent.add(points);
   return {
     points, pos, col, alpha, size, glyph, n,
+    at(i, v) {
+      pos[i * 3] = v.x;
+      pos[i * 3 + 1] = v.y;
+      pos[i * 3 + 2] = v.z;
+    },
     touch(sizes = false) {
       g.attributes.position.needsUpdate = true;
       g.attributes.aAlpha.needsUpdate = true;

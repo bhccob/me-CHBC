@@ -28,6 +28,22 @@ export interface HeadInput {
   reduce: boolean;
 }
 
+/** Where the head is, for the proof harness. */
+export interface HeadReport {
+  /** Its own time. */
+  t: number;
+  /** The answer being read, or -1. */
+  active: number;
+  /** The pressure behind the lips. */
+  pressure: number;
+  /** The language of the words that pour in. */
+  locale: string;
+  /** How far the lid has lifted, 0 to 1. */
+  open: number;
+  /** Where the spark is on the page, CSS px. */
+  spark: [number, number];
+}
+
 /** Where the page's parts of the head journey stand this frame, in CSS px. */
 export interface HeadAnchors {
   /** The six thoughts' regions, for the labels' leaders, and whether each is in front of the camera. */
@@ -88,45 +104,45 @@ export class HeadScene {
   private brainMat: ShaderMaterial | null = null;
   private dustMat: ShaderMaterial | null = null;
   private neuralMat!: ShaderMaterial;
-  private readonly tunnelMat: ShaderMaterial;
-  private readonly beamMat: ShaderMaterial;
-  private readonly glyphAtlas: CanvasTexture;
-  private readonly glyphs: GlowPoints;
+  private tunnelMat!: ShaderMaterial;
+  private beamMat!: ShaderMaterial;
+  private glyphAtlas!: CanvasTexture;
+  private glyphs!: GlowPoints;
   private readonly glyphP: StreamParticle[] = [];
-  private readonly dust: GlowPoints;
+  private dust!: GlowPoints;
   private readonly dustP: StreamParticle[] = [];
-  private readonly sparks: GlowPoints;
+  private sparks!: GlowPoints;
   private readonly sparkP: { y: number; home: Vector3; burst: Vector3; k: number }[] = [];
   private cards: { s: Sprite; p: StreamParticle }[] = [];
   private readonly regionW = THOUGHTS.map((thought) => W(...thought.c));
   private readonly neuronsW: Vector3[] = [];
   private readonly edges: [number, number][] = [];
-  private readonly nodes: GlowPoints;
-  private readonly pulses: GlowPoints;
+  private nodes!: GlowPoints;
+  private pulses!: GlowPoints;
   private readonly pulseP: { e: number; ph: number; sp: number; dir: boolean }[] = [];
   private readonly clusters: { cw: Vector3; m: ShaderMaterial; tips: Vector3[] }[] = [];
-  private readonly somas: GlowPoints;
-  private readonly inward: GlowPoints;
+  private somas!: GlowPoints;
+  private inward!: GlowPoints;
   private readonly inwardP: { k: number; tip: number; ph: number; sp: number }[] = [];
   private readonly objects: { g: Group; m: ShaderMaterial; spin: number }[] = [];
   private readonly optic: { curve: CatmullRomCurve3; m: ShaderMaterial }[] = [];
-  private readonly opticPulses: GlowPoints;
+  private opticPulses!: GlowPoints;
   private readonly opticP: { c: number; ph: number; sp: number; o: Vector3 }[] = [];
   private readonly fibers: { curve: CatmullRomCurve3; offs: Vector3[]; m: ShaderMaterial }[] = [];
-  private readonly fiberPulses: GlowPoints;
+  private fiberPulses!: GlowPoints;
   private readonly fiberPulseP: { f: number; ph: number; sp: number; o: number }[] = [];
-  private readonly outsideLight: Sprite;
-  private readonly lipRings: { g: Group; m: ShaderMaterial };
-  private readonly voice: GlowPoints;
+  private outsideLight!: Sprite;
+  private lipRings!: { g: Group; m: ShaderMaterial };
+  private voice!: GlowPoints;
   private readonly voiceP: { a0: number; sp: number; o: Vector3 }[] = [];
-  private readonly voiceCurve: CatmullRomCurve3;
-  private readonly spray: GlowPoints;
+  private voiceCurve!: CatmullRomCurve3;
+  private spray!: GlowPoints;
   private readonly sprayP: { life: number; o: Vector3 }[] = [];
-  private readonly letters: GlowPoints;
+  private letters!: GlowPoints;
   private readonly letterP: { o: Vector3 }[] = [];
-  private readonly bangSparks: GlowPoints;
+  private bangSparks!: GlowPoints;
   private readonly bangP: { d: Vector3; sp: number; drift: Vector3 }[] = [];
-  private readonly core: Sprite;
+  private core!: Sprite;
   private readonly mouth = W(0, MOUTH_Y, MOUTH_Z + 0.03);
   /** Where the spark is this frame, in the mock's world. */
   private readonly sparkAt = new Vector3();
@@ -149,318 +165,344 @@ export class HeadScene {
     this.head.scale.setScalar(S);
     this.world.add(this.head);
     parent.add(this.world);
-    const u = this.u, rnd = this.rnd;
-
-    // The stars round it all.
-    {
-      const pos: number[] = [], sd: number[] = [];
-      for (let i = 0; i < 2600; i++) {
-        const v = rnd() * 2 - 1, a = rnd() * Math.PI * 2, r = mix(260, 520, rnd()), s = Math.sqrt(1 - v * v);
-        pos.push(Math.cos(a) * s * r, v * r * 0.7 + 10, Math.sin(a) * s * r);
-        sd.push(rnd());
-      }
-      const g = new BufferGeometry();
-      g.setAttribute('position', new Float32BufferAttribute(pos, 3));
-      g.setAttribute('aSeed', new Float32BufferAttribute(sd, 1));
-      const m = dotsMaterial(u, INK, 0.9);
-      m.uniforms.uA.value = 0.55;
-      const p = new Points(g, m);
-      p.frustumCulled = false;
-      this.world.add(p);
-    }
-
-    // The portal's last stretch: a shaft straight down, above his head.
-    this.tunnelMat = new ShaderMaterial({
-      uniforms: { uCamY: { value: 250 }, uA: { value: 1 } },
-      vertexShader: /* glsl */ `uniform float uCamY; varying float vA;
-        void main() {
-          vec4 mv = modelViewMatrix * vec4(position, 1.0); float d = length(mv.xyz);
-          float gone = smoothstep(position.y + 30.0, position.y + 10.0, uCamY);
-          vA = (1.0 - gone) * smoothstep(0.5, 4.0, d) * (1.0 - smoothstep(70.0, 150.0, d));
-          gl_Position = projectionMatrix * mv;
-        }`,
-      fragmentShader: /* glsl */ 'uniform float uA; varying float vA; void main() { gl_FragColor = vec4(0.95, 0.72, 0.3, uA * vA * 0.42); }',
-      transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending,
-    });
-    {
-      const pos: number[] = [];
-      const corner = (k: number): [number, number] => [Math.cos(((k + 0.5) * Math.PI) / 4) * RING_R, Math.sin(((k + 0.5) * Math.PI) / 4) * RING_R];
-      for (const y of RING_Y) {
-        for (let k = 0; k < 8; k++) {
-          const a = corner(k), b = corner(k + 1);
-          pos.push(a[0], y, a[1], b[0], y, b[1]);
-          if (y < RING_Y[RING_Y.length - 1]) pos.push(a[0], y, a[1], a[0], y + 7, a[1]);
-        }
-      }
-      const g = new BufferGeometry();
-      g.setAttribute('position', new Float32BufferAttribute(pos, 3));
-      const l = new LineSegments(g, this.tunnelMat);
-      l.frustumCulled = false;
-      this.world.add(l);
-    }
-
-    // What goes in: everything from the site falls down the shaft and pours into the open skull, a wide torrent.
-    const atlas = document.createElement('canvas');
-    atlas.width = 1024;
-    atlas.height = 512;
-    this.glyphAtlas = new CanvasTexture(atlas);
-    this.glyphAtlas.flipY = false;
-    this.glyphAtlas.anisotropy = 4;
-    this.glyphs = glowPoints(this.world, u, 6000, 32, this.glyphAtlas);
-    for (let i = 0; i < this.glyphs.n; i++) {
-      this.glyphP.push(this.streamParticle());
-      this.glyphs.col.set(TINTS[Math.floor(rnd() * TINTS.length)], i * 3);
-      this.glyphs.size[i] = mix(0.42, 0.95, rnd() ** 1.6);
-      this.glyphs.glyph[i] = Math.floor(rnd() * 128);
-    }
-    this.dust = glowPoints(this.world, u, 5000, 22);
-    for (let i = 0; i < this.dust.n; i++) {
-      this.dustP.push({ ...this.streamParticle(), r: Math.sqrt(rnd()) * 1.1 });
-      this.dust.col.set(TINTS[Math.floor(rnd() * 4)], i * 3);
-      this.dust.size[i] = mix(0.12, 0.28, rnd());
-    }
-    this.sparks = glowPoints(this.world, u, SPARK_RINGS * SPARK_PER, 30);
-    for (let k = 0; k < SPARK_RINGS; k++) {
-      for (let j = 0; j < SPARK_PER; j++) {
-        const e = Math.floor((j / SPARK_PER) * 8), f = (j / SPARK_PER) * 8 - e;
-        const a0 = ((e + 0.5) * Math.PI) / 4, a1 = ((e + 1.5) * Math.PI) / 4, ry = RING_Y[k];
-        const home = new Vector3(mix(Math.cos(a0), Math.cos(a1), f) * RING_R, ry, mix(Math.sin(a0), Math.sin(a1), f) * RING_R);
-        this.sparkP.push({ y: ry, home, burst: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(5), k: Math.floor(rnd() * 6) });
-        const i = k * SPARK_PER + j;
-        this.sparks.col.set([1, 0.76, 0.36], i * 3);
-        this.sparks.size[i] = mix(0.12, 0.28, rnd());
-      }
-    }
-    // The body of the torrent: a soft column of light down the shaft into the skull, with streaks running down it.
-    {
-      const geo = new CylinderGeometry(1, 1, STREAM_Y0 - OPENING_Y, 28, 220, true);
-      geo.translate(0, (STREAM_Y0 + OPENING_Y) / 2, -1);
-      const pos = geo.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const y = pos.getY(i), a = ((STREAM_Y0 - y) / (STREAM_Y0 - OPENING_Y)) * 0.86, r = this.streamR(a) * 0.8;
-        pos.setX(i, pos.getX(i) * r);
-        pos.setZ(i, (pos.getZ(i) + 1) * r - 1);
-      }
-      geo.computeVertexNormals();
-      this.beamMat = new ShaderMaterial({
-        uniforms: { uA: { value: 0 }, uTime: u.uTime },
-        vertexShader: /* glsl */ `varying vec2 vUv; varying vec3 vN; varying vec3 vV; varying float vDist;
-          void main() { vUv = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); vDist = length(mv.xyz); gl_Position = projectionMatrix * mv; }`,
-        fragmentShader: /* glsl */ `uniform float uA, uTime; varying vec2 vUv; varying vec3 vN; varying vec3 vV; varying float vDist;
-          void main() {
-            float body = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);
-            float streak = 0.5 + 0.5 * sin(vUv.y * 150.0 + uTime * 7.0 + sin(vUv.x * 18.85) * 2.4);
-            float ends = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(0.9, 1.0, vUv.y));
-            float a = uA * body * (0.45 + 0.55 * streak) * ends * smoothstep(1.0, 8.0, vDist);
-            gl_FragColor = vec4(mix(vec3(1.0, 0.72, 0.32), vec3(1.0, 0.92, 0.74), streak * body), a * 0.32);
-          }`,
-        side: DoubleSide, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending,
-      });
-      const mesh = new Mesh(geo, this.beamMat);
-      mesh.frustumCulled = false;
-      this.world.add(mesh);
-    }
-
-    // Inside: neurons and the network between them.
-    const neurons: Vector3[] = [];
-    while (neurons.length < 240) {
-      const x = mix(-0.56, 0.56, rnd()), y = mix(0.1, 0.88, rnd()), z = mix(-0.74, 0.58, rnd());
-      if (brainSdf(x, y, z) < -0.025) neurons.push(new Vector3(x, y, z));
-    }
-    {
-      const seen = new Set<string>();
-      neurons.forEach((p, i) => {
-        const near = neurons.map((q, j): [number, number] => [p.distanceTo(q), j]).filter(([d, j]) => j !== i && d < 0.24).sort((a, b) => a[0] - b[0]).slice(0, 3);
-        for (const [, j] of near) {
-          const key = i < j ? `${i}-${j}` : `${j}-${i}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            this.edges.push([i, j]);
-          }
-        }
-      });
-      const pos: number[] = [], shade: number[] = [];
-      for (const [i, j] of this.edges) {
-        pos.push(...neurons[i].toArray(), ...neurons[j].toArray());
-        shade.push(1, 1);
-      }
-      this.neuralMat = lines(this.head, pos, shade, WARM).material;
-    }
-    for (const p of neurons) this.neuronsW.push(p.clone().multiplyScalar(S));
-    this.nodes = glowPoints(this.world, u, neurons.length);
-    this.neuronsW.forEach((p, i) => {
-      this.nodes.pos.set(p.toArray(), i * 3);
-      this.nodes.col.set([1, 0.8, 0.5], i * 3);
-      this.nodes.size[i] = 0.16;
-    });
-    this.nodes.touch(true);
-    this.pulses = glowPoints(this.world, u, 460);
-    for (let i = 0; i < this.pulses.n; i++) {
-      this.pulseP.push({ e: Math.floor(rnd() * this.edges.length), ph: rnd(), sp: mix(0.5, 1.4, rnd()), dir: rnd() < 0.5 });
-      this.pulses.col.set([1, 0.86, 0.6], i * 3);
-      this.pulses.size[i] = mix(0.1, 0.2, rnd());
-    }
-    this.pulses.touch(true);
-
-    // Each thought is one bright neuron: a body and its branches, with signals running in.
-    for (const thought of THOUGHTS) {
-      const c = new Vector3(...thought.c), pos: number[] = [], shade: number[] = [], tips: Vector3[] = [];
-      const grow = (from: Vector3, dir: Vector3, len: number, depth: number): void => {
-        const to = from.clone().addScaledVector(dir, len);
-        pos.push(from.x, from.y, from.z, to.x, to.y, to.z);
-        shade.push(1 - depth * 0.3, 1 - (depth + 1) * 0.3);
-        if (depth < 2) for (let b = 0; b < 2; b++) grow(to, dir.clone().add(new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(1.2)).normalize(), len * 0.64, depth + 1);
-        else tips.push(to.clone().multiplyScalar(S));
-      };
-      for (let b = 0; b < 7; b++) grow(c, new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize(), mix(0.055, 0.09, rnd()), 0);
-      this.clusters.push({ cw: W(...thought.c), m: lines(this.head, pos, shade, new Color(1, 0.84, 0.56)).material, tips });
-    }
-    this.somas = glowPoints(this.world, u, this.clusters.length, 60);
-    this.clusters.forEach((cl, k) => {
-      this.somas.pos.set(cl.cw.toArray(), k * 3);
-      this.somas.col.set([1, 0.88, 0.62], k * 3);
-    });
-    this.inward = glowPoints(this.world, u, this.clusters.length * 24);
-    for (let i = 0; i < this.inward.n; i++) {
-      const k = Math.floor(i / 24);
-      this.inwardP.push({ k, tip: Math.floor(rnd() * this.clusters[k].tips.length), ph: rnd(), sp: mix(0.6, 1.3, rnd()) });
-      this.inward.col.set([1, 0.9, 0.7], i * 3);
-      this.inward.size[i] = mix(0.08, 0.16, rnd());
-    }
-    this.inward.touch(true);
-
-    // One object of light for each answer, beside its thought.
-    THOUGHTS.slice(0, NQ).forEach((thought, k) => {
-      const { positions, shade } = objectSegments(thought.object!);
-      const g = new Group();
-      g.position.copy(this.clusters[k].cw);
-      g.scale.setScalar(1.15);
-      this.world.add(g);
-      this.objects.push({ g, m: lines(g, positions, shade, new Color(1, 0.9, 0.68)).material, spin: rnd() * 6 });
-    });
-
-    // The eyes' nerves, back to the visual cortex.
-    EYES.forEach((e, n) => {
-      const k = n === 0 ? 1 : -1;
-      const curve = new CatmullRomCurve3([W(e.x, e.y, e.z - 0.05), W(k * 0.17, 0.1, 0.44), W(0, 0.12, 0.28), W(-k * 0.12, 0.17, 0.04), W(-k * 0.2, 0.3, -0.36), W(-k * 0.08, 0.44, -0.62)], false, 'centripetal');
-      const pos: number[] = [], shade: number[] = [];
-      for (let st = 0; st < 4; st++) {
-        const off = new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.35);
-        let prev: Vector3 | null = null;
-        for (let j = 0; j <= 120; j++) {
-          const a = j / 120, p = curve.getPoint(a).addScaledVector(off, Math.sin(Math.PI * a));
-          if (prev) {
-            pos.push(prev.x, prev.y, prev.z, p.x, p.y, p.z);
-            shade.push(0.6, 0.6);
-          }
-          prev = p;
-        }
-      }
-      this.optic.push({ curve, m: lines(this.world, pos, shade, WARM).material });
-    });
-    this.opticPulses = glowPoints(this.world, u, 2 * 34);
-    for (let i = 0; i < this.opticPulses.n; i++) {
-      this.opticP.push({ c: i % 2, ph: rnd(), sp: mix(0.35, 0.65, rnd()), o: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.4) });
-      this.opticPulses.col.set([1, 0.9, 0.66], i * 3);
-      this.opticPulses.size[i] = mix(0.12, 0.22, rnd());
-    }
-    this.opticPulses.touch(true);
-
-    // The paths between the thoughts: bundles of fibres; the last runs the long way down to the mouth.
-    this.fiberPulses = glowPoints(this.world, u, 7 * 22);
-    for (let i = 0; i < 7; i++) {
-      const A = W(...THOUGHTS[i].c);
-      const pts = i < 6 ? [A, this.corridor(i).add(new Vector3(0, -0.5, 0)), W(...THOUGHTS[i + 1].c)] : [A, ...DOWN.map((p) => W(p[0] + 0.03, p[1] - 0.03, p[2])), this.mouth.clone()];
-      const curve = new CatmullRomCurve3(pts, false, 'centripetal');
-      const pos: number[] = [], shade: number[] = [], offs: Vector3[] = [];
-      const steps = i < 6 ? 90 : 200;
-      for (let s = 0; s < 6; s++) {
-        const off = new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.55), ph = rnd() * 6.28;
-        offs.push(off);
-        let prev: Vector3 | null = null;
-        for (let j = 0; j <= steps; j++) {
-          const a = j / steps, p = curve.getPoint(a).addScaledVector(off, Math.sin(Math.PI * a) * (0.8 + 0.4 * Math.sin(a * 9 + ph)));
-          if (prev) {
-            pos.push(prev.x, prev.y, prev.z, p.x, p.y, p.z);
-            shade.push(0.5 + 0.5 * Math.sin(Math.PI * (a - 1 / steps)), 0.5 + 0.5 * Math.sin(Math.PI * a));
-          }
-          prev = p;
-        }
-      }
-      this.fibers.push({ curve, offs, m: lines(this.world, pos, shade, WARM).material });
-    }
-    for (let i = 0; i < this.fiberPulses.n; i++) {
-      this.fiberPulseP.push({ f: Math.floor(i / 22), ph: rnd(), sp: mix(0.35, 0.7, rnd()), o: Math.floor(rnd() * 6) });
-      this.fiberPulses.col.set([1, 0.88, 0.62], i * 3);
-      this.fiberPulses.size[i] = mix(0.12, 0.22, rnd());
-    }
-    this.fiberPulses.touch(true);
-
-    // The mouth: a light outside the lips, the rings that frame them from inside.
-    this.outsideLight = lightSprite(this.world, 9);
-    this.outsideLight.position.copy(this.mouth).add(new Vector3(0, 0, 4));
-    this.outsideLight.scale.set(9, 5, 1);
-    {
-      const g = new Group(), pos: number[] = [], shade: number[] = [];
-      for (const [k, sh] of [[1, 1], [1.12, 0.55], [1.3, 0.25]] as const) {
-        for (let i = 0; i < 72; i++) {
-          for (const j of [i, i + 1]) {
-            const a = (j / 72) * Math.PI * 2, x = Math.cos(a) * (MOUTH_W + 0.01) * k;
-            pos.push(x, Math.sin(a) * k, MOUTH_Z - 1.3 * x * x);
-            shade.push(sh);
-          }
-        }
-      }
-      this.lipRings = { g, m: lines(g, pos, shade, new Color(1, 0.86, 0.6)).material };
-      this.head.add(g);
-    }
-    // The thought going down with you, from Broca's area the long way to the mouth.
-    this.voice = glowPoints(this.world, u, 900, 30);
-    for (let i = 0; i < this.voice.n; i++) {
-      this.voiceP.push({ a0: rnd(), sp: mix(0.05, 0.1, rnd()), o: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(1.6) });
-      this.voice.col.set(rnd() < 0.7 ? [1, 0.78, 0.4] : [0.96, 0.93, 0.87], i * 3);
-      this.voice.size[i] = mix(0.08, 0.24, rnd() ** 2);
-    }
-    this.voice.touch(true);
-    this.voiceCurve = new CatmullRomCurve3([W(...THOUGHTS[6].c), ...DOWN.map((p) => W(...p)), this.mouth.clone()], false, 'centripetal');
-    // The spray: a little escaping at the seam of the lips, then the spark's trail.
-    this.spray = glowPoints(this.world, u, 1600, 26);
-    for (let i = 0; i < this.spray.n; i++) {
-      this.sprayP.push({ life: mix(0.5, 1, rnd()), o: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.8) });
-      this.spray.col.set(rnd() < 0.65 ? [1, 0.82, 0.5] : [0.95, 0.95, 1.0], i * 3);
-      this.spray.size[i] = mix(0.06, 0.26, rnd() ** 2);
-    }
-    this.spray.touch(true);
-    // The words: a swarm carried down with you, packed tight behind the lips, then in the spark.
-    this.letters = glowPoints(this.world, u, 1000, 18);
-    for (let i = 0; i < this.letters.n; i++) {
-      this.letterP.push({ o: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize().multiplyScalar(Math.cbrt(rnd()) * 1.1) });
-      this.letters.col.set(rnd() < 0.85 ? [1, 0.8, 0.45] : [0.97, 0.94, 0.88], i * 3);
-      this.letters.size[i] = mix(0.08, 0.16, rnd()) * DEPTH_SCALE;
-    }
-    this.letters.touch(true);
-    // The bang's sparks and its seed of light (its gas, galaxies and rings are the soft bang's, softBang.ts).
-    this.bangSparks = glowPoints(this.world, u, 1500, 22);
-    for (let i = 0; i < this.bangSparks.n; i++) {
-      const d = new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize();
-      this.bangP.push({ d, sp: mix(4, 22, rnd() ** 1.5) * (rnd() < 0.18 ? 3.2 : 1), drift: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.4) });
-      this.bangSparks.col.set(rnd() < 0.6 ? [1, 0.8, 0.45] : [0.85, 0.9, 1.0], i * 3);
-      this.bangSparks.size[i] = mix(0.06, 0.16, rnd()) * DEPTH_SCALE;
-    }
-    this.bangSparks.touch(true);
-    this.core = lightSprite(this.world, 2);
     this.endCam.position.copy(END_POS);
     this.endCam.lookAt(END_LOOK);
     this.endCam.updateMatrixWorld();
     this.world.visible = false;
   }
 
-  /** Loads the baked head and the words that pour in, and draws the cards. */
-  async load(url: string, locale: Locale): Promise<void> {
+  /**
+   * Builds the scene a part at a time, with `next` between parts (a frame, in the tunnel), so that no frame of the flight
+   * waits for all of it: on a weak machine the whole took 170 ms at once.
+   */
+  async build(next: () => Promise<void>): Promise<void> {
+    for (const part of this.parts()) {
+      part();
+      await next();
+    }
+  }
+
+  /** The scene's parts, in the order they are built (mock-up 20's sections). */
+  private parts(): (() => void)[] {
+    const u = this.u, rnd = this.rnd;
+    return [
+      () => {
+        // The stars round it all.
+        {
+          const pos: number[] = [], sd: number[] = [];
+          for (let i = 0; i < 2600; i++) {
+            const v = rnd() * 2 - 1, a = rnd() * Math.PI * 2, r = mix(260, 520, rnd()), s = Math.sqrt(1 - v * v);
+            pos.push(Math.cos(a) * s * r, v * r * 0.7 + 10, Math.sin(a) * s * r);
+            sd.push(rnd());
+          }
+          const g = new BufferGeometry();
+          g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+          g.setAttribute('aSeed', new Float32BufferAttribute(sd, 1));
+          const m = dotsMaterial(u, INK, 0.9);
+          m.uniforms.uA.value = 0.55;
+          const p = new Points(g, m);
+          p.frustumCulled = false;
+          this.world.add(p);
+        }
+
+        // The portal's last stretch: a shaft straight down, above his head.
+        this.tunnelMat = new ShaderMaterial({
+          uniforms: { uCamY: { value: 250 }, uA: { value: 1 } },
+          vertexShader: /* glsl */ `uniform float uCamY; varying float vA;
+            void main() {
+              vec4 mv = modelViewMatrix * vec4(position, 1.0); float d = length(mv.xyz);
+              float gone = smoothstep(position.y + 30.0, position.y + 10.0, uCamY);
+              vA = (1.0 - gone) * smoothstep(0.5, 4.0, d) * (1.0 - smoothstep(70.0, 150.0, d));
+              gl_Position = projectionMatrix * mv;
+            }`,
+          fragmentShader: /* glsl */ 'uniform float uA; varying float vA; void main() { gl_FragColor = vec4(0.95, 0.72, 0.3, uA * vA * 0.42); }',
+          transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending,
+        });
+        {
+          const pos: number[] = [];
+          const corner = (k: number): [number, number] => [Math.cos(((k + 0.5) * Math.PI) / 4) * RING_R, Math.sin(((k + 0.5) * Math.PI) / 4) * RING_R];
+          for (const y of RING_Y) {
+            for (let k = 0; k < 8; k++) {
+              const a = corner(k), b = corner(k + 1);
+              pos.push(a[0], y, a[1], b[0], y, b[1]);
+              if (y < RING_Y[RING_Y.length - 1]) pos.push(a[0], y, a[1], a[0], y + 7, a[1]);
+            }
+          }
+          const g = new BufferGeometry();
+          g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+          const l = new LineSegments(g, this.tunnelMat);
+          l.frustumCulled = false;
+          this.world.add(l);
+        }
+      },
+      () => {
+        // What goes in: everything from the site falls down the shaft and pours into the open skull, a wide torrent.
+        const atlas = document.createElement('canvas');
+        atlas.width = 1024;
+        atlas.height = 512;
+        this.glyphAtlas = new CanvasTexture(atlas);
+        this.glyphAtlas.flipY = false;
+        this.glyphAtlas.anisotropy = 4;
+        this.glyphs = glowPoints(this.world, u, 6000, 32, this.glyphAtlas);
+        for (let i = 0; i < this.glyphs.n; i++) {
+          this.glyphP.push(this.streamParticle());
+          this.glyphs.col.set(TINTS[Math.floor(rnd() * TINTS.length)], i * 3);
+          this.glyphs.size[i] = mix(0.42, 0.95, rnd() ** 1.6);
+          this.glyphs.glyph[i] = Math.floor(rnd() * 128);
+        }
+        this.dust = glowPoints(this.world, u, 5000, 22);
+        for (let i = 0; i < this.dust.n; i++) {
+          this.dustP.push({ ...this.streamParticle(), r: Math.sqrt(rnd()) * 1.1 });
+          this.dust.col.set(TINTS[Math.floor(rnd() * 4)], i * 3);
+          this.dust.size[i] = mix(0.12, 0.28, rnd());
+        }
+        this.sparks = glowPoints(this.world, u, SPARK_RINGS * SPARK_PER, 30);
+        for (let k = 0; k < SPARK_RINGS; k++) {
+          for (let j = 0; j < SPARK_PER; j++) {
+            const e = Math.floor((j / SPARK_PER) * 8), f = (j / SPARK_PER) * 8 - e;
+            const a0 = ((e + 0.5) * Math.PI) / 4, a1 = ((e + 1.5) * Math.PI) / 4, ry = RING_Y[k];
+            const home = new Vector3(mix(Math.cos(a0), Math.cos(a1), f) * RING_R, ry, mix(Math.sin(a0), Math.sin(a1), f) * RING_R);
+            this.sparkP.push({ y: ry, home, burst: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(5), k: Math.floor(rnd() * 6) });
+            const i = k * SPARK_PER + j;
+            this.sparks.col.set([1, 0.76, 0.36], i * 3);
+            this.sparks.size[i] = mix(0.12, 0.28, rnd());
+          }
+        }
+      },
+      () => {
+        // The body of the torrent: a soft column of light down the shaft into the skull, with streaks running down it.
+        {
+          const geo = new CylinderGeometry(1, 1, STREAM_Y0 - OPENING_Y, 28, 220, true);
+          geo.translate(0, (STREAM_Y0 + OPENING_Y) / 2, -1);
+          const pos = geo.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            const y = pos.getY(i), a = ((STREAM_Y0 - y) / (STREAM_Y0 - OPENING_Y)) * 0.86, r = this.streamR(a) * 0.8;
+            pos.setX(i, pos.getX(i) * r);
+            pos.setZ(i, (pos.getZ(i) + 1) * r - 1);
+          }
+          geo.computeVertexNormals();
+          this.beamMat = new ShaderMaterial({
+            uniforms: { uA: { value: 0 }, uTime: u.uTime },
+            vertexShader: /* glsl */ `varying vec2 vUv; varying vec3 vN; varying vec3 vV; varying float vDist;
+              void main() { vUv = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); vDist = length(mv.xyz); gl_Position = projectionMatrix * mv; }`,
+            fragmentShader: /* glsl */ `uniform float uA, uTime; varying vec2 vUv; varying vec3 vN; varying vec3 vV; varying float vDist;
+              void main() {
+                float body = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);
+                float streak = 0.5 + 0.5 * sin(vUv.y * 150.0 + uTime * 7.0 + sin(vUv.x * 18.85) * 2.4);
+                float ends = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(0.9, 1.0, vUv.y));
+                float a = uA * body * (0.45 + 0.55 * streak) * ends * smoothstep(1.0, 8.0, vDist);
+                gl_FragColor = vec4(mix(vec3(1.0, 0.72, 0.32), vec3(1.0, 0.92, 0.74), streak * body), a * 0.32);
+              }`,
+            side: DoubleSide, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending,
+          });
+          const mesh = new Mesh(geo, this.beamMat);
+          mesh.frustumCulled = false;
+          this.world.add(mesh);
+        }
+      },
+      () => {
+        // Inside: neurons and the network between them.
+        const neurons: Vector3[] = [];
+        while (neurons.length < 240) {
+          const x = mix(-0.56, 0.56, rnd()), y = mix(0.1, 0.88, rnd()), z = mix(-0.74, 0.58, rnd());
+          if (brainSdf(x, y, z) < -0.025) neurons.push(new Vector3(x, y, z));
+        }
+        {
+          const seen = new Set<string>();
+          neurons.forEach((p, i) => {
+            const near = neurons.map((q, j): [number, number] => [p.distanceTo(q), j]).filter(([d, j]) => j !== i && d < 0.24).sort((a, b) => a[0] - b[0]).slice(0, 3);
+            for (const [, j] of near) {
+              const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                this.edges.push([i, j]);
+              }
+            }
+          });
+          const pos: number[] = [], shade: number[] = [];
+          for (const [i, j] of this.edges) {
+            pos.push(...neurons[i].toArray(), ...neurons[j].toArray());
+            shade.push(1, 1);
+          }
+          this.neuralMat = lines(this.head, pos, shade, WARM).material;
+        }
+        for (const p of neurons) this.neuronsW.push(p.clone().multiplyScalar(S));
+        this.nodes = glowPoints(this.world, u, neurons.length);
+        this.neuronsW.forEach((p, i) => {
+          this.nodes.at(i, p);
+          this.nodes.col.set([1, 0.8, 0.5], i * 3);
+          this.nodes.size[i] = 0.16;
+        });
+        this.nodes.touch(true);
+        this.pulses = glowPoints(this.world, u, 460);
+        for (let i = 0; i < this.pulses.n; i++) {
+          this.pulseP.push({ e: Math.floor(rnd() * this.edges.length), ph: rnd(), sp: mix(0.5, 1.4, rnd()), dir: rnd() < 0.5 });
+          this.pulses.col.set([1, 0.86, 0.6], i * 3);
+          this.pulses.size[i] = mix(0.1, 0.2, rnd());
+        }
+        this.pulses.touch(true);
+      },
+      () => {
+        // Each thought is one bright neuron: a body and its branches, with signals running in.
+        for (const thought of THOUGHTS) {
+          const c = new Vector3(...thought.c), pos: number[] = [], shade: number[] = [], tips: Vector3[] = [];
+          const grow = (from: Vector3, dir: Vector3, len: number, depth: number): void => {
+            const to = from.clone().addScaledVector(dir, len);
+            pos.push(from.x, from.y, from.z, to.x, to.y, to.z);
+            shade.push(1 - depth * 0.3, 1 - (depth + 1) * 0.3);
+            if (depth < 2) for (let b = 0; b < 2; b++) grow(to, dir.clone().add(new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(1.2)).normalize(), len * 0.64, depth + 1);
+            else tips.push(to.clone().multiplyScalar(S));
+          };
+          for (let b = 0; b < 7; b++) grow(c, new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize(), mix(0.055, 0.09, rnd()), 0);
+          this.clusters.push({ cw: W(...thought.c), m: lines(this.head, pos, shade, new Color(1, 0.84, 0.56)).material, tips });
+        }
+        this.somas = glowPoints(this.world, u, this.clusters.length, 60);
+        this.clusters.forEach((cl, k) => {
+          this.somas.pos.set(cl.cw.toArray(), k * 3);
+          this.somas.col.set([1, 0.88, 0.62], k * 3);
+        });
+        this.inward = glowPoints(this.world, u, this.clusters.length * 24);
+        for (let i = 0; i < this.inward.n; i++) {
+          const k = Math.floor(i / 24);
+          this.inwardP.push({ k, tip: Math.floor(rnd() * this.clusters[k].tips.length), ph: rnd(), sp: mix(0.6, 1.3, rnd()) });
+          this.inward.col.set([1, 0.9, 0.7], i * 3);
+          this.inward.size[i] = mix(0.08, 0.16, rnd());
+        }
+        this.inward.touch(true);
+
+        // One object of light for each answer, beside its thought.
+        THOUGHTS.slice(0, NQ).forEach((thought, k) => {
+          const { positions, shade } = objectSegments(thought.object!);
+          const g = new Group();
+          g.position.copy(this.clusters[k].cw);
+          g.scale.setScalar(1.15);
+          this.world.add(g);
+          this.objects.push({ g, m: lines(g, positions, shade, new Color(1, 0.9, 0.68)).material, spin: rnd() * 6 });
+        });
+      },
+      () => {
+        // The eyes' nerves, back to the visual cortex.
+        EYES.forEach((e, n) => {
+          const k = n === 0 ? 1 : -1;
+          const curve = new CatmullRomCurve3([W(e.x, e.y, e.z - 0.05), W(k * 0.17, 0.1, 0.44), W(0, 0.12, 0.28), W(-k * 0.12, 0.17, 0.04), W(-k * 0.2, 0.3, -0.36), W(-k * 0.08, 0.44, -0.62)], false, 'centripetal');
+          const pos: number[] = [], shade: number[] = [];
+          for (let st = 0; st < 4; st++) {
+            const off = new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.35);
+            let prev: Vector3 | null = null;
+            for (let j = 0; j <= 120; j++) {
+              const a = j / 120, p = curve.getPoint(a).addScaledVector(off, Math.sin(Math.PI * a));
+              if (prev) {
+                pos.push(prev.x, prev.y, prev.z, p.x, p.y, p.z);
+                shade.push(0.6, 0.6);
+              }
+              prev = p;
+            }
+          }
+          this.optic.push({ curve, m: lines(this.world, pos, shade, WARM).material });
+        });
+        this.opticPulses = glowPoints(this.world, u, 2 * 34);
+        for (let i = 0; i < this.opticPulses.n; i++) {
+          this.opticP.push({ c: i % 2, ph: rnd(), sp: mix(0.35, 0.65, rnd()), o: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.4) });
+          this.opticPulses.col.set([1, 0.9, 0.66], i * 3);
+          this.opticPulses.size[i] = mix(0.12, 0.22, rnd());
+        }
+        this.opticPulses.touch(true);
+
+        // The paths between the thoughts: bundles of fibres; the last runs the long way down to the mouth.
+        this.fiberPulses = glowPoints(this.world, u, 7 * 22);
+        for (let i = 0; i < 7; i++) {
+          const A = W(...THOUGHTS[i].c);
+          const pts = i < 6 ? [A, this.corridor(i).add(new Vector3(0, -0.5, 0)), W(...THOUGHTS[i + 1].c)] : [A, ...DOWN.map((p) => W(p[0] + 0.03, p[1] - 0.03, p[2])), this.mouth.clone()];
+          const curve = new CatmullRomCurve3(pts, false, 'centripetal');
+          const pos: number[] = [], shade: number[] = [], offs: Vector3[] = [];
+          const steps = i < 6 ? 90 : 200;
+          for (let s = 0; s < 6; s++) {
+            const off = new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.55), ph = rnd() * 6.28;
+            offs.push(off);
+            let prev: Vector3 | null = null;
+            for (let j = 0; j <= steps; j++) {
+              const a = j / steps, p = curve.getPoint(a).addScaledVector(off, Math.sin(Math.PI * a) * (0.8 + 0.4 * Math.sin(a * 9 + ph)));
+              if (prev) {
+                pos.push(prev.x, prev.y, prev.z, p.x, p.y, p.z);
+                shade.push(0.5 + 0.5 * Math.sin(Math.PI * (a - 1 / steps)), 0.5 + 0.5 * Math.sin(Math.PI * a));
+              }
+              prev = p;
+            }
+          }
+          this.fibers.push({ curve, offs, m: lines(this.world, pos, shade, WARM).material });
+        }
+        for (let i = 0; i < this.fiberPulses.n; i++) {
+          this.fiberPulseP.push({ f: Math.floor(i / 22), ph: rnd(), sp: mix(0.35, 0.7, rnd()), o: Math.floor(rnd() * 6) });
+          this.fiberPulses.col.set([1, 0.88, 0.62], i * 3);
+          this.fiberPulses.size[i] = mix(0.12, 0.22, rnd());
+        }
+        this.fiberPulses.touch(true);
+      },
+      () => {
+        // The mouth: a light outside the lips, the rings that frame them from inside.
+        this.outsideLight = lightSprite(this.world, 9);
+        this.outsideLight.position.copy(this.mouth).add(new Vector3(0, 0, 4));
+        this.outsideLight.scale.set(9, 5, 1);
+        {
+          const g = new Group(), pos: number[] = [], shade: number[] = [];
+          for (const [k, sh] of [[1, 1], [1.12, 0.55], [1.3, 0.25]] as const) {
+            for (let i = 0; i < 72; i++) {
+              for (const j of [i, i + 1]) {
+                const a = (j / 72) * Math.PI * 2, x = Math.cos(a) * (MOUTH_W + 0.01) * k;
+                pos.push(x, Math.sin(a) * k, MOUTH_Z - 1.3 * x * x);
+                shade.push(sh);
+              }
+            }
+          }
+          this.lipRings = { g, m: lines(g, pos, shade, new Color(1, 0.86, 0.6)).material };
+          this.head.add(g);
+        }
+        // The thought going down with you, from Broca's area the long way to the mouth.
+        this.voice = glowPoints(this.world, u, 900, 30);
+        for (let i = 0; i < this.voice.n; i++) {
+          this.voiceP.push({ a0: rnd(), sp: mix(0.05, 0.1, rnd()), o: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(1.6) });
+          this.voice.col.set(rnd() < 0.7 ? [1, 0.78, 0.4] : [0.96, 0.93, 0.87], i * 3);
+          this.voice.size[i] = mix(0.08, 0.24, rnd() ** 2);
+        }
+        this.voice.touch(true);
+        this.voiceCurve = new CatmullRomCurve3([W(...THOUGHTS[6].c), ...DOWN.map((p) => W(...p)), this.mouth.clone()], false, 'centripetal');
+        // The spray: a little escaping at the seam of the lips, then the spark's trail.
+        this.spray = glowPoints(this.world, u, 1600, 26);
+        for (let i = 0; i < this.spray.n; i++) {
+          this.sprayP.push({ life: mix(0.5, 1, rnd()), o: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.8) });
+          this.spray.col.set(rnd() < 0.65 ? [1, 0.82, 0.5] : [0.95, 0.95, 1.0], i * 3);
+          this.spray.size[i] = mix(0.06, 0.26, rnd() ** 2);
+        }
+        this.spray.touch(true);
+        // The words: a swarm carried down with you, packed tight behind the lips, then in the spark.
+        this.letters = glowPoints(this.world, u, 1000, 18);
+        for (let i = 0; i < this.letters.n; i++) {
+          this.letterP.push({ o: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize().multiplyScalar(Math.cbrt(rnd()) * 1.1) });
+          this.letters.col.set(rnd() < 0.85 ? [1, 0.8, 0.45] : [0.97, 0.94, 0.88], i * 3);
+          this.letters.size[i] = mix(0.08, 0.16, rnd()) * DEPTH_SCALE;
+        }
+        this.letters.touch(true);
+        // The bang's sparks and its seed of light (its gas, galaxies and rings are the soft bang's, softBang.ts).
+        this.bangSparks = glowPoints(this.world, u, 1500, 22);
+        for (let i = 0; i < this.bangSparks.n; i++) {
+          const d = new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize();
+          this.bangP.push({ d, sp: mix(4, 22, rnd() ** 1.5) * (rnd() < 0.18 ? 3.2 : 1), drift: new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.4) });
+          this.bangSparks.col.set(rnd() < 0.6 ? [1, 0.8, 0.45] : [0.85, 0.9, 1.0], i * 3);
+          this.bangSparks.size[i] = mix(0.06, 0.16, rnd()) * DEPTH_SCALE;
+        }
+        this.bangSparks.touch(true);
+        this.core = lightSprite(this.world, 2);
+      },
+    ];
+  }
+
+  /** Loads the baked head and the words that pour in, and draws the cards; `next` between its heavier steps. */
+  async load(url: string, locale: Locale, next: () => Promise<void> = async () => {}): Promise<void> {
     this.locale = locale;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`head.bin: ${response.status}`);
     const parts = decodeHead(await response.arrayBuffer());
+    await next();
     const part = (name: string) => parts.find((p) => p.name === name)!;
     const meshOf = (name: string): BufferGeometry => {
       const p = part(name), g = new BufferGeometry();
@@ -483,8 +525,10 @@ export class HeadScene {
       object.frustumCulled = false;
       this.head.add(object);
     }
+    await next();
     await Promise.all([document.fonts.load('800 60px Barlow'), document.fonts.load("500 46px 'IBM Plex Mono'")]);
     this.drawAtlas();
+    await next();
     this.buildCards(locale);
     this.loaded = true;
   }
@@ -513,6 +557,26 @@ export class HeadScene {
 
   show(on: boolean): void {
     this.world.visible = on && this.loaded;
+  }
+
+  /**
+   * Draws the scene for the first time in batches, `next` between them, so each part's buffers go to the GPU in a frame of
+   * their own and none waits for all of them (on a weak machine the whole took 70 ms at once). `draw` draws the tunnel's
+   * picture; its shaders are built already. Leaves the scene hidden.
+   */
+  async warm(draw: () => void, next: () => Promise<void>, batch = 10): Promise<void> {
+    const parts = [...this.world.children];
+    for (const part of parts) part.visible = false;
+    this.world.visible = true;
+    for (let i = 0; i < parts.length; i += batch) {
+      const some = parts.slice(i, i + batch);
+      for (const part of some) part.visible = true;
+      draw();
+      for (const part of some) part.visible = false;
+      await next();
+    }
+    for (const part of parts) part.visible = true;
+    this.world.visible = false;
   }
 
   /**
@@ -676,14 +740,14 @@ export class HeadScene {
     for (let i = 0; i < this.glyphs.n; i++) {
       const p = this.glyphP[i], a = (p.a0 + now * p.sp) % 1;
       this.streamPos(p, a, now, tmp);
-      this.glyphs.pos.set(tmp.toArray(), i * 3);
+      this.glyphs.at(i, tmp);
       this.glyphs.alpha[i] = streamOn * smooth(0, 0.04, a) * (1 - smooth(0.95, 1, a)) * (0.85 + 1.3 * bump(0.84, 0.98, a));
     }
     this.glyphs.touch();
     for (let i = 0; i < this.dust.n; i++) {
       const p = this.dustP[i], a = (p.a0 + now * p.sp * 1.1) % 1;
       this.streamPos(p, a, now, tmp);
-      this.dust.pos.set(tmp.toArray(), i * 3);
+      this.dust.at(i, tmp);
       this.dust.alpha[i] = streamOn * smooth(0, 0.04, a) * (1 - smooth(0.94, 1, a)) * 0.85;
     }
     this.dust.touch();
@@ -696,7 +760,7 @@ export class HeadScene {
     for (let i = 0; i < this.sparks.n; i++) {
       const s = this.sparkP[i], gn = smooth(s.y + 30, s.y + 6, camLocal.y), f = gn * gn * (3 - 2 * gn);
       tmp.copy(s.home).addScaledVector(s.burst, Math.sin(Math.PI * gn) * 0.8).lerp(this.regionW[s.k], f * 0.85);
-      this.sparks.pos.set(tmp.toArray(), i * 3);
+      this.sparks.at(i, tmp);
       this.sparks.alpha[i] = gn > 0.001 && gn < 0.999 ? Math.sin(Math.PI * gn) * (1 - smooth(0.2, 0.3, t)) : 0;
     }
     this.sparks.touch();
@@ -705,7 +769,7 @@ export class HeadScene {
     for (let i = 0; i < this.pulses.n; i++) {
       const p = this.pulseP[i], f = (p.ph + now * p.sp) % 1, [a, b] = this.edges[p.e];
       tmp.copy(this.neuronsW[p.dir ? a : b]).lerp(this.neuronsW[p.dir ? b : a], f);
-      this.pulses.pos.set(tmp.toArray(), i * 3);
+      this.pulses.at(i, tmp);
       this.pulses.alpha[i] = brainOn * 0.75 * visible * Math.sin(Math.PI * f) * (1 - 0.85 * reading) * (1 - 0.4 * endOn) * (1 + 0.8 * streamOn);
       if (f < 0.01) {
         p.e = Math.floor(this.rnd() * this.edges.length);
@@ -726,7 +790,7 @@ export class HeadScene {
     for (let i = 0; i < this.inward.n; i++) {
       const p = this.inwardP[i], f = (p.ph + now * p.sp) % 1, cl = this.clusters[p.k];
       tmp.copy(cl.tips[p.tip]).lerp(cl.cw, f);
-      this.inward.pos.set(tmp.toArray(), i * 3);
+      this.inward.at(i, tmp);
       this.inward.alpha[i] = seen * clamp(u.uAct.value[p.k]) * Math.sin(Math.PI * f) * (1 - 0.85 * dw[p.k]);
       if (f < 0.02) p.tip = Math.floor(this.rnd() * cl.tips.length);
     }
@@ -744,7 +808,7 @@ export class HeadScene {
     for (let i = 0; i < this.fiberPulses.n; i++) {
       const p = this.fiberPulseP[i], f = (p.ph + now * p.sp) % 1, fb = this.fibers[p.f];
       fb.curve.getPoint(f, tmp).addScaledVector(fb.offs[p.o], Math.sin(Math.PI * f));
-      this.fiberPulses.pos.set(tmp.toArray(), i * 3);
+      this.fiberPulses.at(i, tmp);
       this.fiberPulses.alpha[i] = (1 - smooth(0.93, 0.95, t)) * (0.12 * seen + 0.85 * fiberW[p.f]) * (1 - 0.85 * reading) * Math.sin(Math.PI * f);
     }
     this.fiberPulses.touch();
@@ -767,7 +831,7 @@ export class HeadScene {
     for (let i = 0; i < this.opticPulses.n; i++) {
       const p = this.opticP[i], f = (p.ph + now * p.sp) % 1;
       this.optic[p.c].curve.getPoint(f, tmp).addScaledVector(p.o, Math.sin(Math.PI * f));
-      this.opticPulses.pos.set(tmp.toArray(), i * 3);
+      this.opticPulses.at(i, tmp);
       this.opticPulses.alpha[i] = seeing * (1 - 0.8 * inside) * Math.sin(Math.PI * f);
     }
     this.opticPulses.touch();
@@ -791,7 +855,7 @@ export class HeadScene {
     for (let i = 0; i < this.voice.n; i++) {
       const s = this.voiceP[i], a = (s.a0 + now * s.sp * 0.6) % 1;
       this.voiceCurve.getPoint(a, tmp).addScaledVector(s.o, 0.5 + 0.5 * Math.sin(Math.PI * a));
-      this.voice.pos.set(tmp.toArray(), i * 3);
+      this.voice.at(i, tmp);
       this.voice.alpha[i] = thoughtOn * smooth(0, 0.05, a) * (1 - smooth(0.92, 1, a)) * 0.85;
     }
     this.voice.touch();
@@ -812,7 +876,7 @@ export class HeadScene {
         tmp.set(this.mouth.x + s.o.x * 3.6, this.mouth.y + s.o.y * 0.25, this.mouth.z + 0.2 + f * 2.2);
         al = (pressure - 0.3) * (1 - f);
       }
-      this.spray.pos.set(tmp.toArray(), i * 3);
+      this.spray.at(i, tmp);
       this.spray.alpha[i] = al * (1 - smooth(0.975, 0.99, t));
     }
     this.spray.touch();
@@ -832,7 +896,7 @@ export class HeadScene {
     for (let i = 0; i < this.bangSparks.n; i++) {
       const s = this.bangP[i], r = (1 - Math.pow(1 - b, 3)) * s.sp * DEPTH_SCALE;
       tmp.copy(this.landing).addScaledVector(s.d, r).addScaledVector(s.drift, Math.sin(now * 0.3 + i) * 2 * b * DEPTH_SCALE);
-      this.bangSparks.pos.set(tmp.toArray(), i * 3);
+      this.bangSparks.at(i, tmp);
       this.bangSparks.alpha[i] = 0.25 * (b > 0 ? (bump(0, 0.25, b) * 0.6 + 0.3 * smooth(0.3, 1, b)) * (0.7 + 0.3 * Math.sin(now * 2 + i)) : 0);
     }
     this.bangSparks.touch();
@@ -855,7 +919,7 @@ export class HeadScene {
         }
         alpha = swarmOn * mix(0.32, 0.6, pressure);
       }
-      this.letters.pos.set(tmp.toArray(), i * 3);
+      this.letters.at(i, tmp);
       this.letters.alpha[i] = alpha * (0.8 + 0.2 * Math.sin(now * 2 + i)) * (1 - smooth(0.955, 0.96, t));
     }
     this.letters.touch();
@@ -863,10 +927,10 @@ export class HeadScene {
   }
 
   /** Where the head is, for the proof harness: its t, the answer being read (-1 for none), the pressure behind the lips, and the language of the words that pour in. */
-  report(): { t: number; active: number; pressure: number; locale: string } {
+  report(spark: [number, number]): HeadReport {
     let active = -1;
     for (let i = 0; i < NQ; i++) if (answerShown(this.lastT, i) > 0.5) active = i;
-    return { t: this.lastT, active, pressure: this.lastPressure, locale: this.locale };
+    return { t: this.lastT, active, pressure: this.lastPressure, locale: this.locale, open: this.u.uOpen.value, spark: [spark[0], spark[1]] };
   }
 
   dispose(): void {
@@ -877,7 +941,7 @@ export class HeadScene {
       const material = withGeometry.material as { dispose?: () => void } | undefined;
       material?.dispose?.();
     });
-    this.glyphAtlas.dispose();
+    this.glyphAtlas?.dispose();
     for (const c of this.cards) (c.s.material.map as CanvasTexture | null)?.dispose();
   }
 

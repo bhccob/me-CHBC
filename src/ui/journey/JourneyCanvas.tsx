@@ -4,6 +4,7 @@ import codeScreenUrl from '~/assets/journey/code-screen.webp?url';
 import type { Locale } from '~/i18n/Translator';
 import type { Timeline } from '~/journey/timeline';
 import type { StopReport } from '~/journey/world/flight/TunnelScene';
+import type { HeadReport } from '~/journey/world/head/HeadScene';
 import { FrameJudge, startStep } from '~/engine/quality';
 import { journeyQuality, journeySteps } from '~/journey/quality';
 import { type JourneyStage, stagesToLoad } from '~/journey/stages';
@@ -16,7 +17,7 @@ export interface CanvasHandle {
   /** Where a project's screen stands on the page: left, top, width, height. */
   screenRect(id: string): [number, number, number, number] | null;
   /** What stands in the flight, for those checking it. */
-  report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number; locale: string } | null };
+  report(): { stops: StopReport[]; walls: number; head: HeadReport | null };
   /** Where the scan report's top middle stands on the page, CSS px: the spark lands there. */
   setLanding(x: number, y: number): void;
   /** Whether a stage has come, the ladder's step, and the pixel ratio it draws at. */

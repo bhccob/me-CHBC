@@ -33,6 +33,7 @@ const { HITS } = await tsImport('../../src/journey/sound/score.ts', import.meta.
 const { headFrame, SPIT_T, FINALE_S } = await tsImport('../../src/journey/head/time.ts', import.meta.url);
 const { dwellT } = await tsImport('../../src/journey/head/thoughts.ts', import.meta.url);
 const { en } = await tsImport('../../src/i18n/en.ts', import.meta.url);
+const { nl } = await tsImport('../../src/i18n/nl.ts', import.meta.url);
 const HIT_NAMES = HITS.map(([, name]) => name);
 
 const ROUTE = process.env.ROUTE ?? '/';
@@ -334,7 +335,8 @@ async function firstView(browser, step) {
   writeFileSync(join(OUT, 'stills', 'first-view.jpg'), shot);
   const gold = await sharp(shot).extract({ left: Math.round(VIEW.width * 0.6), top: 0, width: Math.round(VIEW.width * 0.4), height: Math.round(VIEW.height * 0.25) }).stats();
   step.check(gold.channels[0].max > 200, 'the tree has grown, with its gold traces');
-  await goToFrame(page, 40);
+  // The age rolls from 13 to its end by frame 42 (round 24's slower roll); the story stands to 46.
+  await goToFrame(page, 44);
   await page.waitForTimeout(200);
   const story = await page.evaluate((age) => {
     const reel = document.querySelectorAll('.j-digit');
@@ -767,6 +769,152 @@ async function headResize(browser, step) {
   return '';
 }
 
+/** His head reported, or null while it does not show. */
+const headNow = (page) => page.evaluate(() => window.__journeyDebug.stops()?.head ?? null);
+
+/** To `t` of his head by the scroll, with its stage come. */
+async function toHead(page, t) {
+  await jumpTo(page, headFrame(t, timeline));
+  await page.waitForFunction(() => window.__journeyDebug.stops()?.head != null, null, { timeout: 60_000 });
+  await page.waitForTimeout(450);
+}
+
+/** Behind his lips, then on to the end: from the spit the ending runs on its own clock. */
+async function playEnding(page) {
+  await toHead(page, 0.9);
+  await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' }));
+}
+
+/** The scan: the scanner's read-out counting, the lid lifting as things pour in, and six labels round the head. */
+async function headScan(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  await toHead(page, 0.13);
+  const scanning = await page.evaluate(() => ({ status: document.querySelector('.j-hud-status').textContent, readout: Number(getComputedStyle(document.querySelector('.j-hud-readout')).opacity) }));
+  const at13 = await headNow(page);
+  step.check(scanning.readout > 0.9 && /^Scanning \d+ %$/.test(scanning.status), `the read-out counts the scan (${scanning.status})`);
+  step.check(at13.open > 0, `the lid is lifting by t 0.13 (${at13.open.toFixed(3)})`);
+  writeFileSync(join(dir, 'head-scan.jpg'), await page.screenshot({ type: 'jpeg', quality: 86 }));
+  await toHead(page, 0.2);
+  step.check((await headNow(page)).open > 0.99, 'and open by t 0.2');
+  // The sixth label arrives from t 0.245 to 0.253 (the mock's timing): all six stand from there to 0.27.
+  await toHead(page, 0.26);
+  const labels = await page.evaluate(() => [...document.querySelectorAll('.j-hud-label')].map((el) => { const r = el.getBoundingClientRect(); return { shown: Number(getComputedStyle(el).opacity), left: r.left, top: r.top, right: r.right, bottom: r.bottom }; }));
+  const shown = labels.filter((label) => label.shown > 0.9);
+  step.check(shown.length === 6, `six labels show at t 0.26 (${shown.length})`);
+  step.check(shown.every((b) => b.left >= 0 && b.right <= VIEW.width && b.top >= 0 && b.bottom <= VIEW.height), 'each on the page');
+  const meet = shown.some((a, i) => shown.some((b, j) => j > i && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom));
+  step.check(!meet, 'and none over another');
+  writeFileSync(join(dir, 'head-labels.jpg'), await page.screenshot({ type: 'jpeg', quality: 86 }));
+  await context.close();
+  return '';
+}
+
+/** Each thought: its answer readable at its stop, on the page, on the shade, with the read-out naming it. */
+async function headThoughts(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
+  const dir = join(OUT, 'stills');
+  mkdirSync(dir, { recursive: true });
+  for (let i = 0; i < 6; i++) {
+    await toHead(page, dwellT(i));
+    const seen = await page.evaluate((n) => {
+      const cards = [...document.querySelectorAll('.j-answer')], el = cards[n], r = el.getBoundingClientRect();
+      return { shown: Number(getComputedStyle(el).opacity), others: Math.max(...cards.filter((_, k) => k !== n).map((c) => Number(getComputedStyle(c).opacity))), shade: Number(getComputedStyle(document.querySelector('.j-hud-shade')).opacity), status: document.querySelector('.j-hud-status').textContent, box: [r.left, r.top, r.right, r.bottom] };
+    }, i);
+    const head = await headNow(page);
+    const [l, t, r, b] = seen.box;
+    step.check(seen.shown > 0.9 && seen.others < 0.05, `answer ${i + 1} reads at its stop, alone (${seen.shown.toFixed(2)}; others ${seen.others.toFixed(2)})`);
+    step.check(l >= 0 && t >= 0 && r <= VIEW.width && b <= VIEW.height, `answer ${i + 1} stays on the page (${[l, t, r, b].map((v) => v.toFixed(0)).join(', ')})`);
+    step.check(seen.shade > 0.9, `answer ${i + 1} stands on the shade (${seen.shade.toFixed(2)})`);
+    step.check(seen.status === `Thought 0${i + 1} / 06` && head.active === i, `the read-out names thought ${i + 1} (${seen.status})`);
+    writeFileSync(join(dir, `head-answer-${i + 1}.jpg`), await page.screenshot({ type: 'jpeg', quality: 84 }));
+  }
+  await context.close();
+  return '';
+}
+
+/** The spit: the pressure read out behind his lips, then one spark, landing on the top middle of the scan report. */
+async function headSpit(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
+  await toHead(page, 0.92);
+  const held = await page.evaluate(() => document.querySelector('.j-hud-status').textContent);
+  const pressing = await headNow(page);
+  step.check(held === 'Holding it in' && pressing.pressure > 0.5, `behind his lips, the read-out says so and the pressure builds (${held}, ${pressing.pressure.toFixed(2)})`);
+  await playEnding(page);
+  await page.waitForFunction(() => (window.__journeyDebug.stops()?.head?.t ?? 0) >= 0.952, null, { timeout: 20_000, polling: 'raf' });
+  const landed = await page.evaluate(() => {
+    const panel = document.querySelector('.j-report-panel').getBoundingClientRect(), head = window.__journeyDebug.stops().head;
+    return { spark: head.spark, top: [panel.left + panel.width / 2, panel.top] };
+  });
+  const miss = Math.hypot(landed.spark[0] - landed.top[0], landed.spark[1] - landed.top[1]);
+  step.check(miss < 8, `the spark lands on the report's top middle (${miss.toFixed(1)} px off)`);
+  await page.waitForFunction(() => (window.__journeyDebug.stops()?.head?.t ?? 0) >= 0.959, null, { timeout: 20_000, polling: 'raf' });
+  const flash = await page.evaluate(() => Number(document.getElementById('j-flash').style.opacity || 0));
+  step.check(flash <= 0.221, `its flash is faint (${flash.toFixed(3)}, at most 0.22)`);
+  await context.close();
+  return '';
+}
+
+/** The ending's own clock: the report finished 4.8 s after the spit, rewound by scrolling up, and finished on arrival at #contact. */
+async function endClockStep(browser, step) {
+  const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
+  await playEnding(page);
+  await page.waitForFunction((spit) => (window.__journeyDebug.stops()?.head?.t ?? 0) >= spit, SPIT_T, { timeout: 20_000, polling: 'raf' });
+  const spat = Date.now();
+  await page.waitForFunction(() => (window.__journeyDebug.stops()?.head?.t ?? 0) >= 0.999, null, { timeout: 20_000, polling: 'raf' });
+  const took = (Date.now() - spat) / 1000;
+  step.check(Math.abs(took - FINALE_S) < 0.5, `the report is finished ${took.toFixed(2)} s after the spit (${FINALE_S} s)`);
+  const printed = () => page.evaluate(() => ({ frame: Number(getComputedStyle(document.querySelector('.j-report-frame')).opacity), title: getComputedStyle(document.querySelector('.j-report-next')).clipPath }));
+  const done = await printed();
+  step.check(done.frame === 1 && done.title === 'none', 'every row of it printed');
+  await toHead(page, 0.85);
+  const back = await printed();
+  const t = (await headNow(page)).t;
+  step.check(t < SPIT_T && back.frame === 0 && back.title !== 'none', `scrolling up above the spit rewinds it (t ${t.toFixed(3)})`);
+  await context.close();
+  // A link to Contact lands on the report, finished.
+  const arrival = await openPage(browser, step, VIEW);
+  await arrival.page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
+  await arrival.page.goto(`${BASE}/en/?proof&stages=all#contact`, { waitUntil: 'load' });
+  await arrival.page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
+  const came = Date.now();
+  await arrival.page.waitForFunction(() => getComputedStyle(document.querySelector('.j-report-next')).clipPath === 'none', null, { timeout: 10_000 });
+  const waited = (Date.now() - came) / 1000;
+  step.check(waited < 1, `#contact lands on the report finished (${waited.toFixed(2)} s)`);
+  await arrival.context.close();
+  return `${took.toFixed(2)} s`;
+}
+
+/** The report's words in English and Dutch: what the scan found, his heritage, Let's talk, the three ways and no Email. */
+async function headReport(browser, step) {
+  for (const [route, words, contact] of [['/en/', en, '/en/contact/'], ['/', nl, '/contact/']]) {
+    const { context, page } = await openPage(browser, step, VIEW);
+    await page.addInitScript(() => sessionStorage.setItem('journey-seen', '1'));
+    await page.goto(`${BASE}${route}?proof&stages=all#contact`, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.j-report-next')).clipPath === 'none', null, { timeout: 10_000 });
+    const seen = await page.evaluate(() => ({
+      head: document.querySelector('.j-report-head').textContent,
+      rows: document.querySelector('.j-report-rows').textContent,
+      title: document.getElementById('j-end-word').textContent,
+      links: [...document.querySelectorAll('#contact a')].map((a) => a.getAttribute('href')),
+      mail: document.querySelectorAll('a[href^="mailto:"]').length,
+    }));
+    const r = words.journey.head.report;
+    const tag = route === '/' ? 'Dutch' : 'English';
+    step.check(seen.head.includes(r.complete) && /\d{2} \S+ \d{4} · \d{2}:\d{2}/.test(seen.head), `${tag}: "${r.complete}", with the visitor's date (${seen.head.trim()})`);
+    const values = [r.subject, 'Bob Chung', r.basedIn, r.basedInValue, r.bornIn, r.bornInValue, r.heritage, r.heritageValue, r.thoughtsRead, '6 / 6', r.stillMissing, r.stillMissingValue];
+    const missing = values.filter((value) => !seen.rows.includes(value));
+    step.check(missing.length === 0, `${tag}: every row reads (missing: ${missing.join(', ') || 'none'})`);
+    step.check(seen.title === words.journey.end.title, `${tag}: ${seen.title}`);
+    step.check(seen.links.length === 3 && seen.links.includes(contact) && seen.links.some((h) => h.includes('github.com')) && seen.links.some((h) => h.includes('instagram.com')), `${tag}: GitHub, Instagram and Send a message (${seen.links.join(', ')})`);
+    step.check(seen.mail === 0, `${tag}: and no Email`);
+    await context.close();
+  }
+  return '';
+}
+
 /** Every link reachable by Tab, the focus visible, and a link bringing its chapter into place. */
 async function keyboard(browser, step) {
   const { context, page } = await openJourney(browser, step, VIEW, { route: '/en/' });
@@ -831,7 +979,9 @@ async function noScript(browser, step) {
   const { context, page } = await openPage(browser, step, VIEW, { javaScriptEnabled: false });
   await page.goto(`${BASE}/en/`, { waitUntil: 'load' });
   const text = await page.content();
-  for (const words of ['Software', 'Cookies Clicker', 'What is your plan after MBO?', 'bhccob@gmail.com']) step.check(text.includes(words), `"${words}" is in the HTML`);
+  // The scan report's words and ways to reach him; no Email since 2026-11-08 (Bob: "send a message is the same").
+  for (const words of ['Software', 'Cookies Clicker', 'What is your plan after MBO?', 'Scan complete', 'github.com/bhccob', 'href="/en/contact/"']) step.check(text.includes(words), `"${words}" is in the HTML`);
+  step.check(!text.includes('mailto:'), 'and no Email');
   step.check((await page.locator('.j-noscript a').getAttribute('href')) === '/en/lite/', 'and it points to Lite');
   await context.close();
   return '';
@@ -1073,13 +1223,14 @@ async function rungs(browser, step) {
     await opened.page.goto(`${BASE}/en/?proof&stages=all&step=${n}`, { waitUntil: 'load' });
     await opened.page.waitForFunction(() => window.__journeyDebug?.ready(), null, { timeout: 60_000 });
     await flightLoaded(opened.page, projects.byDate().length);
-    await opened.page.waitForFunction(() => window.__journeyDebug.stops()?.end !== null, null, { timeout: 30_000 });
     const want = journeyQuality(n, true);
     const got = await opened.page.evaluate(() => ({ step: window.__journeyDebug.quality(), dpr: window.__journeyDebug.dpr() }));
     step.check(got.step === n && Math.abs(got.dpr - Math.min(1.5, want.pixelRatio)) < 0.01, `step ${n}: pixel ratio ${got.dpr}, as it says (${want.pixelRatio})`);
-    for (const f of [0, 304, 448, 642, 793, timeline.last]) {
+    // The machine, the stack, the flight, then his head: the scan, an answer, and the report.
+    for (const f of [0, 304, 448, headFrame(0.17, timeline), headFrame(dwellT(2), timeline), timeline.last]) {
       await jumpTo(opened.page, f);
-      await opened.page.waitForTimeout(f === timeline.last ? 1200 : 350);
+      if (f === timeline.last) await reportPrinted(opened.page);
+      await opened.page.waitForTimeout(f === timeline.last ? 300 : 450);
       const { channels } = await sharp(await opened.page.screenshot({ type: 'jpeg', quality: 80 })).stats();
       step.check(channels[0].max > 40, `step ${n}, frame ${f}: it draws (brightest ${channels[0].max})`);
     }
@@ -1099,6 +1250,8 @@ async function walkDown(browser, step) {
   await flightLoaded(page, projects.byDate().length);
   await goToFrame(page, 372);
   await goToFrame(page, 430, 200);
+  // Into his head: the ladder walks down where the most is drawn.
+  await jumpTo(page, headFrame(0.17, timeline));
   await page.waitForTimeout(600);
   const start = await page.evaluate(() => ({ step: window.__journeyDebug.quality(), dpr: window.__journeyDebug.dpr() }));
   await page.evaluate(() => {
@@ -1119,7 +1272,7 @@ async function walkDown(browser, step) {
   step.check(start.step === 0, `it starts at the top (${start.step})`);
   step.check(end.step > start.step, `the ladder has walked down (step ${start.step} to ${end.step}, pixel ratio ${start.dpr} to ${end.dpr})`);
   const { channels } = await sharp(await page.screenshot({ type: 'jpeg', quality: 80 })).stats();
-  step.check(channels[0].max > 40, `the tunnel is still drawn on the way down (brightest ${channels[0].max})`);
+  step.check(channels[0].max > 40, `his head is still drawn on the way down (brightest ${channels[0].max})`);
   step.check(end.longest <= 250, `no main-thread task over 250 ms on the way (the longest ${end.longest.toFixed(0)} ms): nothing is built again`);
   await context.close();
   return `step ${start.step} to ${end.step}`;
@@ -1498,7 +1651,7 @@ async function cursorForm(browser, step) {
   return '';
 }
 
-const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, 'head-language': headLanguage, 'head-resize': headResize, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
+const STEPS = { 'dutch-fit': dutchFit, rungs, 'walk-down': walkDown, 'jump-early': jumpEarly, phone: phoneStep, tablet: tabletStep, rotate: rotateStep, 'reduced-motion': reducedMotion, 'no-webgl': noWebgl, 'context-lost': contextLost, 'head-missing': headMissing, 'head-language': headLanguage, 'head-resize': headResize, 'head-scan': headScan, 'head-thoughts': headThoughts, 'head-spit': headSpit, 'end-clock': endClockStep, 'head-report': headReport, keyboard, 'background-tab': backgroundTab, 'no-script': noScript, flight, projects: projectsStep, 'project-open': projectOpen, 'project-direct': projectDirect, stills, smooth, cursor: cursorStep, 'no-cursor': noCursor, 'cursor-form': cursorForm, sound: soundStep, loader, 'loader-quick': loaderQuick, 'loader-new-tab': loaderNewTab, 'loader-door-keys': loaderDoorKeys, 'loader-reduced': loaderReduced, 'give-up': giveUp, 'first-view': firstView, sheets, 'engineering-readable': engineeringReadable, stack: stackStep, portal, jumps, hash, 'reload-mid': reloadMid, 'resize-keeps-place': resizeKeepsPlace, 'lang-keeps-place': langKeepsPlace };
 
 // ---------------------------------------------------------------- run
 

@@ -1,3 +1,5 @@
+import type { HeadReport } from '~/journey/world/head/HeadScene';
+
 /** What the proof harness may read of the journey, behind `?proof` only. */
 export interface JourneyDebug {
   frame(): number;
@@ -17,7 +19,7 @@ export interface JourneyDebug {
   /** How far along the flight, how fast, and through what lens. */
   flight(): { s: number; speed: number; fov: number; calm: number; project: string | null; link: [number, number] | null; screen: [number, number] | null; hover: string | null } | null;
   /** What stands in the flight: each stop's screens, pieces and words as drawn, and the screens on the walls. */
-  stops(): { stops: { id: string; screens: number; pieces: number; words: string[]; rect: [number, number, number, number]; foot: number }[]; walls: number; head: { t: number; active: number; pressure: number; locale: string } | null } | null;
+  stops(): { stops: { id: string; screens: number; pieces: number; words: string[]; rect: [number, number, number, number]; foot: number }[]; walls: number; head: HeadReport | null } | null;
 }
 
 declare global {

@@ -100,20 +100,28 @@ export function decodeHead(buffer: ArrayBuffer): HeadPart[] {
     at += 24;
     const quantized = new Int16Array(buffer, at, n * 3);
     const positions = new Float32Array(n * 3);
-    for (let i = 0; i < n * 3; i++) {
-      const k = i % 3;
-      positions[i] = min[k] + ((quantized[i] + Q) / (2 * Q)) * (max[k] - min[k]);
+    // min + (q + Q) / 2Q * (max - min), worked out once per axis: decoded while the flight runs, on any machine.
+    const [s0, s1, s2] = [0, 1, 2].map((k) => (max[k] - min[k]) / (2 * Q));
+    const [o0, o1, o2] = [0, 1, 2].map((k) => min[k] + (max[k] - min[k]) / 2);
+    for (let i = 0; i < n * 3; i += 3) {
+      positions[i] = o0 + quantized[i] * s0;
+      positions[i + 1] = o1 + quantized[i + 1] * s1;
+      positions[i + 2] = o2 + quantized[i + 2] * s2;
     }
     at += pad4(n * 6);
     const part: HeadPart = { name: name as HeadPartName, positions };
     if (flags & 1) {
       const packed = new Int8Array(buffer, at, n * 3);
-      part.normals = Float32Array.from(packed, (v) => v / 127);
+      const normals = new Float32Array(n * 3);
+      for (let i = 0; i < n * 3; i++) normals[i] = packed[i] / 127;
+      part.normals = normals;
       at += pad4(n * 3);
     }
     if (flags & 2) {
       const packed = new Uint8Array(buffer, at, n);
-      part.extra = Float32Array.from(packed, (v) => v / 255);
+      const extra = new Float32Array(n);
+      for (let i = 0; i < n; i++) extra[i] = packed[i] / 255;
+      part.extra = extra;
       at += pad4(n);
     }
     if (indexCount > 0) {

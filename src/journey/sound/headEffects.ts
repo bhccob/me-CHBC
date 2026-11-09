@@ -21,6 +21,12 @@ const noise = (a: Audio, type: BiquadFilterType, f0: number, f1: number, q: numb
 /** The thoughts' tones, as steps above 220 Hz. */
 const NOTES = [1, 1.125, 1.25, 1.5, 1.667, 1.875, 2] as const;
 
+/**
+ * The spit against the mock's: through the site's compressor at the mock's level it peaked at 0.56 to 0.61, over the
+ * harness's no-distortion bar of 0.6, and well over the machine's loudest (0.41).
+ */
+const SPIT_LEVEL = 0.75;
+
 /** The labels' one pitch: six pings at one note make no melody (spec section 14; Bob wants no melody on the site). */
 const LABEL_PING = 0;
 
@@ -59,13 +65,13 @@ const SOUNDS: Readonly<Record<HeadCue, (a: Audio, n: number) => void>> = {
   },
   corridor: (a) => whoosh(a, 0.6),
   down: (a) => whoosh(a, 0.5),
-  // The spit: a hard "p", the burst of air and spray, a wet tail.
+  // The spit: a hard "p", the burst of air and spray, a wet tail; at SPIT_LEVEL of the mock's, the loudest moment of the site.
   spit: (a) => {
-    tone(a, 'sine', 170, 48, 0.42, 0.004, 0.22);
-    noise(a, 'bandpass', 300, 3400, 1.1, 0.62, 0.015, 0.55);
-    noise(a, 'highpass', 2600, 6500, 0.7, 0.2, 0.004, 0.32);
-    noise(a, 'bandpass', 1100, 420, 2.2, 0.14, 0.06, 0.9, 0.08);
-    noise(a, 'highpass', 3000, 7000, 0.8, 0.05, 0.25, 0.9, 0.12);
+    tone(a, 'sine', 170, 48, 0.42 * SPIT_LEVEL, 0.004, 0.22);
+    noise(a, 'bandpass', 300, 3400, 1.1, 0.62 * SPIT_LEVEL, 0.015, 0.55);
+    noise(a, 'highpass', 2600, 6500, 0.7, 0.2 * SPIT_LEVEL, 0.004, 0.32);
+    noise(a, 'bandpass', 1100, 420, 2.2, 0.14 * SPIT_LEVEL, 0.06, 0.9, 0.08);
+    noise(a, 'highpass', 3000, 7000, 0.8, 0.05 * SPIT_LEVEL, 0.25, 0.9, 0.12);
   },
   // The spark gathering: a short rising tone.
   gather: (a) => {

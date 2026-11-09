@@ -10,7 +10,7 @@ import { idleFrames, machinePose, nightShare } from '../machine/choreography';
 import type { Timeline } from '../timeline';
 import type { JourneyStage } from '../stages';
 import { type FlightProject, type FlightState, type StopReport, TunnelScene } from './flight/TunnelScene';
-import type { HeadAnchors } from './head/HeadScene';
+import type { HeadAnchors, HeadReport } from './head/HeadScene';
 import { IrisWindow } from './IrisWindow';
 import { LookEffect } from './LookEffect';
 import { blurShare } from './looks';
@@ -227,7 +227,7 @@ export class World {
   }
 
   /** What stands in the flight, and where the head is, for those checking it. */
-  report(): { stops: StopReport[]; walls: number; head: { t: number; active: number; pressure: number; locale: string } | null } {
+  report(): { stops: StopReport[]; walls: number; head: HeadReport | null } {
     return { stops: this.tunnel.report(), walls: this.tunnel.wallCount, head: this.tunnel.headReport() };
   }
 
