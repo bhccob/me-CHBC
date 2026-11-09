@@ -14,6 +14,7 @@
  *   PROOF_DIR        where results.json and the stills go, default ./proof-out
  *   STEPS            comma list of steps, default all
  *   PLAYWRIGHT_CORE  path to a playwright-core package outside the repo
+ *   BROWSER          firefox or webkit, Playwright's own builds, for the other engines; default Edge
  */
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -23,7 +24,8 @@ import sharp from 'sharp';
 import { tsImport } from 'tsx/esm/api';
 
 const require = createRequire(import.meta.url);
-const { chromium } = process.env.PLAYWRIGHT_CORE ? require(resolve(process.env.PLAYWRIGHT_CORE)) : require('playwright-core');
+const playwright = process.env.PLAYWRIGHT_CORE ? require(resolve(process.env.PLAYWRIGHT_CORE)) : require('playwright-core');
+const ENGINE = process.env.BROWSER ?? 'msedge';
 const { scrollFromFrame } = await tsImport('../../src/journey/timeline.ts', import.meta.url);
 const { projects } = await tsImport('../../src/data/projects.ts', import.meta.url);
 const { flightLayout, timelineFor } = await tsImport('../../src/journey/flight/layout.ts', import.meta.url);
@@ -63,10 +65,26 @@ class Step {
 async function openPage(browser, step, viewport = VIEW, options = {}) {
   const context = await browser.newContext({ viewport, ...options });
   const page = await context.newPage();
+  // A screenshot in WebKit adds a stylesheet of Playwright's own, which WebKit holds to the page's CSP and reports, one
+  // message a shot (the page alone makes none: checked 2026-11-09). Only that message, and only around a shot, is let by.
+  let shotUntil = 0;
+  if (ENGINE === 'webkit') {
+    const shoot = page.screenshot.bind(page);
+    page.screenshot = async (shot) => {
+      shotUntil = Infinity;
+      try {
+        return await shoot(shot);
+      } finally {
+        shotUntil = Date.now() + 1000;
+      }
+    };
+  }
+  const shotStyle = (text) => ENGINE === 'webkit' && Date.now() < shotUntil && /^Refused to apply a stylesheet/.test(text);
   page.on('pageerror', (error) => step.errors.push(String(error).slice(0, 300)));
   page.on('console', (message) => {
     if (message.type() !== 'error') return;
     const text = message.text();
+    if (shotStyle(text)) return;
     if (/Content Security Policy/i.test(text)) step.csp.push(text.slice(0, 300));
     else step.errors.push(text.slice(0, 300));
   });
@@ -1681,7 +1699,8 @@ if (!BASE) {
 }
 
 const results = [];
-const browser = await chromium.launch({ channel: 'msedge', headless: true, args: ARGS });
+// Edge by default; Firefox or WebKit as Playwright builds them, with their own flags.
+const browser = ENGINE === 'msedge' ? await playwright.chromium.launch({ channel: 'msedge', headless: true, args: ARGS }) : await playwright[ENGINE].launch({ headless: true });
 try {
   for (const id of wanted) {
     const step = new Step(id);
