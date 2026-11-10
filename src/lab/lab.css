@@ -1,0 +1,524 @@
+/* LAB ONLY (throwaway): the new opening's previews. Tokens from tokens.css; two families, Barlow and IBM Plex Mono. */
+
+html[data-route='lab'],
+html[data-route='lab'] body {
+  background: #07050b;
+  color: var(--ink);
+  font-family: var(--font-name);
+}
+
+html[data-route='lab'] main {
+  position: static;
+  z-index: auto;
+}
+
+html[data-route='lab'] .site-header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 8;
+  min-height: 60px;
+  padding: 0 34px;
+  flex-wrap: nowrap;
+}
+
+html[data-route='lab'] .poster {
+  display: none;
+}
+
+.lab {
+  --lab-gutter: clamp(18px, 4.4vw, 72px);
+  --lab-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.lab-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;
+  display: block;
+  z-index: 0;
+  background: #07050b;
+}
+
+/* The letterbox: real bars, 2.39:1, only while the chain runs. */
+.lab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: max(0px, calc((100vh - 100vw / 2.39) / 2));
+  background: #040307;
+  z-index: 3;
+  transform: scaleY(0);
+  pointer-events: none;
+}
+
+.lab-bar-top {
+  top: 0;
+  transform-origin: 50% 0;
+}
+
+.lab-bar-bottom {
+  bottom: 0;
+  transform-origin: 50% 100%;
+}
+
+/* The hero: the name, one line, the cue, the mark. Nothing else. */
+.lab-hero {
+  position: fixed;
+  left: var(--lab-gutter);
+  bottom: clamp(88px, 15vh, 180px);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.lab-name {
+  margin: 0;
+  font-family: var(--font-name);
+  font-weight: 800;
+  font-size: clamp(66px, 13.2vw, 236px);
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.lab-name-line {
+  display: block;
+}
+
+.lab-name {
+  position: relative;
+}
+
+/* Concept C: the name's outline, traced by the line over the real text. */
+.lab-name-outline {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2.965em;
+  height: 1.64em;
+  overflow: visible;
+  fill: none;
+  stroke: var(--gold);
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgb(230 184 74 / 0.55));
+}
+
+/* The pen: where the line is being drawn. */
+.lab-pen {
+  position: fixed;
+  left: -4px;
+  top: -4px;
+  z-index: 6;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff4d8;
+  box-shadow: 0 0 10px 3px rgb(230 184 74 / 0.75), 0 0 28px 8px rgb(230 184 74 / 0.3);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lab-line {
+  margin: clamp(14px, 1.6vw, 26px) 0 0 0.06em;
+  max-width: 34ch;
+  font-size: clamp(17px, 1.3vw, 22px);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--lilac);
+}
+
+.lab-cue,
+.lab-mark,
+.lab-readout,
+.lab-tag,
+.lab-step-n,
+.lab-loader-value,
+.lab-loader-label {
+  font-family: var(--font-label);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.lab-cue {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 5;
+  margin: 0;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.lab-cue i {
+  display: block;
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(var(--gold), transparent);
+  transform-origin: 50% 0;
+  animation: lab-cue 1.8s var(--lab-ease) infinite;
+}
+
+@keyframes lab-cue {
+  0% { transform: scaleY(0); opacity: 1; }
+  60% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+.lab-mark {
+  position: fixed;
+  left: var(--lab-gutter);
+  bottom: 26px;
+  z-index: 5;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.lab-mark i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.lab-readout {
+  position: fixed;
+  right: var(--lab-gutter);
+  bottom: 26px;
+  z-index: 5;
+  margin: 0;
+  font-size: 11px;
+  color: var(--dim);
+  text-align: right;
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+}
+
+.lab-tag {
+  position: fixed;
+  right: var(--lab-gutter);
+  top: 76px;
+  z-index: 5;
+  margin: 0;
+  font-size: 10px;
+  color: rgb(151 137 187 / 0.7);
+}
+
+/* Each step of the chain: a number, one big word, one dry line. */
+.lab-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lab-step {
+  position: fixed;
+  left: var(--lab-gutter);
+  top: 50%;
+  z-index: 5;
+  max-width: min(40vw, 640px);
+  transform: translateY(-50%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-lab='b'] .lab-step,
+[data-lab='c'] .lab-step,
+[data-lab='d'] .lab-step,
+[data-lab='e'] .lab-step {
+  top: auto;
+  bottom: clamp(110px, 18vh, 190px);
+  transform: none;
+}
+
+.lab-step-n {
+  display: block;
+  font-size: 12px;
+  color: var(--gold);
+}
+
+.lab-step-title {
+  margin: 12px 0 14px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: clamp(40px, 5.4vw, 96px);
+  line-height: 0.86;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.lab-step-line {
+  margin: 0;
+  max-width: 28ch;
+  font-size: clamp(16px, 1.2vw, 20px);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--lilac);
+}
+
+/* Labels pinned to the 3D (dimensions, part names). */
+.lab-pins {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.lab-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.lab-pin b {
+  font-weight: 500;
+  color: var(--gold);
+}
+
+/* The name as the monitor shows it: DOM text on the 3D screen. */
+.lab-screen-name {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0 0.12em;
+  font-weight: 800;
+  font-size: 160px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+  transform-origin: 0 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.lab-brain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.lab-skip {
+  position: fixed;
+  left: var(--lab-gutter);
+  top: 72px;
+  z-index: 30;
+  padding: 10px 14px;
+  border-radius: 2px;
+  background: var(--gold);
+  color: #17120a;
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: translateY(calc(-100% - 96px));
+}
+
+.lab-skip:focus-visible {
+  transform: none;
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* The loader: an instrument, styled for each concept. */
+.lab-loader {
+  --p: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: #07050b;
+}
+
+.lab-loader-inner {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  min-width: 260px;
+}
+
+.lab-loader-value {
+  margin: 0;
+  font-size: clamp(30px, 3.2vw, 46px);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.lab-loader-label {
+  margin: 0;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.lab-loader-gauge {
+  display: block;
+  position: relative;
+  width: 260px;
+  height: 1px;
+  background: rgb(184 170 216 / 0.18);
+}
+
+.lab-loader-gauge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gold);
+  transform: scaleX(var(--p));
+  transform-origin: left;
+}
+
+/* A: a bench supply's dial. */
+.lab-loader-psu .lab-loader-gauge {
+  width: 140px;
+  height: 70px;
+  background: none;
+  border: 1px solid rgb(184 170 216 / 0.22);
+  border-bottom: 0;
+  border-radius: 70px 70px 0 0;
+}
+
+.lab-loader-psu .lab-loader-gauge::after {
+  left: 50%;
+  top: auto;
+  bottom: 0;
+  width: 1px;
+  height: 62px;
+  inset: auto auto 0 50%;
+  background: var(--gold);
+  transform-origin: 50% 100%;
+  transform: rotate(calc(-90deg + var(--p) * 180deg));
+}
+
+/* B: a fiducial that centres as it finds its mark. */
+.lab-loader-pnp .lab-loader-gauge {
+  width: 64px;
+  height: 64px;
+  background: none;
+  border: 1px solid rgb(184 170 216 / 0.22);
+  border-radius: 50%;
+}
+
+.lab-loader-pnp .lab-loader-gauge::after {
+  inset: auto;
+  left: calc(50% - 6px + (1 - var(--p)) * 22px);
+  top: calc(50% - 6px - (1 - var(--p)) * 14px);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  transform: none;
+}
+
+/* C: one line with its dimension. */
+.lab-loader-line .lab-loader-gauge {
+  width: min(60vw, 520px);
+  height: 1px;
+  background: none;
+}
+
+.lab-loader-line .lab-loader-gauge::after {
+  background: var(--gold);
+  box-shadow: 0 0 10px rgb(230 184 74 / 0.6);
+}
+
+/* Without WebGL: the text of the opening, plainly. */
+.lab-flat {
+  min-height: 100vh;
+  padding: 120px var(--lab-gutter) 80px;
+}
+
+.lab-flat-note {
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.lab-flat-steps {
+  list-style: none;
+  margin: 64px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 48px;
+}
+
+.lab-flat-steps h2 {
+  margin: 8px 0;
+  font-size: clamp(36px, 5vw, 72px);
+  font-weight: 800;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.lab-flat-steps p,
+.lab-mark-flat {
+  color: var(--lilac);
+}
+
+.lab-index {
+  padding: 140px var(--lab-gutter);
+}
+
+.lab-index a {
+  color: var(--gold);
+  margin-right: 1ch;
+}
+
+@media (max-width: 760px) {
+  .lab-hero {
+    bottom: 120px;
+  }
+
+  .lab-step {
+    top: auto;
+    bottom: 96px;
+    max-width: calc(100vw - 2 * var(--lab-gutter));
+    transform: none;
+  }
+
+  .lab-tag {
+    display: none;
+  }
+
+  .lab-readout {
+    bottom: 60px;
+  }
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .lab-bar {
+    display: none;
+  }
+}

@@ -6,7 +6,7 @@ import { routeFromPath } from '../i18n/locale';
  * What kind of page the router shows. The styles read it from `<html data-route>`, and each kind's route module is
  * the file named after it (`routes/lite.tsx`).
  */
-export type RouteName = 'home' | 'project' | 'lite' | 'contact' | 'not-found';
+export type RouteName = 'home' | 'project' | 'lite' | 'contact' | 'not-found' | 'lab';
 
 /** The `handle` every route module exports; the Shell reads it from the deepest matched route (`useMatches`). */
 export interface RouteHandle {
@@ -20,10 +20,12 @@ export const HANDLES = {
   lite: { route: 'lite' },
   contact: { route: 'contact' },
   'not-found': { route: 'not-found' },
+  // The opening's lab (LAB=1 only): no page of the site.
+  lab: { route: 'lab' },
 } as const satisfies { readonly [R in RouteName]: RouteHandle & { route: R } };
 
 /** The kind of every page of the site. `src/app/routes.ts` gives each page the module of its kind, `routes/<kind>.tsx`. */
-export const PAGE_KINDS: Readonly<Record<PageId, Exclude<RouteName, 'not-found'>>> = {
+export const PAGE_KINDS: Readonly<Record<PageId, Exclude<RouteName, 'not-found' | 'lab'>>> = {
   home: 'home',
   'project-jontai-energy': 'project',
   'project-cookies-clicker': 'project',
@@ -50,6 +52,8 @@ export function handleOf(matches: readonly { handle?: unknown; pathname?: string
   const match = matches.at(-1);
   const handle = match?.handle;
   if (!isRouteHandle(handle)) return HANDLES['not-found'];
+  // The lab's route exists only in a LAB=1 server, so its handle is enough.
+  if (handle.route === 'lab') return handle;
   if (handle.route !== 'not-found' && !PAGE_ROUTES.has(routeFromPath(match?.pathname ?? ''))) return HANDLES['not-found'];
   return handle;
 }

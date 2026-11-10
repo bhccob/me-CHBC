@@ -1,5 +1,5 @@
 import { type RouteConfig, index, route } from '@react-router/dev/routes';
-import { PAGES, type PageId } from '../data/pages';
+import { labEnabled, PAGES, type PageId } from '../data/pages';
 import { defaultLocale, locales, Translator } from '../i18n/Translator';
 import { PAGE_KINDS } from './handle';
 
@@ -22,4 +22,7 @@ const pages = ordered.flatMap((locale) =>
   }),
 );
 
-export default [...pages, route('*', 'routes/not-found.tsx', { id: 'not-found' })] satisfies RouteConfig;
+// The opening's lab, only with LAB=1: throwaway previews, never prerendered (src/data/pages.ts).
+const lab = labEnabled() ? [route('lab/:id', 'routes/lab.tsx', { id: 'lab', caseSensitive: true })] : [];
+
+export default [...pages, ...lab, route('*', 'routes/not-found.tsx', { id: 'not-found' })] satisfies RouteConfig;

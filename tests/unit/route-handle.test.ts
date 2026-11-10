@@ -15,7 +15,7 @@ const moduleOf = (entry: RouteConfigEntry): Promise<{ handle?: unknown }> => imp
 
 describe('the route handle: one table for every kind of page', () => {
   it('names each kind of page once', () => {
-    expect(NAMES.sort()).toEqual(['contact', 'home', 'lite', 'not-found', 'project']);
+    expect(NAMES.sort()).toEqual(['contact', 'home', 'lab', 'lite', 'not-found', 'project']);
     for (const name of NAMES) expect(HANDLES[name].route, name).toBe(name);
   });
 

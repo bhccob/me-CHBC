@@ -23,6 +23,21 @@
       "port": 5174
     },
     {
+      "name": "lab",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "react-router",
+        "dev",
+        "--port",
+        "5175",
+        "--strictPort"
+      ],
+      "env": {
+        "LAB": "1"
+      },
+      "port": 5175
+    },
+    {
       "name": "journey",
       "runtimeExecutable": "node",
       "runtimeArgs": [
