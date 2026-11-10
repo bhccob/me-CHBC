@@ -227,7 +227,7 @@ html[data-route='lab'] .poster {
   left: var(--lab-gutter);
   top: 50%;
   z-index: 5;
-  max-width: min(40vw, 640px);
+  max-width: min(56vw, 900px);
   transform: translateY(-50%);
   visibility: hidden;
   pointer-events: none;
@@ -250,7 +250,7 @@ html[data-route='lab'] .poster {
 
 .lab-step-title {
   margin: 12px 0 14px;
-  white-space: nowrap;
+  max-width: 13.5ch;
   font-weight: 800;
   font-size: clamp(40px, 5.4vw, 96px);
   line-height: 0.86;
@@ -450,6 +450,176 @@ html[data-route='lab'] .poster {
 .lab-loader-line .lab-loader-gauge::after {
   background: var(--gold);
   box-shadow: 0 0 10px rgb(230 184 74 / 0.6);
+}
+
+/* ---------- the machine round (2026-11-10, second brief) ---------- */
+
+.lab-canvas-clear {
+  background: transparent;
+}
+
+.lab-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.lab-backdrop i {
+  position: absolute;
+  display: block;
+}
+
+.lab-close {
+  position: fixed;
+  left: var(--lab-gutter);
+  bottom: clamp(96px, 16vh, 170px);
+  z-index: 5;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.lab-close-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(48px, 7vw, 124px);
+  line-height: 0.86;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+.lab-close-line {
+  margin: 14px 0 0;
+  font-size: clamp(16px, 1.2vw, 20px);
+  font-weight: 500;
+  color: var(--lilac);
+}
+
+.lab-panels {
+  display: none;
+}
+
+.lab-step-n {
+  letter-spacing: 0.18em;
+}
+
+/* A · Exhibit: a dark gallery with one soft light from above; the words come in on cream pages that slide over the 3D. */
+[data-lab='a'] .lab-backdrop {
+  background:
+    radial-gradient(ellipse 46% 52% at 50% 30%, rgb(86 56 120 / 0.42), transparent 72%),
+    radial-gradient(ellipse 70% 30% at 50% 96%, rgb(52 30 74 / 0.5), transparent 70%),
+    linear-gradient(#0e0818, #140a22 60%, #0b0613);
+}
+
+[data-lab='a'] .lab-panels {
+  display: block;
+}
+
+[data-lab='a'] .lab-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  align-content: end;
+  gap: 18px;
+  padding: 0 var(--lab-gutter) clamp(72px, 12vh, 140px);
+  background: var(--cream);
+  color: #130724;
+  /* Off the page below until the timeline brings it up (GSAP owns the transform). */
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-lab='a'] .lab-panel-n {
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6a2fd0;
+}
+
+[data-lab='a'] .lab-panel-title {
+  margin: 0;
+  max-width: 11ch;
+  font-weight: 800;
+  font-size: clamp(40px, 11.5vw, 210px);
+  line-height: 0.84;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
+/* In the gallery the big word lives on its page; beside the machine only the number and the line stay. */
+[data-lab='a'] .lab-step-title {
+  display: none;
+}
+
+[data-lab='a'] .lab-step {
+  top: auto;
+  bottom: clamp(88px, 14vh, 150px);
+  transform: none;
+}
+
+[data-lab='a'] .lab-step-line {
+  font-size: clamp(18px, 1.5vw, 26px);
+  color: var(--ink);
+}
+
+/* B · Drawn, then built: the dark of the brain's own page, nothing else. */
+[data-lab='b'] .lab-backdrop {
+  background: radial-gradient(ellipse 60% 60% at 62% 46%, rgb(40 20 64 / 0.6), transparent 75%), #0c0616;
+}
+
+/* C · Dusk: sky, sun and sea are drawn here and kept in line with the 3D camera (--hy horizon, --sx/--sy sun, --night). */
+[data-lab='c'] .lab-backdrop {
+  --hy: 60vh;
+  --sx: 60vw;
+  --sy: 58vh;
+  --night: 0;
+  background: #07040c;
+}
+
+[data-lab='c'] .lab-sky {
+  inset: 0 0 calc(100% - var(--hy)) 0;
+  background:
+    radial-gradient(ellipse 55% 70% at var(--sx) 100%, rgb(255 168 92 / calc(0.55 * (1 - var(--night)))), transparent 70%),
+    linear-gradient(to bottom,
+      color-mix(in srgb, #0b0614 calc(100% - var(--night) * 20%), #05030a),
+      color-mix(in srgb, #2a1240 calc(100% - var(--night) * 70%), #0d0718) 55%,
+      color-mix(in srgb, #8a3e4a calc(100% - var(--night) * 85%), #1a0d2a) 88%,
+      color-mix(in srgb, #e4884c calc(100% - var(--night) * 95%), #241336));
+}
+
+[data-lab='c'] .lab-sun {
+  left: var(--sx);
+  top: var(--sy);
+  width: 9vh;
+  height: 9vh;
+  margin: -4.5vh 0 0 -4.5vh;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3d6 0 38%, #ffcf7a 52%, rgb(255 170 90 / 0) 72%);
+  box-shadow: 0 0 80px 30px rgb(255 160 80 / 0.35);
+  opacity: calc(1 - var(--night) * 0.9);
+  clip-path: inset(0 0 calc(100% - (var(--hy) - var(--sy)) - 4.5vh) 0);
+}
+
+[data-lab='c'] .lab-sea {
+  inset: var(--hy) 0 0 0;
+  background:
+    linear-gradient(to bottom, rgb(255 190 120 / calc(0.35 * (1 - var(--night)))), transparent 2px),
+    radial-gradient(ellipse 4% 60% at var(--sx) 0%, rgb(255 190 110 / calc(0.32 * (1 - var(--night)))), transparent 70%),
+    linear-gradient(to bottom, color-mix(in srgb, #2a1530 calc(100% - var(--night) * 80%), #07040c), #07040c 70%);
+}
+
+[data-lab='c'] .lab-step {
+  top: clamp(110px, 16vh, 170px);
+  transform: none;
+}
+
+[data-lab='c'] .lab-close {
+  top: clamp(110px, 16vh, 170px);
+  bottom: auto;
 }
 
 /* Without WebGL: the text of the opening, plainly. */

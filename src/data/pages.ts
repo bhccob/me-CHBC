@@ -23,7 +23,7 @@ export const PAGES: Record<PageId, string> = {
  * The opening's lab: throwaway previews of the new opening at /lab/<id>/, only in a dev server or build run with LAB=1.
  * Never prerendered, never in the sitemap. Read in Node only (routes.ts); deleted with the lab.
  */
-export const LAB_IDS = ['a', 'b', 'c', 'd', 'e'] as const;
+export const LAB_IDS = ['a', 'b', 'c'] as const;
 export function labEnabled(): boolean {
   return process.env.LAB === '1';
 }

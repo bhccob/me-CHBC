@@ -70,11 +70,13 @@ export function wordsTimeline(tl: gsap.core.Timeline, root: HTMLElement, beats: 
     }
     tl.to(step, { autoAlpha: 0, y: reduce ? 0 : -18, duration: d - c, ease: 'power2.in' }, c);
   });
-  const [b0, b1, b2, b3] = beats.bars;
-  const bars = root.querySelectorAll('.lab-bar');
-  if (b1 > b0) {
-    tl.fromTo(bars, { scaleY: 0 }, { scaleY: 1, duration: b1 - b0, ease: 'power2.inOut', immediateRender: false }, b0);
-    tl.to(bars, { scaleY: 0, duration: b3 - b2, ease: 'power2.inOut' }, b2);
+  // The machine complete: one statement while it opens up, gone before the iris.
+  const close = root.querySelector('.lab-close');
+  if (close) {
+    const lines = close.querySelectorAll('p');
+    tl.set(close, { autoAlpha: 1 }, 280);
+    tl.fromTo(lines, { autoAlpha: 0, y: reduce ? 0 : 24 }, { autoAlpha: 1, y: 0, duration: 12, stagger: 3, ease: 'expo.out', immediateRender: false }, 280);
+    tl.to(close, { autoAlpha: 0, y: reduce ? 0 : -16, duration: 10, ease: 'power2.in' }, 318);
   }
   // Everything of the opening's chrome is gone before the tunnel is alone.
   tl.to(root.querySelectorAll('.lab-mark, .lab-readout, .lab-tag'), { autoAlpha: 0, duration: 16 }, 340);

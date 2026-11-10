@@ -7,14 +7,14 @@ import { labTimeline } from './timeline';
 
 /**
  * LAB ONLY (throwaway, LAB=1 dev servers only). One preview of the new opening: the page's words as real text, the
- * canvas under them, and the scroll track. The engine loads after hydration. `?smooth=0.2` gives the scroll more
- * weight, `?dpr=2` draws at a pixel ratio of 2, `?webgl=off` shows the fallback.
+ * concept's backdrop, the canvas over it, and the scroll track. The engine loads after hydration. `?smooth=0.3` gives the
+ * scroll more weight, `?dpr=2` draws at a pixel ratio of 2, `?webgl=off` shows the fallback.
  */
 export function LabPage({ id }: { id: string }): JSX.Element {
   const copy: LabCopy | undefined = COPY[id as ConceptId];
   const root = useRef<HTMLDivElement>(null);
   const timeline = useMemo(labTimeline, []);
-  const [mode, setMode] = useState<'live' | 'still' | 'no-webgl'>('live');
+  const [mode, setMode] = useState<'live' | 'no-webgl'>('live');
 
   useEffect(() => {
     if (!copy || !root.current) return;
@@ -24,7 +24,8 @@ export function LabPage({ id }: { id: string }): JSX.Element {
       return;
     }
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const smooth = Math.min(1, Math.max(0.02, Number(params.get('smooth') ?? 0.13)));
+    // A little more weight than the site's 0.13 s: the page follows the scroll a beat late.
+    const smooth = Math.min(1, Math.max(0.02, Number(params.get('smooth') ?? 0.2)));
     const pixelRatio = Math.min(devicePixelRatio, Math.max(0.5, Math.min(2, Number(params.get('dpr') ?? 1.5))));
     let stop: (() => void) | null = null;
     const leave = new AbortController();
@@ -49,7 +50,14 @@ export function LabPage({ id }: { id: string }): JSX.Element {
     return (
       <div className="lab lab-index">
         <h1 className="lab-name">Lab</h1>
-        <p className="lab-line">Previews: {Object.keys(COPY).map((key) => <a key={key} href={`/lab/${key}/`}>{key} </a>)}</p>
+        <p className="lab-line">
+          Previews:{' '}
+          {Object.values(COPY).map((c) => (
+            <a key={c.id} href={`/lab/${c.id}/`}>
+              {c.id} {c.name}{' '}
+            </a>
+          ))}
+        </p>
       </div>
     );
   }
@@ -89,9 +97,10 @@ export function LabPage({ id }: { id: string }): JSX.Element {
       <a className="lab-skip" href="#lab-brain" onClick={skip}>
         Skip to the brain
       </a>
-      <div className="lab-bars" aria-hidden="true">
-        <i className="lab-bar lab-bar-top" />
-        <i className="lab-bar lab-bar-bottom" />
+      <div className="lab-backdrop" aria-hidden="true">
+        <i className="lab-sky" />
+        <i className="lab-sun" />
+        <i className="lab-sea" />
       </div>
       <section className="lab-hero" aria-label="Bob Chung">
         <h1 className="lab-name">
@@ -111,22 +120,30 @@ export function LabPage({ id }: { id: string }): JSX.Element {
       <ol className="lab-steps">
         {copy.steps.map((step, n) => (
           <li key={step.n} className="lab-step" data-step={n}>
-            <span className="lab-step-n">{step.n}</span>
+            <span className="lab-step-n">{step.n} / 04</span>
             <h2 className="lab-step-title">{step.title}</h2>
             <p className="lab-step-line">{step.line}</p>
           </li>
         ))}
       </ol>
+      <div className="lab-close">
+        <p className="lab-close-title">{copy.close.title}</p>
+        <p className="lab-close-line">{copy.close.line}</p>
+      </div>
+      <div className="lab-panels" aria-hidden="true">
+        {copy.steps.map((step) => (
+          <div key={step.n} className="lab-panel">
+            <span className="lab-panel-n">{step.n} / 04</span>
+            <p className="lab-panel-title">{step.title}</p>
+          </div>
+        ))}
+      </div>
       <div className="lab-pins" aria-hidden="true" />
-      <i className="lab-pen" aria-hidden="true" />
-      <p className="lab-screen-name" aria-hidden="true">
-        Bob Chung
-      </p>
       <h2 id="lab-brain" className="lab-brain" tabIndex={-1}>
         The brain
       </h2>
       <p className="lab-tag" aria-hidden="true">
-        Lab {copy.id.toUpperCase()} · {copy.name} · greybox
+        Lab {copy.id.toUpperCase()} · {copy.name}
       </p>
       <div className={`lab-loader lab-loader-${copy.loader}`} role="status" aria-label="Loading">
         <div className="lab-loader-inner">

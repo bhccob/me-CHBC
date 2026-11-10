@@ -16,11 +16,9 @@ import { Stage } from './stage';
  */
 
 const CONCEPTS: Record<ConceptId, () => Promise<{ build(ctx: BuildContext): Promise<World> }>> = {
-  a: () => import('../concepts/a-chain'),
-  b: () => import('../concepts/b-assembly'),
-  c: () => import('../concepts/c-blueprint'),
-  d: () => import('../concepts/d-scan'),
-  e: () => import('../concepts/e-mechanism'),
+  a: () => import('../concepts/a-exhibit'),
+  b: () => import('../concepts/b-drawn'),
+  c: () => import('../concepts/c-dusk'),
 };
 
 /**
@@ -103,12 +101,17 @@ export async function run(o: RunOptions): Promise<() => void> {
   const canvas = document.createElement('canvas');
   canvas.className = 'lab-canvas';
   canvas.setAttribute('aria-hidden', 'true');
-  root.prepend(canvas);
+  // Over the concept's backdrop, under the words.
+  const backdrop = root.querySelector('.lab-backdrop');
+  if (backdrop) backdrop.after(canvas);
+  else root.prepend(canvas);
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: false, stencil: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(o.pixelRatio);
   renderer.setSize(innerWidth, innerHeight, false);
 
   const world = await module.build({ renderer, reduce, root });
+  if (world.transparent) canvas.classList.add('lab-canvas-clear');
+  await world.load?.((p) => (share = 0.2 + 0.25 * p));
   mark('world');
   const stage = new Stage(renderer, world, timeline, reduce);
   stage.resize(innerWidth, innerHeight);

@@ -1,5 +1,5 @@
 import { BloomEffect, DepthOfFieldEffect, EffectComposer, EffectPass, RenderPass, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
-import { HalfFloatType, NoToneMapping, Vector3, VSMShadowMap, type WebGLRenderer } from 'three';
+import { HalfFloatType, NoToneMapping, VSMShadowMap, type WebGLRenderer } from 'three';
 import { projects } from '~/data/projects';
 import { flightLayout } from '~/journey/flight/layout';
 import { journeyQuality } from '~/journey/quality';
@@ -7,14 +7,14 @@ import type { Timeline } from '~/journey/timeline';
 import { type FlightProject, TunnelScene } from '~/journey/world/flight/TunnelScene';
 import { IrisWindow } from '~/journey/world/IrisWindow';
 import { LookEffect } from '~/journey/world/LookEffect';
-import { canvasOpaque, irisWindowOn } from '~/journey/world/portalWindow';
+import { canvasOpaque } from '~/journey/world/portalWindow';
 import type { Look, World } from '../concepts/types';
 import { FilmEffect } from './film';
 
 /**
  * LAB ONLY (throwaway). One renderer for the whole preview: the concept's world through its film chain (depth of field,
- * bloom, AgX, the site's look, grain and vignette), and from frame 336 the real, unmodified tunnel through the chip's
- * port (the live site's IrisWindow), alone from 372 on. Frames from 350 are the live site's flight and head.
+ * bloom, AgX, the site's look, grain and vignette), the real, unmodified tunnel through the world's window (the live
+ * site's IrisWindow), and the tunnel alone from frame 372. Frames from 350 are the live site's flight and head.
  */
 export class Stage {
   readonly tunnel: TunnelScene;
@@ -25,10 +25,6 @@ export class Stage {
   private readonly dofPass: EffectPass;
   private readonly film = new FilmEffect();
   private readonly iris = new IrisWindow();
-  private readonly center = new Vector3();
-  private readonly edge = new Vector3();
-  private width = 1;
-  private height = 1;
 
   constructor(renderer: WebGLRenderer, world: World, timeline: Timeline, reduce: boolean) {
     this.renderer = renderer;
@@ -36,6 +32,7 @@ export class Stage {
     renderer.toneMapping = NoToneMapping;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = VSMShadowMap;
+    renderer.setClearAlpha(0);
     const dated = projects.byDate();
     const flying: FlightProject[] = dated.map((project) => ({
       id: project.id,
@@ -54,13 +51,14 @@ export class Stage {
     this.tunnel = new TunnelScene({ layout: flightLayout(dated), projects: flying, locale: 'en', timeline, reduce });
     this.tunnel.setQuality(journeyQuality(0, true));
 
+    const post = world.post ?? { bloom: 0.5, threshold: 1, contrast: 1.16, saturation: 1.1 };
     this.composer = new EffectComposer(renderer, { frameBufferType: HalfFloatType, multisampling: 4 });
     this.composer.addPass(new RenderPass(world.scene, world.camera));
     this.dof = new DepthOfFieldEffect(world.camera, { focusDistance: 4, focusRange: 1, bokehScale: 0, resolutionScale: 0.5 });
     this.dofPass = new EffectPass(world.camera, this.dof);
     this.composer.addPass(this.dofPass);
-    const bloom = new BloomEffect({ intensity: 0.55, luminanceThreshold: 1.0, luminanceSmoothing: 0.2, mipmapBlur: true, radius: 0.62 });
-    this.composer.addPass(new EffectPass(world.camera, bloom, new ToneMappingEffect({ mode: ToneMappingMode.AGX }), new LookEffect(1.16, 1.1), this.film, this.iris.effect));
+    const bloom = new BloomEffect({ intensity: post.bloom, luminanceThreshold: post.threshold, luminanceSmoothing: 0.25, mipmapBlur: true, radius: 0.6 });
+    this.composer.addPass(new EffectPass(world.camera, bloom, new ToneMappingEffect({ mode: ToneMappingMode.AGX }), new LookEffect(post.contrast, post.saturation), this.film, this.iris.effect));
   }
 
   /** Readies the world's shaders and draws it once, behind the loader. */
@@ -79,8 +77,6 @@ export class Stage {
   }
 
   resize(width: number, height: number): void {
-    this.width = width;
-    this.height = height;
     this.composer.setSize(width, height);
     this.iris.resize(this.renderer);
     this.tunnel.resize(width, height, this.renderer.getPixelRatio());
@@ -88,7 +84,7 @@ export class Stage {
 
   /** Draws frame `f`. `t` is the head's own time, for the tunnel past the flight. */
   render(f: number, dt: number, now: number, t: number, look: Look): void {
-    const window = irisWindowOn(f);
+    const window = this.world.window?.(f) ?? null;
     const inside = canvasOpaque(f);
     if (window || inside) {
       this.tunnel.update(f, dt, now, t);
@@ -98,25 +94,17 @@ export class Stage {
       this.iris.present(this.renderer);
       return;
     }
-    if (window) {
-      this.world.chip.portCenter(this.center);
-      this.world.chip.portEdge(this.edge);
-      this.iris.place([this.center.x, this.center.y, this.center.z], [this.edge.x, this.edge.y, this.edge.z], this.world.camera, Infinity);
-    } else this.iris.close();
-    this.world.prerender?.(this.renderer, f);
+    if (window) this.iris.place(window.center, window.edge, this.world.camera, window.reach);
+    else this.iris.close();
     const blur = look.blur;
     this.dofPass.enabled = blur > 0.05;
     if (this.dofPass.enabled) {
       this.dof.cocMaterial.focusDistance = look.focus;
-      this.dof.cocMaterial.focusRange = Math.max(0.05, look.focus * 0.12);
+      this.dof.cocMaterial.focusRange = Math.max(0.05, look.focus * 0.15);
       this.dof.bokehScale = blur;
     }
     this.film.set(look.grain, look.vignette, look.flash, (now % 10000) / 997);
     this.composer.render();
-  }
-
-  get size(): [number, number] {
-    return [this.width, this.height];
   }
 
   dispose(): void {

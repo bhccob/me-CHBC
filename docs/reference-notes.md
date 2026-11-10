@@ -42,6 +42,15 @@ Looked at in the Browser pane on 2026-11-10, at desktop size, scrolling each fro
 - **Scroll:** the structure breaks and re-forms; a ribbon of pictures twists through the scene.
 - **Principle:** one sentence for the whole site, acted out by the scene from the loader on.
 
+## leoparpeix.com (added 2026-11-10, Bob's new benchmark for "seamless" and "premium")
+
+- **Loader:** a white page, then the hero simply appears: no counter, no gate.
+- **Hero:** one sculpted object (a soft, plaster-like flower) in one calm, sunlit room. A small three-line text bottom left ("Driven by detail. Obsessed with seamless motion."), a tiny "Scroll down".
+- **3D inside the page:** the 3D room is a full-width section of an editorial page. Scrolling moves the whole section up like a page, while the camera inside drifts more slowly, a beat behind. Under it comes a light section with one giant word block ("FRENCH INTERACTIVE DESIGNER"), and a small 3D bee you can click.
+- **Rhythm:** 3D room, big type page, a row of large project pictures cropped at the edges, another 3D room with a big statement over it, more projects, a big closing line. Every 3D room shares one material and one light.
+- **Feel:** slow, eased scroll (inertia); words reveal by line; nothing jumps.
+- **Principle:** one render style everywhere, 3D and 2D taking turns inside one page flow, and the scroll a little late. Not to copy: the flower, the atelier, the bee, the cream-and-green palette.
+
 ## What they share, and what that means for Bob's opening
 
 1. **One idea you can say in a sentence**, acted out from the loader to the last frame. For Bob: a machine is mechanics, electronics and software working as one; the opening is one chain where each part causes the next.
