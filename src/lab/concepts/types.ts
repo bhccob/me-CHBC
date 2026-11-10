@@ -60,4 +60,4 @@ export interface World {
   dispose(): void;
 }
 
-export type ConceptId = 'a' | 'b' | 'c';
+export type ConceptId = 'b' | 'd';

@@ -16,9 +16,8 @@ import { Stage } from './stage';
  */
 
 const CONCEPTS: Record<ConceptId, () => Promise<{ build(ctx: BuildContext): Promise<World> }>> = {
-  a: () => import('../concepts/a-exhibit'),
   b: () => import('../concepts/b-drawn'),
-  c: () => import('../concepts/c-dusk'),
+  d: () => import('../concepts/d-pc'),
 };
 
 /**
