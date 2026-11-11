@@ -27,6 +27,11 @@
 <p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
 
 <section>
+  <h2 class="display">Round 33 · Brush or struck, white or purple</h2>
+  <p class="idea">Four ways to set the name, side by side, all in the coin's own bronze. The brush (Ma Shan Zheng, already in the repo): print is what Bob does now, the brush is what is personal and next. Struck: BOB raised, CHUNG cut in (on white it reads as letterpress). Live: <a href="fv-a5.html?bg=light&type=hand">brush on white</a>, <a href="fv-a5.html?bg=dark&type=hand">brush on purple</a>, <a href="fv-a5.html?bg=light&type=metal">struck on white</a>, <a href="fv-a5.html?bg=dark&type=metal">struck on purple</a>.</p>
+  <div class="grid" id="a5"></div>
+</section>
+<section>
   <h2 class="display">Round 32 · Struck and cut, in purple and gold</h2>
   <p class="idea">The site's own purple and yellow. The name is the coin's two kinds of lettering: BOB struck in raised gold, CHUNG cut into the paper. Your cursor is the light raking across both, so they answer it in opposite ways. <a href="fv-a4.html">Open it live</a> and move the mouse over the name.</p>
   <div class="grid" id="a4"></div>
@@ -73,6 +78,12 @@
 </section>
 <script type="module">
 const frames = {
+  a5: [
+    ['fv-a5', 'Brush on white', 'BOB printed, Chung brushed in the coin’s bronze; the headline’s second line and a note in the same hand.', 'light-hand-t6.2-1440x810'],
+    ['fv-a5', 'Brush on purple', 'The same on the site’s purple.', 'dark-hand-t6.2-1440x810'],
+    ['fv-a5', 'Struck on white', 'Letterpress: BOB raised in bronze, CHUNG pressed into the paper.', 'light-metal-t6.2-1440x810'],
+    ['fv-a5', 'Struck on purple', 'Round 32, in the coin’s shade.', 'dark-metal-t6.2-1440x810'],
+  ],
   a4: [
     ['fv-a4', 'Loader', 'A gold rubbing of the coin comes up on dark paper.', 't1.4-1440x810'],
     ['fv-a4', 'Struck', 'The name is struck from left to right as the light passes.', 't3.6-1440x810'],
