@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pull the string · straight into the O, out into space</title>
+<link rel="icon" href="data:," />
+<style>
+  html, body { margin: 0; background: #150923; }
+  .track { height: 700vh; }
+  iframe { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; display: block; opacity: 0; }
+</style>
+</head>
+<body>
+<!-- LAB ONLY (throwaway): the first view (fv-a6, zoom mode) over the realistic works domain (domain2). Scrolling pulls
+     the string: the coin comes to the middle and the camera flies into its square hole; the hole's far opening, cut
+     out of the first view, is the way in, until the camera is through. Further scrolling turns the band of works. -->
+<div class="track"></div>
+<iframe id="domain" src="domain3.html?embed=1" title="Selected works"></iframe>
+<iframe id="front" src="fv-a6.html?embed=1&zoom=direct" title="Bob Chung"></iframe>
+<script>
+const front = document.getElementById('front'), dom = document.getElementById('domain');
+let poly = null, inside = false, ready = false, shown = 0;
+addEventListener('message', (e) => {
+  if (!e.data) return;
+  if (e.data.wheel && ready) scrollBy(0, e.data.wheel);
+  if (e.data.poly) { poly = e.data.poly; inside = e.data.inside; }
+  if (e.data.ready) ready = true;
+  if (e.data.alive) front.style.opacity = dom.style.opacity = '1';
+});
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+function tick() {
+  const W = innerWidth, H = innerHeight;
+  shown += (scrollY / H - shown) * 0.09;
+  const pull = clamp(shown / 3);
+  // The domain arrives as the camera nears the hole and passes through it.
+  const open = ease((pull - 0.45) / 0.55);
+  front.contentWindow.postMessage({ pull }, '*');
+  dom.contentWindow.postMessage({ open, turn: Math.max(0, shown - 3) }, '*');
+  if (poly && pull > 0.005 && !inside) {
+    const d = poly.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+    front.style.clipPath = `path(evenodd, "M-10 -10H${W + 10}V${H + 10}H-10Z ${d} Z")`;
+  } else front.style.clipPath = 'none';
+  front.style.visibility = inside || pull > 0.995 ? 'hidden' : 'visible';
+  window.__pull = { pull, open, ready, inside };
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

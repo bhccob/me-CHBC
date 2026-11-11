@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Selected works · Through space</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  body { background: #04020a; color: var(--light); cursor: none; overscroll-behavior: none; }
+  canvas.full { z-index: 1; }
+  .tag { position: fixed; left: 0; top: 0; z-index: 4; margin: 0; pointer-events: none; white-space: nowrap; font: 500 15px Barlow; color: #fff; text-shadow: 0 1px 12px rgb(0 0 0 / 0.5); }
+  .tag.locked { color: #c9935f; }
+  .btn { position: fixed; left: 0; top: 0; z-index: 4; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: rgb(10 6 18 / 0.75); display: grid; place-items: center; pointer-events: none; }
+  .btn::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #f2efe8; }
+  .cursor { position: fixed; left: 0; top: 0; z-index: 9; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%; border: 1px solid rgb(242 239 232 / 0.5); display: grid; place-items: center; pointer-events: none; opacity: 0;
+    font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--light); transition: width 0.4s, height 0.4s, margin 0.4s, background 0.4s, color 0.4s; }
+  .cursor.open { width: 104px; height: 104px; margin: -52px 0 0 -52px; background: var(--light); color: #130724; }
+  .count { position: fixed; right: var(--gutter); bottom: var(--gutter); z-index: 5; margin: 0; color: rgb(242 239 232 / 0.6); text-align: right; line-height: 1.8; }
+  .count b { color: var(--light); font-weight: 500; }
+  .count i { font-style: normal; color: #c9935f; }
+  .hintx { position: fixed; left: var(--gutter); bottom: var(--gutter); z-index: 5; margin: 0; color: rgb(242 239 232 / 0.5); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<div id="tags"></div>
+<p class="hintx mono">Scroll or drag</p>
+<p class="count mono"><span>Speed <i>0.00</i> c</span><br><b>01</b> / 05</p>
+<div class="cursor">Drag</div>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Selected works</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, stage, fonts, canvasTex, lockedScreen, lockedGame, ready } from './kit.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight;
+const q = new URLSearchParams(location.search);
+const embed = q.has('embed');
+const s = stage(document.querySelector('canvas'), { fov: 36, env: 0.1 }).post({ focus: 10, range: 6, bokeh: 0.6, bloom: 0.55, threshold: 0.7, vignette: 0.55, radius: 0.5 });
+const { scene, camera } = s;
+scene.background = new THREE.Color('#04020a');
+
+// ------------------------------------------------------------------ space: a faint nebula in the site's purple and the coin's gold
+const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 64, 32), new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  vertexShader: 'varying vec3 v; void main(){ v = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `varying vec3 v;
+    float hash(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+    float noise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+                 mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z); }
+    float fbm(vec3 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 5; i++) { s += a * noise(p); p *= 2.03; a *= 0.5; } return s; }
+    void main(){
+      float n = fbm(v * 2.4 + vec3(3.1, 0.0, 1.7));
+      float m = fbm(v * 4.8 + vec3(9.0, 2.0, 0.0));
+      vec3 base = vec3(0.012, 0.006, 0.03);
+      vec3 violet = vec3(0.22, 0.08, 0.34) * smoothstep(0.42, 0.85, n);
+      vec3 gold = vec3(0.22, 0.13, 0.05) * smoothstep(0.62, 0.95, m) * smoothstep(0.3, 0.8, n);
+      float band = exp(-pow(v.y * 3.0, 2.0)) * 0.5 + 0.5;
+      gl_FragColor = vec4((base + violet + gold) * band, 1.0);
+    }`,
+}));
+scene.add(sky);
+
+// Stars as tiny lines: dots at rest, streaks when the band moves fast or when you arrive at speed.
+const STARS = 2600;
+const starPos = new Float32Array(STARS * 6), starCol = new Float32Array(STARS * 6), home = [];
+{
+  let sd = 5; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < STARS; i++) {
+    const a = rnd() * Math.PI * 2, r = 22 + rnd() * 120, y = (rnd() - 0.4) * 90;
+    home.push(new THREE.Vector3(Math.sin(a) * r, y, -Math.cos(a) * r));
+    const tint = rnd();
+    const c = tint < 0.08 ? [0.95, 0.75, 0.45] : tint < 0.22 ? [0.75, 0.66, 1.0] : [0.9, 0.9, 1.0];
+    const b = 0.35 + rnd() * 0.65;
+    for (let k = 0; k < 2; k++) starCol.set([c[0] * b, c[1] * b, c[2] * b * (k ? 0.2 : 1)], i * 6 + k * 3);
+  }
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+starGeo.setAttribute('color', new THREE.BufferAttribute(starCol, 3));
+const stars = new THREE.LineSegments(starGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+scene.add(stars);
+
+// A fine grid floor, as a system would draw it, fading into the dark.
+{
+  const pts = [], size = 120, step = 1.2;
+  for (let i = -size / 2; i <= size / 2; i += step) pts.push(-size / 2, 0, i, size / 2, 0, i, i, 0, -size / 2, i, 0, size / 2);
+  const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const grid = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#8f7fc0', transparent: true, opacity: 0.11 }));
+  grid.position.y = -2.4;
+  scene.add(grid);
+  scene.fog = new THREE.FogExp2('#04020a', 0.05);
+}
+
+// ------------------------------------------------------------------ the works: same-size rounded pictures on a band that curves round you
+const card = (draw) => canvasTex(1600, 1000, draw);
+const cover = (img) => card((x, w, h) => { const s2 = Math.max(w / img.width, h / img.height); x.drawImage(img, (w - img.width * s2) / 2, (h - img.height * s2) / 2, img.width * s2, img.height * s2); });
+const phone = (bg, im) => card((x, w, h) => {
+  const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, bg[0]); g.addColorStop(1, bg[1]); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  const ph = h * 0.86, pw = ph * (im.width / im.height);
+  x.save(); x.beginPath(); x.roundRect((w - pw) / 2, (h - ph) / 2, pw, ph, 34); x.clip(); x.drawImage(im, (w - pw) / 2, (h - ph) / 2, pw, ph); x.restore();
+});
+const img = (src) => new Promise((done) => { const i = new Image(); i.onload = () => done(i); i.src = src; });
+const [lumoImg, jontaiImg, cookiesImg] = await Promise.all([img('img/lumo.webp'), img('/public/flight/jontai.webp'), img('/public/flight/cookies.webp')]);
+const works = [
+  { title: 'Lumo', tex: phone(['#1f7a34', '#0b3b17'], lumoImg) },
+  { title: 'Locked', tex: phone(['#2a1a12', '#0d0b0f'], lockedScreen().image) },
+  { title: 'Jontai Energy', tex: cover(jontaiImg) },
+  { title: 'Cookies Clicker', tex: cover(cookiesImg) },
+  { title: 'Roblox game · in development', tex: card((x, w, h) => x.drawImage(lockedGame().image, 0, 0, w, h)), locked: true },
+];
+const PW = 5.4, PH = 3.375, RING = 9.5, N = 10, Y0 = 0.25;
+const vert = `
+  uniform float uVel, uTime, uHover;
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    vec3 p = position * (1.0 + uHover * 0.07);
+    vec4 w = modelMatrix * vec4(p, 1.0);
+    // The band flexes with speed: a travelling wave along it, and a lean.
+    float wave = sin(w.x * 0.55 + uTime * 1.6) * 0.5 + sin(w.x * 0.21 - uTime) * 0.5;
+    p.z += uVel * (wave * 0.55 + (p.x * p.x) * 0.06) + uHover * 0.55;
+    p.y += uVel * p.x * 0.035;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  }`;
+const frag = `
+  uniform sampler2D uMap; uniform float uLocked, uIn, uHover;
+  varying vec2 vUv;
+  float rbox(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
+  void main() {
+    vec2 p = (vUv - 0.5) * vec2(1.6, 1.0);
+    float d = rbox(p, vec2(0.8, 0.5), 0.045);
+    float a = 1.0 - smoothstep(-0.002, 0.002, d);
+    if (a < 0.01) discard;
+    vec3 c = texture2D(uMap, vUv).rgb;
+    c = mix(c, vec3(dot(c, vec3(0.3, 0.59, 0.11))), uLocked * 0.6);
+    c *= (0.9 + uHover * 0.1) * uIn;
+    gl_FragColor = vec4(c, a);
+  }`;
+const panels = [];
+for (let i = 0; i < N; i++) {
+  const w = works[i % works.length];
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH, 60, 30), new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, transparent: true, uniforms: { uMap: { value: w.tex }, uVel: { value: 0 }, uTime: { value: 0 }, uHover: { value: 0 }, uLocked: { value: w.locked ? 1 : 0 }, uIn: { value: 1 } } }));
+  scene.add(m);
+  const tag = document.createElement('p'); tag.className = `tag${w.locked ? ' locked' : ''}`; tag.textContent = w.title;
+  const btn = document.createElement('i'); btn.className = 'btn';
+  document.getElementById('tags').append(tag, btn);
+  panels.push({ m, tag, btn, work: w, hover: 0 });
+}
+
+// ------------------------------------------------------------------ motion: the wheel drives the band (the page does not scroll), with weight
+const cursor = document.querySelector('.cursor');
+const count = document.querySelector('.count b'), speedEl = document.querySelector('.count i');
+const step = (Math.PI * 2) / N;
+let target = 0, angle = 0, vel = 0, drag = null;
+const ext = { open: embed ? 0 : 1, turn: 0 };
+const mouse = new THREE.Vector2(9, 9), look = { x: 0, y: 0 };
+if (!embed) addEventListener('wheel', (e) => { e.preventDefault(); target += (e.deltaY + e.deltaX) * 0.0016; }, { passive: false });
+if (embed) {
+  addEventListener('message', (e) => {
+    if (!e.data || typeof e.data.open !== 'number') return;
+    target += ((e.data.turn ?? 0) - ext.turn) * 1.1;
+    ext.open = e.data.open;
+    ext.turn = e.data.turn ?? 0;
+  });
+  addEventListener('wheel', (e) => parent.postMessage({ wheel: e.deltaY }, '*'), { passive: true });
+}
+addEventListener('pointermove', (e) => {
+  cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+  cursor.style.opacity = '1';
+  mouse.set((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1);
+  if (drag) target = drag.start - (e.clientX - drag.x) * 0.0032;
+});
+addEventListener('pointerdown', (e) => { drag = { x: e.clientX, start: target }; });
+addEventListener('pointerup', () => { drag = null; });
+const ease = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+const ray = new THREE.Raycaster();
+const tmp = new THREE.Vector3(), radial = new THREE.Vector3(), tangent = new THREE.Vector3();
+let last = performance.now(), hovered = null, said = false;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const tSec = now / 1000;
+  const k = ext.open, arrive = ease(k);
+  const prev = angle;
+  angle += (target - angle) * (1 - Math.exp(-dt / 0.42));
+  vel += ((angle - prev) / Math.max(dt, 1e-3) - vel) * 0.15;
+  const mx = Math.abs(mouse.x) > 2 ? 0 : mouse.x, my = Math.abs(mouse.y) > 2 ? 0 : mouse.y;
+  look.x += (mx * 0.05 - look.x) * 0.05; look.y += (my * 0.04 - look.y) * 0.05;
+  camera.position.set(0, 0.35, (1 - arrive) * 5);
+  camera.lookAt(look.x * 10, 0.25 + look.y * 6, -10);
+  camera.fov = 36 + (1 - arrive) * 38;
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld();
+  // Stars: a dot each, streaked sideways by the band's speed and toward you while you arrive at speed.
+  const warp = (1 - arrive) * 9;
+  const sideways = THREE.MathUtils.clamp(vel, -3, 3);
+  for (let i = 0; i < STARS; i++) {
+    const h = home[i];
+    radial.copy(h).normalize();
+    tangent.set(-radial.z, 0, radial.x);
+    const len = 0.04 + Math.abs(sideways) * h.length() * 0.034 + warp * 0.6;
+    tmp.copy(h).applyAxisAngle(THREE.Object3D.DEFAULT_UP, -angle * 0.35);
+    starPos[i * 6] = tmp.x; starPos[i * 6 + 1] = tmp.y; starPos[i * 6 + 2] = tmp.z;
+    const dir = warp > 0.2 ? radial.applyAxisAngle(THREE.Object3D.DEFAULT_UP, -angle * 0.35) : tangent.applyAxisAngle(THREE.Object3D.DEFAULT_UP, -angle * 0.35).multiplyScalar(Math.sign(sideways) || 1);
+    starPos[i * 6 + 3] = tmp.x + dir.x * len; starPos[i * 6 + 4] = tmp.y + dir.y * len; starPos[i * 6 + 5] = tmp.z + dir.z * len;
+  }
+  starGeo.attributes.position.needsUpdate = true;
+  ray.setFromCamera(mouse, camera);
+  const hit = k >= 0.98 && !drag ? ray.intersectObjects(panels.map((p) => p.m))[0]?.object ?? null : null;
+  const hp = panels.find((p) => p.m === hit) ?? null;
+  if (hp !== hovered) { hovered = hp; cursor.classList.toggle('open', !!hp); cursor.textContent = hp ? (hp.work.locked ? 'Soon' : 'Open') : 'Drag'; }
+  let front = 0, best = -9;
+  panels.forEach((p, i) => {
+    const a = i * step - angle;
+    const r = RING + (1 - arrive) * 9;
+    p.m.position.set(Math.sin(a) * r, Y0, -Math.cos(a) * r);
+    p.m.lookAt(0, Y0, 0);
+    p.m.updateMatrixWorld();
+    p.hover += ((p === hovered ? 1 : 0) - p.hover) * 0.1;
+    const u = p.m.material.uniforms;
+    u.uHover.value = p.hover;
+    u.uVel.value = THREE.MathUtils.clamp(-vel * 0.6, -0.9, 0.9);
+    u.uTime.value = tSec;
+    u.uIn.value = 0.2 + 0.8 * arrive;
+    const facing = Math.cos(a);
+    if (facing > best) { best = facing; front = i % works.length; }
+    // The title sits in the picture's bottom left, the small round button in its bottom right.
+    const bl = new THREE.Vector3(-PW / 2 + 0.28, -PH / 2 + 0.3, 0.02).applyMatrix4(p.m.matrixWorld).project(camera);
+    const br = new THREE.Vector3(PW / 2 - 0.3, -PH / 2 + 0.3, 0.02).applyMatrix4(p.m.matrixWorld).project(camera);
+    const vis = facing > 0.3 && bl.z < 1 ? Math.min(1, (facing - 0.3) * 3) * arrive * (1 - Math.min(1, Math.abs(vel) * 0.6)) : 0;
+    p.tag.style.opacity = p.btn.style.opacity = vis;
+    p.tag.style.transform = `translate(${(bl.x * 0.5 + 0.5) * W}px, ${(-bl.y * 0.5 + 0.5) * H - 18}px)`;
+    p.btn.style.transform = `translate(${(br.x * 0.5 + 0.5) * W}px, ${(-br.y * 0.5 + 0.5) * H}px)`;
+  });
+  count.textContent = String(front + 1).padStart(2, '0');
+  speedEl.textContent = Math.min(0.99, Math.abs(vel) * 0.3 + warp * 0.1).toFixed(2);
+  s.render();
+  if (!said && now > 1500) { said = true; ready(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

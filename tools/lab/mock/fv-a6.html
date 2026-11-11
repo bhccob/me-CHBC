@@ -14,7 +14,7 @@
   @font-face { font-family: 'Ma Shan Zheng'; font-display: block; src: url('/node_modules/@fontsource/ma-shan-zheng/files/ma-shan-zheng-latin-400-normal.woff2') format('woff2'); }
   body.dark { --accent: #c9935f; --ink: #f2efe8; --ink-soft: rgb(242 239 232 / 0.62); --paper: #150923; }
   body.light { --accent: #8a5a2f; --ink: #130724; --ink-soft: rgb(19 7 36 / 0.62); --paper: #f2efe8; }
-  body { background: var(--paper); color: var(--ink); }
+  body, body.dark, body.light { background: var(--paper); color: var(--ink); }
   .light .chrome { color: var(--ink); }
   .metal .name { color: transparent; }
   body { --gold: #cf9a62; --violet: #b47ed4; }
@@ -137,6 +137,7 @@ const hand = (params.get('type') ?? 'hand') === 'hand';
 // Embedded in pull.html: the parent says how far the string has been pulled; wheel turns go up to it.
 const embed = params.has('embed');
 const zoomMode = params.has('zoom');
+const directMode = params.get('zoom') === 'direct';
 let pull = 0;
 if (embed) {
   addEventListener('message', (e) => { if (e.data && typeof e.data.pull === 'number') pull = e.data.pull; });
@@ -517,7 +518,28 @@ function frame(now) {
   reveals.forEach((el, i) => { el.style.opacity = ease((t - 4.2 - i * 0.06) / 0.5); });
   // ---- Pulled: the coin leaves the name, turns to you and grows until its square hole is the way in.
   const P = embed && t > 5 ? pull : 0;
-  if (P > 0 && zoomMode) {
+  if (P > 0 && directMode) {
+    // Straight in: the camera centres on the O as it dives, so the coin never leaves the name; the page flies past.
+    if (!pageWrap) { wrapPage(); pageWrap.style.transformOrigin = '0 0'; }
+    const lat = ease(P / 0.55);
+    const zc = Math.pow(P, 2.0) * (D0 + R * 0.3);
+    const camX = W / 2 + (works.position.x - W / 2) * lat, camY = H / 2 + (works.position.y - H / 2) * lat;
+    camera.position.set(camX, camY, D0 - zc);
+    camera.projectionMatrix.copy(proj0);
+    camera.projectionMatrixInverse.copy(proj0inv);
+    camera.updateMatrixWorld();
+    const m = Math.min(80, D0 / Math.max(1, D0 - zc));
+    const cssX = camX, cssY = H - camY;
+    pageWrap.style.transform = `matrix(${m}, 0, 0, ${m}, ${W / 2 - m * cssX}, ${H / 2 - m * cssY})`;
+    works.rotation.set(works.rotation.x * (1 - lat), works.rotation.y * (1 - ease(P / 0.4)), 0);
+    tagEls.forEach((x) => x.el.classList.remove('on'));
+    works.updateMatrixWorld(true);
+    const poly = [[-HOLE, -HOLE], [HOLE, -HOLE], [HOLE, HOLE], [-HOLE, HOLE]].map(([x, y]) => {
+      const v = works.localToWorld(new THREE.Vector3(x, y, -0.08)).project(camera);
+      return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H];
+    });
+    parent.postMessage({ poly, inside: camera.position.z < -R * 0.08 }, '*');
+  } else if (P > 0 && zoomMode) {
     // The coin leaves the name and turns to you in the middle; then the camera itself flies into its hole.
     if (!pageWrap) wrapPage();
     const a = ease(P / 0.2);
