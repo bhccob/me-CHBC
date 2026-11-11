@@ -108,7 +108,7 @@ function pose(hand, a, b, f) {
 }
 
 // ------------------------------------------------------------------ the study coins: one mark each, the last one newly minted
-function markGeometry(name, size = 0.36, depth = 0.04) {
+export function markGeometry(name, size = 0.36, depth = 0.04) {
   let shapes;
   if (name === 'gear') {
     const s = new THREE.Shape(), teeth = 8;
@@ -131,7 +131,7 @@ function markGeometry(name, size = 0.36, depth = 0.04) {
   g.computeVertexNormals();
   return g;
 }
-function studyCoin(study) {
+export function studyCoin(study) {
   const g = coin();
   const [body, high] = g.userData.materials;
   if (study.fresh) {
@@ -237,7 +237,7 @@ function faceMaterial(text) {
 }
 
 // ------------------------------------------------------------------ the tunnel inside, and the socket at the bottom
-function circuitMaterial() {
+export function circuitMaterial() {
   return new THREE.ShaderMaterial({
     side: THREE.BackSide,
     uniforms: { uTime: { value: 0 } },
@@ -261,7 +261,7 @@ function circuitMaterial() {
       }`,
   });
 }
-function socketTexture() {
+export function socketTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 1024;
   const x = c.getContext('2d');
@@ -285,7 +285,7 @@ function socketTexture() {
   return t;
 }
 /** A brain, seen as the brain section sees it: an X-ray in gold, folds and all. */
-function brain() {
+export function brain() {
   const g = new THREE.SphereGeometry(1, 128, 96);
   const a = g.attributes.position, v = new THREE.Vector3();
   for (let i = 0; i < a.count; i++) {
