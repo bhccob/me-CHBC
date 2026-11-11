@@ -123,7 +123,7 @@
 <div class="chrome reveal"><p class="tl">BC—2006</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
 <canvas class="loader" aria-label="Loading"></canvas>
 <script type="module">
-import { THREE, coin, fonts, pixelCamera, ready } from './kit.js';
+import { THREE, HOLE, coin, fonts, pixelCamera, ready } from './kit.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 await Promise.all([fonts(), ...['300 40px Barlow', 'italic 300 40px Barlow', '600 40px Barlow', '700 40px Barlow', '400 17px Barlow', '400 40px "Ma Shan Zheng"'].map((f) => document.fonts.load(f))]);
@@ -134,6 +134,13 @@ const frozen = new URLSearchParams(location.search).get('t');
 const params = new URLSearchParams(location.search);
 const light = (params.get('bg') ?? 'dark') === 'light';
 const hand = (params.get('type') ?? 'hand') === 'hand';
+// Embedded in pull.html: the parent says how far the string has been pulled; wheel turns go up to it.
+const embed = params.has('embed');
+let pull = 0;
+if (embed) {
+  addEventListener('message', (e) => { if (e.data && typeof e.data.pull === 'number') pull = e.data.pull; });
+  addEventListener('wheel', (e) => parent.postMessage({ wheel: e.deltaY }, '*'), { passive: true });
+}
 document.body.classList.add(light ? 'light' : 'dark', hand ? 'hand' : 'metal');
 if (light) document.body.classList.remove('dark');
 if (hand) {
@@ -444,6 +451,7 @@ const t0 = performance.now();
 let shot = false;
 function frame(now) {
   const t = frozen !== null ? Number(frozen) : (now - t0) / 1000;
+  if (embed && !frame.told) { frame.told = true; parent.postMessage({ alive: true }, '*'); }
   // 0 to 2.2 s: the pencil rubs the coin up (in the site, this follows the real loading).
   if (frozen !== null) { rubbed = 0; lm.setTransform(1, 0, 0, 1, 0, 0); lm.clearRect(0, 0, W * dpr, H * dpr); lm.scale(dpr, dpr); }
   rubTo(ease(t / 2.2) * 0.999 + (t > 2.2 ? 0.001 : 0));
@@ -497,7 +505,32 @@ function frame(now) {
   tassel.scale.y = kk;
   lines.forEach((el, i) => { el.style.transform = `translateY(${(1 - out((t - 3.7 - i * 0.12) / 0.8)) * 110}%)`; });
   reveals.forEach((el, i) => { el.style.opacity = ease((t - 4.2 - i * 0.06) / 0.5); });
+  // ---- Pulled: the coin leaves the name, turns to you and grows until its square hole is the way in.
+  const P = embed && t > 5 ? pull : 0;
+  if (P > 0) {
+    const a = ease(P / 0.22);
+    const g = clamp((P - 0.08) / 0.92);
+    const big = (Math.hypot(W, H) / (2 * HOLE * R)) * 1.08;
+    const grow = 1 + Math.pow(g, 1.9) * (big - 1);
+    const cx = X + (W / 2 - X) * a, cy = Y + (H / 2 - Y) * a;
+    works.position.set(cx, cy, 0);
+    works.scale.setScalar(R * grow);
+    works.rotation.set(0, works.rotation.y * (1 - a), 0);
+    // Everything else falls away: the cord and the four coins drop out (for later), the words part and fade.
+    const fall = ease(P / 0.32) * H * 1.15;
+    if (cord) cord.position.y = -fall;
+    small.forEach((c) => (c.position.y -= fall));
+    knot.position.y -= fall;
+    tassel.position.y -= fall;
+    const fade = 1 - ease(P / 0.18);
+    letters.forEach((el, i) => (el.style.transform = `translateX(${(i === 0 ? -1 : 1) * a * W * 0.22}px)`));
+    r2.style.transform = `rotate(-3.5deg) translate(${a * W * 0.18}px, 0.03em)`;
+    for (const el of [name, intro, eyebrow, vert, note, ...reveals]) if (el) el.style.opacity = String(fade);
+    tagEls.forEach((x) => x.el.classList.remove('on'));
+    parent.postMessage({ hole: [cx, H - cy, HOLE * R * grow, a] }, '*');
+  }
   renderer.render(scene, camera);
+  if (embed && t > 5.2 && !shot) parent.postMessage({ ready: true }, '*');
   if (!shot && t > (frozen !== null ? -1 : 5.2)) { shot = true; ready(); }
   if (frozen === null) requestAnimationFrame(frame);
 }

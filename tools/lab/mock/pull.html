@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pull the string · first view into the works domain</title>
+<link rel="icon" href="data:," />
+<style>
+  html, body { margin: 0; background: #150923; }
+  .track { height: 700vh; }
+  iframe { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; display: block; opacity: 0; }
+</style>
+</head>
+<body>
+<!-- LAB ONLY (throwaway): the first view (fv-a6) over the works domain. Scrolling pulls the string: the works coin
+     leaves the name and grows; its square hole is cut out of the first view so the domain shows through, until it is
+     past the screen's corners and you are inside. Further scrolling turns the ring. -->
+<div class="track"></div>
+<iframe id="domain" src="domain.html?embed=1" title="Selected works"></iframe>
+<iframe id="front" src="fv-a6.html?embed=1" title="Bob Chung"></iframe>
+<script>
+const front = document.getElementById('front'), dom = document.getElementById('domain');
+let hole = null, ready = false, shown = 0;
+addEventListener('message', (e) => {
+  if (!e.data) return;
+  if (e.data.wheel && ready) scrollBy(0, e.data.wheel);
+  if (e.data.hole) hole = e.data.hole;
+  if (e.data.ready) ready = true;
+  // Shown only once the first view is drawing its loader, so neither page flashes while it loads.
+  if (e.data.alive) front.style.opacity = dom.style.opacity = '1';
+});
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+function tick() {
+  const W = innerWidth, H = innerHeight;
+  // The page follows the scroll a beat late, as the site does.
+  shown += (scrollY / H - shown) * 0.1;
+  const pull = clamp(shown / 3);
+  const open = ease((pull - 0.24) / 0.76);
+  front.contentWindow.postMessage({ pull }, '*');
+  dom.contentWindow.postMessage({ open, turn: Math.max(0, shown - 3) }, '*');
+  if (hole && hole[3] > 0.98 && pull > 0.02) {
+    const [cx, cy, h] = hole;
+    front.style.clipPath = `path(evenodd, "M0 0H${W}V${H}H0Z M${cx - h} ${cy - h}H${cx + h}V${cy + h}H${cx - h}Z")`;
+  } else front.style.clipPath = 'none';
+  const gone = pull > 0.995;
+  front.style.visibility = gone ? 'hidden' : 'visible';
+  window.__pull = { pull, open, ready };
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

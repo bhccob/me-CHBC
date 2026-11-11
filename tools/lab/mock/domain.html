@@ -182,7 +182,21 @@ addEventListener('pointermove', (e) => {
 addEventListener('pointerdown', (e) => { drag = { x: e.clientX, start: target }; });
 addEventListener('pointerup', () => { drag = null; });
 const step = (Math.PI * 2) / N;
-const open = () => (q.has('open') ? 1 : Math.min(1, scrollY / (H * 1.1)));
+const embed = q.has('embed');
+const ext = { open: 0, turn: 0 };
+const open = () => (embed ? ext.open : q.has('open') ? 1 : Math.min(1, scrollY / (H * 1.1)));
+if (embed) {
+  // Embedded in pull.html: the first view is the gate; the parent opens the domain and turns the ring.
+  gate.style.display = 'none';
+  document.querySelector('.track').style.display = 'none';
+  addEventListener('message', (e) => {
+    if (!e.data || typeof e.data.open !== 'number') return;
+    target += ((e.data.turn ?? 0) - ext.turn) * 1.4;
+    ext.open = e.data.open;
+    ext.turn = e.data.turn ?? 0;
+  });
+  addEventListener('wheel', (e) => parent.postMessage({ wheel: e.deltaY }, '*'), { passive: true });
+}
 const ease = (x) => x * x * (3 - 2 * x);
 const ray = new THREE.Raycaster();
 let last = performance.now(), hovered = null, shotReady = false;
