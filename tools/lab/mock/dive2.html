@@ -608,7 +608,11 @@ function frame(now) {
   const arrive = ease((u - uCross) / (uSettle - uCross));
   const bs = sNow - SD * uSettle;
   const angle = STEP * 1.25 * (bs <= 0 ? 0 : bs < 1 ? (bs * bs) / 2 : bs - 0.5);
-  const res = space.update({ pos: cs, fov: 30 + 10 * arrive, pitch: (pitch - 0.075) * arrive, angle, look: lookS, arrive, dt, time: t, dragging: !!dragAt && arrive > 0.9 });
+  // Inside, the camera comes down as it slows, to just under the middle of the works, and looks nearly level: a low eye
+  // over the bench, the works above it.
+  const eye = cs.clone();
+  eye.y += (bandY - 0.35) * arrive;
+  const res = space.update({ pos: eye, fov: 30 + 10 * arrive, pitch: -0.03 * arrive, angle, look: lookS, arrive, dt, time: t, dragging: !!dragAt && arrive > 0.9 });
   space.render();
   document.body.style.cursor = arrive > 0.5 ? (res.hovered !== null ? 'pointer' : 'default') : '';
   if (inside) space.present();

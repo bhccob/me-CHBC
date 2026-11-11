@@ -9,7 +9,7 @@ import { canvasTex, lockedScreen, lockedGame } from './kit.js';
 
 export const HS = 0.9; // half the hole's side
 export const RC = 9; // the ring's radius
-export const PW = 5.1, PH = 3.1875, GAP = 0.13; // a picture is a plain 16:10 rectangle
+export const PW = 5.8, PH = 3.625, GAP = 0.14; // a picture is a plain 16:10 rectangle
 export const STEP = (PW + GAP) / RC; // radians from one picture to the next
 const POOL = 9, CORNER = 0.07;
 
@@ -23,11 +23,16 @@ const CSS = `
   .bh-br { bottom: var(--gutter, 30px); right: var(--gutter, 30px); color: rgb(242 239 232 / 0.55); text-align: right; line-height: 1.8; }
   .bh b { color: #f2efe8; font-weight: 500; }
   .bh-br i { font-style: normal; color: #cf9a62; }
-  .bh-t { position: fixed; left: 0; top: 0; margin: 0; white-space: nowrap; font: 500 17px Barlow; letter-spacing: -0.01em; text-shadow: 0 1px 10px rgb(0 0 0 / 0.45); transform-origin: 0 100%; }
+  .bh-t { position: fixed; left: 0; top: 0; margin: 0; white-space: nowrap; font: 500 18px Barlow; letter-spacing: -0.01em; text-shadow: 0 1px 12px rgb(0 0 0 / 0.5); }
+  .bh-t .k { display: block; margin-bottom: 4px; font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(242 239 232 / 0.75); opacity: 0; transform: translateY(8px); transition: opacity .5s, transform .7s cubic-bezier(0.16, 1, 0.3, 1); }
+  .bh-t .n { display: block; }
+  .bh-t.on .k { opacity: 1; transform: none; }
   .bh-t.locked { color: #cf9a62; }
   .bh-b { position: fixed; left: 0; top: 0; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; background: #0b0910; display: grid; place-items: center; transition: width .35s, height .35s, margin .35s; }
-  .bh-b::after { content: '→'; font: 500 11px Barlow; color: #f2efe8; }
-  .bh-b.on { width: 34px; height: 34px; margin: -17px 0 0 -17px; }`;
+  .bh-b::after { content: '→'; font: 500 11px Barlow; color: #f2efe8; transition: transform .5s cubic-bezier(0.16, 1, 0.3, 1); }
+  .bh-b { transition: width .5s cubic-bezier(0.16, 1, 0.3, 1), height .5s cubic-bezier(0.16, 1, 0.3, 1), margin .5s cubic-bezier(0.16, 1, 0.3, 1), background .3s; }
+  .bh-b.on { width: 40px; height: 40px; margin: -20px 0 0 -20px; background: #f2efe8; }
+  .bh-b.on::after { color: #0b0910; transform: rotate(-45deg); }`;
 
 function finishMaterial(full) {
   return new THREE.ShaderMaterial({
@@ -58,11 +63,11 @@ async function loadWorks() {
   const img = (src) => new Promise((done) => { const i = new Image(); i.onload = () => done(i); i.src = src; });
   const [lumo, jontai, cookies] = await Promise.all([img('img/lumo.webp'), img('/public/flight/jontai.webp'), img('/public/flight/cookies.webp')]);
   const works = [
-    { title: 'Lumo', tex: phone(['#1f7a34', '#0b3b17'], lumo) },
-    { title: 'Locked', tex: phone(['#2a1a12', '#0d0b0f'], lockedScreen().image) },
-    { title: 'Jontai Energy', tex: cover(jontai) },
-    { title: 'Cookies Clicker', tex: cover(cookies) },
-    { title: 'Roblox game · in development', tex: card((x, w, h) => x.drawImage(lockedGame().image, 0, 0, w, h)), locked: true },
+    { title: 'Lumo', meta: 'Android app · 2026', tex: phone(['#1f7a34', '#0b3b17'], lumo) },
+    { title: 'Locked', meta: 'Android app · 2026', tex: phone(['#2a1a12', '#0d0b0f'], lockedScreen().image) },
+    { title: 'Jontai Energy', meta: 'Website · 2025', tex: cover(jontai) },
+    { title: 'Cookies Clicker', meta: 'Browser game · 2025', tex: cover(cookies) },
+    { title: 'Roblox game', meta: 'In development', tex: card((x, w, h) => x.drawImage(lockedGame().image, 0, 0, w, h)), locked: true },
   ];
   for (const w of works) {
     const c = document.createElement('canvas'); c.width = c.height = 1;
@@ -149,7 +154,7 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
   scene.add(floor);
   // The dial: degrees round the ring on the bench, turning with the works; a gold mark in front of you.
   const dial = (() => {
-    const segs = 360, r0 = RC - 1.5, r1 = RC - 0.95, pos = [], uv = [], idx = [];
+    const segs = 360, r0 = RC - 2.6, r1 = RC - 1.95, pos = [], uv = [], idx = [];
     for (let i = 0; i <= segs; i++) {
       const a = (i / segs) * Math.PI * 2;
       pos.push(Math.sin(a) * r0, 0, -Math.cos(a) * r0, Math.sin(a) * r1, 0, -Math.cos(a) * r1);
@@ -165,7 +170,7 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
     scene.add(m);
     const mark = new THREE.Mesh(new THREE.PlaneGeometry(0.035, 0.75), new THREE.MeshBasicMaterial({ color: '#cf9a62' }));
     mark.rotation.x = -Math.PI / 2;
-    mark.position.set(home.x, floorY + 0.006, home.z - (RC - 1.22));
+    mark.position.set(home.x, floorY + 0.006, home.z - (RC - 2.27));
     scene.add(mark);
     return m;
   })();
@@ -177,18 +182,18 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
     varying vec2 vUv; varying vec3 vWP;
     void main(){
       vUv = uv;
-      float grow = 1.0 + uHover * 0.035;
+      float grow = 1.0 + uHover * 0.05;
       float th = uAng + position.x * ${PW.toFixed(3)} * grow / ${RC.toFixed(1)};
       // One sheet: a wave travels along the ring while it turns, and a breath of it stays when it rests.
       float ph = th * 2.3 + uTime * 1.5;
-      float r = ${RC.toFixed(1)} - uVel * 0.75 * cos(ph) - uHover * 0.3;
+      float r = ${RC.toFixed(1)} - uVel * 0.75 * cos(ph) - uHover * 0.45;
       float y = uY + position.y * ${PH.toFixed(3)} * grow + uVel * (0.42 * sin(ph) + 0.18 * sin(th * 4.7 - uTime * 1.1)) + 0.035 * sin(th * 1.9 + uTime * 0.45);
       vec3 p = uHome + vec3(sin(th) * r, y, -cos(th) * r);
       vWP = p;
       gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
     }`;
   const cardFrag = `
-    uniform sampler2D uMap; uniform float uHover, uLocked, uDim;
+    uniform sampler2D uMap; uniform float uHover, uLocked, uDim, uHoverT; uniform vec2 uMouse, uEntry;
     varying vec2 vUv; varying vec3 vWP;
     float rbox(vec2 p, vec2 b, float r){ vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
     void main(){
@@ -196,7 +201,18 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
       float d = rbox(p, vec2(${PW / 2}, ${PH / 2}), ${CORNER});
       float a = 1.0 - smoothstep(-0.008, 0.004, d);
       if (a < 0.01) discard;
-      vec3 c = texture2D(uMap, (vUv - 0.5) / (1.0 + uHover * 0.045) + 0.5).rgb;
+      // Hover, unfolding while you stay: a ripple runs out from where you came in and settles; the picture leans toward
+      // the pointer and pushes in slowly the longer you look; a soft light follows the pointer across it.
+      vec2 asp = vec2(${(PW / PH).toFixed(4)}, 1.0);
+      float zoom = 1.0 + uHover * (0.04 + 0.08 * (1.0 - exp(-uHoverT * 0.3)));
+      vec2 uv = (vUv - 0.5) / zoom + 0.5 - (uMouse - 0.5) * 0.024 * uHover;
+      vec2 dv = (vUv - uEntry) * asp;
+      float rr = length(dv);
+      float ring = exp(-pow((rr - uHoverT * 1.15) * 7.0, 2.0)) * exp(-uHoverT * 1.1) * uHover;
+      vec2 off = dv / max(rr, 1e-4) * ring * 0.022;
+      vec3 c = vec3(texture2D(uMap, clamp(uv - off * 1.5, 0.002, 0.998)).r, texture2D(uMap, clamp(uv - off, 0.002, 0.998)).g, texture2D(uMap, clamp(uv - off * 0.5, 0.002, 0.998)).b);
+      vec2 dm = (vUv - uMouse) * asp;
+      c += vec3(1.0, 0.95, 0.9) * exp(-dot(dm, dm) * 5.0) * 0.1 * uHover;
       c = mix(c, vec3(dot(c, vec3(0.3, 0.59, 0.11))), uLocked * 0.6);
       // The sheet darkens where it turns from you, and toward the edges of the view.
       vec3 N = normalize(cross(dFdx(vWP), dFdy(vWP)));
@@ -214,14 +230,14 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
   hudParent.append(hud);
   const cardsEl = hud.querySelector('.bh-cards'), thetaEl = hud.querySelector('.bh-bl b'), speedEl = hud.querySelector('.bh-br i'), countEl = hud.querySelector('.bh-br b');
   for (let i = 0; i < POOL; i++) {
-    const u = { uMap: { value: works[0].tex }, uHome: { value: home.clone() }, uAng: { value: 0 }, uVel: { value: 0 }, uTime: { value: 0 }, uHover: { value: 0 }, uY: { value: bandY }, uLocked: { value: 0 }, uDim: { value: 1 } };
+    const u = { uMap: { value: works[0].tex }, uHome: { value: home.clone() }, uAng: { value: 0 }, uVel: { value: 0 }, uTime: { value: 0 }, uHover: { value: 0 }, uY: { value: bandY }, uLocked: { value: 0 }, uDim: { value: 1 }, uHoverT: { value: 0 }, uMouse: { value: new THREE.Vector2(0.5, 0.5) }, uEntry: { value: new THREE.Vector2(0.5, 0.5) } };
     const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 64, 24), new THREE.ShaderMaterial({ uniforms: u, vertexShader: cardVert, fragmentShader: cardFrag, transparent: true, side: THREE.DoubleSide }));
     m.frustumCulled = false;
     scene.add(m);
-    const t = document.createElement('p'); t.className = 'bh-t';
+    const t = document.createElement('p'); t.className = 'bh-t'; t.innerHTML = '<span class="k"></span><span class="n"></span>';
     const b = document.createElement('i'); b.className = 'bh-b';
     cardsEl.append(t, b);
-    cards.push({ m, u, t, b, hover: 0, slot: null });
+    cards.push({ m, u, t, b, hover: 0, slot: null, hoverT: 0, was: false, mouse: new THREE.Vector2(0.5, 0.5) });
   }
 
   // ---------------------------------------------------------------- the picture: off screen, finished by whoever shows it
@@ -240,12 +256,13 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
 
   const mouse = new THREE.Vector2(9, 9), ray = new THREE.Raycaster(), tmp = new THREE.Vector3();
   addEventListener('pointermove', (e) => mouse.set((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1));
-  let lastA = null, vel = 0, hoverSlot = null;
+  let lastA = null, vel = 0, hoverSlot = null, focus = 0;
+  const hitUV = new THREE.Vector2();
   const proj = (v) => { tmp.copy(v).project(camera); return [(tmp.x * 0.5 + 0.5) * W, (-tmp.y * 0.5 + 0.5) * H, tmp.z]; };
   // Where a point of a picture is, the same sum as the shader's.
   const at = (ang, lx, ly, v, time, hover) => {
-    const grow = 1 + hover * 0.035, th = ang + (lx * PW * grow) / RC, ph = th * 2.3 + time * 1.5;
-    const r = RC - v * 0.75 * Math.cos(ph) - hover * 0.3;
+    const grow = 1 + hover * 0.05, th = ang + (lx * PW * grow) / RC, ph = th * 2.3 + time * 1.5;
+    const r = RC - v * 0.75 * Math.cos(ph) - hover * 0.45;
     const y = home.y + bandY + ly * PH * grow + v * (0.42 * Math.sin(ph) + 0.18 * Math.sin(th * 4.7 - time * 1.1)) + 0.035 * Math.sin(th * 1.9 + time * 0.45);
     return new THREE.Vector3(home.x + Math.sin(th) * r, y, home.z - Math.cos(th) * r);
   };
@@ -277,12 +294,13 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
           const t = (-B + Math.sqrt(disc)) / (2 * A), q = o.addScaledVector(d, t);
           const th = Math.atan2(q.x, -q.z), k = Math.round((th + angle) / STEP);
           const off = (th + angle - k * STEP) * RC;
-          if (Math.abs(off) < PW / 2 && Math.abs(q.y - bandY) < PH / 2) hit = k;
+          if (Math.abs(off) < PW / 2 && Math.abs(q.y - bandY) < PH / 2) { hit = k; hitUV.set(off / PW + 0.5, (q.y - bandY) / PH + 0.5); }
         }
       }
       hoverSlot = hit;
       // The pool takes the slots in view: a slot k stands at k·STEP − angle.
       const k0 = Math.round(angle / STEP), lights = [];
+      focus += ((hoverSlot !== null ? 1 : 0) - focus) * 0.08;
       let front = 0;
       cards.forEach((c, i) => {
         const k = k0 + i - Math.floor(POOL / 2);
@@ -293,20 +311,28 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
         c.u.uAng.value = ang;
         c.u.uVel.value = v;
         c.u.uTime.value = time;
-        if (c.slot !== k) { c.slot = k; c.hover = 0; }
-        c.hover += ((k === hoverSlot ? 1 : 0) - c.hover) * 0.1;
+        if (c.slot !== k) { c.slot = k; c.hover = 0; c.was = false; }
+        const on = k === hoverSlot;
+        if (on && !c.was) { c.hoverT = 0; c.mouse.copy(hitUV); c.u.uEntry.value.copy(hitUV); }
+        c.was = on;
+        c.hoverT += dt;
+        if (on) c.mouse.lerp(hitUV, 0.12);
+        c.hover += ((on ? 1 : 0) - c.hover) * 0.08;
         c.u.uHover.value = c.hover;
-        c.u.uDim.value = THREE.MathUtils.lerp(0.45, 1, THREE.MathUtils.smoothstep(Math.cos(ang - (-look.x * 0.05 * arrive)), 0.62, 0.97)) * (0.9 + c.hover * 0.1);
+        c.u.uHoverT.value = Math.min(c.hoverT, 60);
+        c.u.uMouse.value.copy(c.mouse);
+        c.u.uDim.value = THREE.MathUtils.lerp(0.45, 1, THREE.MathUtils.smoothstep(Math.cos(ang - (-look.x * 0.05 * arrive)), 0.62, 0.97)) * (0.9 + c.hover * 0.1) * (1 - 0.35 * focus * (1 - c.hover));
         if (Math.abs(ang) < STEP / 2) front = n;
         if (Math.abs(ang) < 2.2 * STEP) lights.push({ p: at(ang, 0, -0.5, v, time, c.hover), c: w.avg, s: c.u.uDim.value });
-        c.t.textContent = w.title;
+        if (c.t.dataset.n !== String(n)) { c.t.dataset.n = String(n); c.t.firstChild.textContent = w.meta; c.t.lastChild.textContent = w.title; }
         c.t.classList.toggle('locked', !!w.locked);
-        c.b.classList.toggle('on', c.hover > 0.5);
+        c.t.classList.toggle('on', on);
+        c.b.classList.toggle('on', on);
         const bl = proj(at(ang, -0.5 + 0.22 / PW, -0.5 + 0.28 / PH, v, time, c.hover));
         const br = proj(at(ang, 0.5 - 0.3 / PW, -0.5 + 0.3 / PH, v, time, c.hover));
         const vis = bl[2] < 1 && Math.cos(ang) > 0.55 ? Math.min(1, (Math.cos(ang) - 0.55) * 5) * (1 - Math.min(1, Math.abs(v) * 1.8)) : 0;
         c.t.style.opacity = c.b.style.opacity = vis.toFixed(3);
-        c.t.style.transform = `translate(${bl[0]}px, ${bl[1] - 22}px)`;
+        c.t.style.transform = `translate(${bl[0]}px, ${bl[1] + 4}px) translateY(-100%)`;
         c.b.style.transform = `translate(${br[0]}px, ${br[1]}px)`;
       });
       for (let i = 0; i < 5; i++) {

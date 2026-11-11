@@ -27,7 +27,10 @@ renderer.setPixelRatio(dpr);
 renderer.setSize(W, H, false);
 const pitch = -0.2;
 const home = new THREE.Vector3(0, 0, -6);
-const bench = await createBench(renderer, { W, H, dpr, home, bandY: RC * Math.tan(pitch) });
+const bandY = RC * Math.tan(pitch);
+const bench = await createBench(renderer, { W, H, dpr, home, bandY });
+// A low eye, just under the middle of the works, looking nearly level.
+const eye = home.clone().add(new THREE.Vector3(0, bandY - 0.35, 0));
 let goal = q.has('a') ? Number(q.get('a')) * STEP : 0, angle = goal, drag = null;
 const look = { x: 0, y: 0 }, aim = { x: 0, y: 0 };
 addEventListener('wheel', (e) => { e.preventDefault(); goal += (e.deltaY + e.deltaX) * 0.0016; }, { passive: false });
@@ -41,7 +44,7 @@ function frame(now) {
   const t = (now - t0) / 1000;
   angle += (goal - angle) * (1 - Math.exp(-dt / 0.5));
   look.x += (aim.x - look.x) * 0.04; look.y += (aim.y - look.y) * 0.04;
-  const r = bench.update({ pos: home, fov: 40, pitch: pitch - 0.075, angle, look, arrive: 1, dt, time: t, dragging: !!drag });
+  const r = bench.update({ pos: eye, fov: 40, pitch: -0.03, angle, look, arrive: 1, dt, time: t, dragging: !!drag });
   document.body.style.cursor = r.hovered !== null ? 'pointer' : 'default';
   bench.render();
   bench.present();
