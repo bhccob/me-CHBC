@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>First view C · The rubbing</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  body { cursor: crosshair; }
+  canvas.full { z-index: 1; }
+  .hint { position: fixed; right: 12vw; top: 62%; margin: 0; z-index: 3; color: var(--ink-soft); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body>
+<canvas class="full" aria-label="Bob Chung, and five coins under the paper"></canvas>
+<p class="hint mono">Rub the page</p>
+<div class="chrome">
+  <p class="tl">Bob Chung</p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="bl">Software engineer. I build apps, games and websites.</p>
+  <p class="br"><span>Scroll</span><i></i></p>
+</div>
+<script type="module">
+import { fonts, ready } from './kit.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio);
+const canvas = document.querySelector('canvas');
+canvas.width = W * dpr; canvas.height = H * dpr;
+const ctx = canvas.getContext('2d');
+ctx.scale(dpr, dpr);
+const layer = () => { const c = document.createElement('canvas'); c.width = W * dpr; c.height = H * dpr; const x = c.getContext('2d'); x.scale(dpr, dpr); return [c, x]; };
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+// The paper: off-white with fibres.
+const [paper, p] = layer();
+p.fillStyle = '#f2efe8'; p.fillRect(0, 0, W, H);
+for (let i = 0; i < 9000; i++) { p.fillStyle = `rgba(${rnd() < 0.5 ? '120,100,90' : '255,255,255'},${rnd() * 0.05})`; p.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 3, 1); }
+
+// What lies under the paper: the name, and five coins. Raised parts are opaque, low parts faint.
+const [relief, rl] = layer();
+rl.fillStyle = '#fff';
+const fs = Math.min(W * 0.155, H * 0.3);
+rl.font = `800 ${fs}px Barlow`; rl.textAlign = 'center'; rl.textBaseline = 'alphabetic';
+rl.fillText('BOB CHUNG', W / 2, H * 0.47);
+const coins = 5, cr = Math.min(W * 0.045, H * 0.075), cy = H * 0.73;
+for (let i = 0; i < coins; i++) {
+  const cx = W / 2 + (i - 2) * cr * 3.1;
+  rl.globalAlpha = 0.42; rl.beginPath(); rl.arc(cx, cy, cr, 0, Math.PI * 2); rl.fill();
+  rl.globalAlpha = 1; rl.lineWidth = cr * 0.12; rl.strokeStyle = '#fff';
+  rl.beginPath(); rl.arc(cx, cy, cr * 0.94, 0, Math.PI * 2); rl.stroke();
+  const h = cr * 0.34; rl.strokeRect(cx - h - cr * 0.06, cy - h - cr * 0.06, (h + cr * 0.06) * 2, (h + cr * 0.06) * 2);
+  rl.globalCompositeOperation = 'destination-out'; rl.fillRect(cx - h, cy - h, h * 2, h * 2); rl.globalCompositeOperation = 'source-over';
+  // One mark per coin above the hole: works, then the four studies.
+  rl.font = `500 ${cr * 0.36}px "IBM Plex Mono"`;
+  rl.fillText(['WORK', '</>', '▲●', 'APP', '⛨'][i] ?? '', cx, cy - h - cr * 0.12);
+  rl.font = `800 ${fs}px Barlow`;
+}
+// Graphite: dense diagonal strokes.
+const [graphite, g] = layer();
+g.fillStyle = 'rgba(38,32,44,0.9)'; g.fillRect(0, 0, W, H);
+g.globalCompositeOperation = 'destination-out';
+for (let i = 0; i < 26000; i++) { const x = rnd() * W, y = rnd() * H; g.fillStyle = `rgba(0,0,0,${0.25 + rnd() * 0.6})`; g.fillRect(x, y, 2 + rnd() * 6, 1); }
+// Where it has been rubbed so far: a few strokes across the name and the first two coins.
+const [mask, m] = layer();
+const rub = (x, y, size = 46) => { const grad = m.createRadialGradient(x, y, 0, x, y, size); grad.addColorStop(0, 'rgba(0,0,0,0.55)'); grad.addColorStop(1, 'rgba(0,0,0,0)'); m.fillStyle = grad; m.beginPath(); m.arc(x, y, size, 0, Math.PI * 2); m.fill(); };
+for (let k = 0; k < 7; k++) for (let x = W * 0.08; x < W * (0.42 + k * 0.035); x += 9) rub(x, H * (0.3 + k * 0.035) + Math.sin(x * 0.02 + k) * 18, 50);
+for (let k = 0; k < 4; k++) for (let x = W * 0.22; x < W * 0.47; x += 9) rub(x, H * (0.66 + k * 0.04) + Math.sin(x * 0.03 + k) * 10, 40);
+
+const [work, w] = layer();
+function draw() {
+  w.setTransform(1, 0, 0, 1, 0, 0);
+  w.clearRect(0, 0, work.width, work.height);
+  w.drawImage(graphite, 0, 0);
+  w.globalCompositeOperation = 'destination-in'; w.drawImage(relief, 0, 0);
+  w.globalCompositeOperation = 'destination-in'; w.drawImage(mask, 0, 0);
+  w.globalCompositeOperation = 'source-over';
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(paper, 0, 0);
+  ctx.globalAlpha = 0.16; ctx.drawImage((() => { const [c, x] = layer(); x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(graphite, 0, 0); x.globalCompositeOperation = 'destination-in'; x.drawImage(mask, 0, 0); return c; })(), 0, 0);
+  ctx.globalAlpha = 1; ctx.drawImage(work, 0, 0);
+}
+draw();
+let pending = false;
+addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'mouse') { rub(e.clientX, e.clientY, 38); if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; draw(); }); } } });
+ready();
+</script>
+</body>
+</html>

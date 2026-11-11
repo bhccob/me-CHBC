@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Studies · Coins in</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  .rack { position: fixed; right: var(--gutter); top: 50%; transform: translateY(-50%); z-index: 5; margin: 0; padding: 0; list-style: none; display: grid; gap: 22px; }
+  .rack li { display: grid; grid-template-columns: 44px auto; align-items: center; gap: 16px; opacity: 0.38; }
+  .rack li.in { opacity: 0.75; }
+  .rack li.now { opacity: 1; }
+  .rack img { width: 44px; height: 44px; }
+  .rack span { display: block; color: var(--glow); margin-bottom: 4px; }
+  .rack b { font: 800 clamp(16px, 1.5vw, 22px)/1 Barlow; text-transform: uppercase; }
+  .rack li.in b::after { content: ' · in'; font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--glow); }
+  .credits { position: fixed; left: var(--gutter); bottom: var(--gutter); z-index: 5; margin: 0; color: var(--glow); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<ol class="rack"></ol>
+<p class="credits mono"></p>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, C, coin, visorHead, stage, fonts, ready } from './kit.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+await fonts();
+const n = Number(new URLSearchParams(location.search).get('n') ?? 2);
+const studies = [
+  ['02', 'Software engineering', 'The code that makes it think.'],
+  ['03', 'Game & app development', 'The controls. How you play with it.'],
+  ['04', 'Cybersecurity', 'The armour. What keeps it safe.'],
+  ['05', 'Mechatronics', 'Next: the gears and motors that move it.'],
+];
+const [num, title, line] = studies[n - 2];
+
+// A small coin picture for the rack.
+const icon = (() => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+  const r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  r.toneMapping = THREE.AgXToneMapping; r.toneMappingExposure = 1.25;
+  const sc = new THREE.Scene();
+  sc.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
+  const c = coin(); c.rotation.set(0.2, 0.5, 0);
+  sc.add(c, new THREE.DirectionalLight('#fff3e2', 2));
+  const cam = new THREE.PerspectiveCamera(26, 1, 0.1, 20); cam.position.z = 5;
+  r.render(sc, cam);
+  const url = cv.toDataURL(); r.dispose(); return url;
+})();
+const rack = document.querySelector('.rack');
+studies.forEach(([nn, t], i) => {
+  const li = document.createElement('li');
+  li.className = i + 2 < n ? 'in' : i + 2 === n ? 'now' : '';
+  li.innerHTML = `<img src="${icon}" alt="" /><p><span class="mono">${nn}</span><b>${t}</b></p>`;
+  rack.append(li);
+});
+document.querySelector('.credits').textContent = `Credits ${n} / 5${n === 5 ? ' · booted' : ''}`;
+
+const s = stage(document.querySelector('canvas'), { fov: 30, env: 0.45 }).post({ focus: 12, range: 5, bokeh: 0.9, bloom: 0.8, threshold: 0.7, vignette: 0.55, radius: 0.55 });
+const { scene, camera } = s;
+scene.background = new THREE.Color('#07050b');
+const head = visorHead([[`${num} / 05`, 64], [title.toUpperCase(), 100], [line, 56]]);
+head.position.set(-2.6, 0.5, -1.5);
+head.rotation.y = 0.32;
+scene.add(head);
+head.updateMatrixWorld(true);
+// Each study coin goes into the slot on the chin, half in already.
+const c = coin();
+c.scale.setScalar(0.55);
+c.position.copy(head.localToWorld(new THREE.Vector3(0, -0.85, 3.5)));
+c.quaternion.copy(head.getWorldQuaternion(new THREE.Quaternion())).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2 - 1.0, 0)));
+scene.add(c);
+// The side discs light up as studies go in: the parts it boots.
+const lit = Math.min(4, n - 1);
+head.traverse((o) => { if (o.isMesh && o.geometry.type === 'CylinderGeometry' && o.geometry.parameters.radiusTop === 0.55) { o.material = o.material.clone(); o.material.emissive = new THREE.Color(C.glow); o.material.emissiveIntensity = 0.25 * lit; } });
+const key = new THREE.DirectionalLight('#ffe9cc', 1.5); key.position.set(-6, 8, 9);
+const rimL = new THREE.DirectionalLight('#8a6cff', 2.2); rimL.position.set(-8, 3, -6);
+const rimR = new THREE.DirectionalLight(C.glow, 1.2); rimR.position.set(8, 2, -6);
+const glow = new THREE.PointLight(C.glow, 10, 9, 2); glow.position.set(-2.4, 0.9, 3.2);
+scene.add(key, rimL, rimR, glow, new THREE.HemisphereLight('#3a2a50', '#05040a', 0.35));
+camera.position.set(1.2, -0.4, 17.5);
+camera.lookAt(-0.9, 0.0, 0);
+s.render();
+ready();
+</script>
+</body>
+</html>

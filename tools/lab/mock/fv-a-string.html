@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>First view A · The string</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  .name { position: fixed; left: 0; right: 0; margin: 0; display: flex; align-items: baseline; justify-content: center; font-weight: 800; line-height: 1; white-space: nowrap; text-transform: uppercase; letter-spacing: -0.02em; z-index: 2; }
+  .name span { display: inline-block; flex: none; }
+  .name .slot { visibility: hidden; }
+  .name .gap { width: 0.24em; }
+  canvas.full { z-index: 3; pointer-events: none; }
+  .tag { position: fixed; z-index: 4; margin: 0; white-space: nowrap; transform: translateY(-50%); }
+  .tag span { color: var(--ink-soft); margin-right: 12px; }
+  .tag b { font-weight: 500; letter-spacing: 0.08em; }
+  .tag.works { transform: translate(0, -50%); }
+  .bl { left: auto !important; right: var(--gutter); bottom: auto !important; text-align: right; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body>
+<h1 class="name" aria-label="Bob Chung"><span>B</span><span class="slot"></span><span>B</span><span class="gap"></span><span>Chung</span></h1>
+<canvas class="full" aria-hidden="true"></canvas>
+<nav aria-label="Coins" id="tags"></nav>
+<div class="chrome">
+  <p class="tl">Bob Chung</p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="bl">Software engineer. I build apps, games and websites.</p>
+  <p class="br"><span>Scroll</span><i></i></p>
+</div>
+<script type="module">
+import { THREE, C, coin, fonts, pixelCamera, ready } from './kit.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight;
+const name = document.querySelector('.name'), slot = document.querySelector('.slot');
+const probe = document.createElement('canvas').getContext('2d');
+probe.font = '800 1000px Barlow';
+const cap = probe.measureText('B').actualBoundingBoxAscent / 1000, D = cap * 1.03;
+let size = 200;
+for (let i = 0; i < 4; i++) {
+  name.style.fontSize = `${size}px`;
+  slot.style.width = `${D * size}px`; slot.style.height = `${cap * size}px`; slot.style.margin = `0 ${0.02 * size}px`;
+  const spans = name.querySelectorAll('span');
+  const wide = spans[spans.length - 1].getBoundingClientRect().right - spans[0].getBoundingClientRect().left;
+  size *= Math.min((W - 2 * 40) / wide, (H * 0.25) / (cap * size));
+}
+name.style.fontSize = `${size}px`;
+slot.style.width = `${D * size}px`; slot.style.height = `${cap * size}px`; slot.style.margin = `0 ${0.02 * size}px`;
+name.style.top = `${H * 0.33 - name.getBoundingClientRect().height / 2}px`;
+document.querySelector('.bl').style.top = `${name.getBoundingClientRect().bottom - size * 0.12}px`;
+const box = slot.getBoundingClientRect();
+const ox = box.left + box.width / 2, oy = box.top + box.height / 2, R = (D * size) / 2;
+
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas'), antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap;
+const scene = new THREE.Scene();
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.75;
+const camera = new THREE.PerspectiveCamera();
+pixelCamera(camera, W, H);
+const X = ox, Y = H - oy;
+
+// The cord: from the top edge, through the O's square hole, through four smaller coins, down to a knot and a tassel.
+const studies = [['02', 'Software engineering'], ['03', 'Game & app development'], ['04', 'Cybersecurity'], ['05', 'Mechatronics']];
+const r = R * 0.3;
+const ys = studies.map((_, i) => Y - R - (H * 0.078) * (i + 1) - r * 0.6);
+const knotY = ys[ys.length - 1] - H * 0.065;
+const silk = new THREE.MeshPhysicalMaterial({ color: '#8c2219', roughness: 0.55, sheen: 1, sheenColor: new THREE.Color('#ff8a6a'), sheenRoughness: 0.4 });
+const sway = (y, t) => Math.sin(t * 1.1) * (H - y) * 0.004 + Math.sin(t * 0.7 + y * 0.004) * 2;
+let cord = null;
+function makeCord(t) {
+  if (cord) { scene.remove(cord); cord.geometry.dispose(); }
+  const pts = [];
+  for (let y = H + 20; y >= knotY; y -= 8) pts.push(new THREE.Vector3(X + sway(y, t), y, -R * 0.13));
+  cord = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 200, 2.4, 8), silk);
+  cord.castShadow = true;
+  scene.add(cord);
+}
+// The O: the coin of selected works, turned a little so it reads as a coin sitting in the word.
+const works = coin();
+works.scale.setScalar(R);
+works.position.set(X, Y, 0);
+scene.add(works);
+const small = ys.map((y) => {
+  const c = coin();
+  c.scale.setScalar(r);
+  c.position.set(X, y, 0);
+  scene.add(c);
+  return c;
+});
+// Knot and tassel.
+const knot = new THREE.Mesh(new THREE.TorusKnotGeometry(6, 2.4, 64, 8, 2, 3), silk);
+knot.position.set(X, knotY, 0);
+knot.castShadow = true;
+scene.add(knot);
+const threads = [];
+for (let i = 0; i < 46; i++) {
+  const a = (i / 46) * Math.PI * 2, rr = 2 + (i % 5) * 1.2;
+  threads.push(Math.cos(a) * rr, 0, Math.sin(a) * rr, Math.cos(a) * (rr + 6), -H * 0.06 - (i % 7) * 3, Math.sin(a) * (rr + 6));
+}
+const tassel = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(threads, 3)), new THREE.LineBasicMaterial({ color: '#9a2a1f' }));
+tassel.position.set(X, knotY - 6, 0);
+scene.add(tassel);
+
+// The page catches the shadows.
+const catcher = new THREE.Mesh(new THREE.PlaneGeometry(W * 3, H * 3), new THREE.ShadowMaterial({ opacity: 0.2, color: '#1b0d24' }));
+catcher.position.set(W / 2, H / 2, -R * 0.6);
+catcher.receiveShadow = true;
+scene.add(catcher);
+const sun = new THREE.DirectionalLight('#fff3e2', 2.4);
+sun.position.set(X - W * 0.4, H * 1.4, H * 1.2);
+sun.target.position.set(X, H / 2, 0);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.radius = 9;
+Object.assign(sun.shadow.camera, { left: -W, right: W, top: H, bottom: -H, near: 1, far: H * 5 });
+for (const c of [works, ...small]) c.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+scene.add(sun, sun.target, new THREE.HemisphereLight('#fff6ea', '#3a2a40', 0.6));
+
+// The labels: the four studies beside their coins, selected works over the O. The first view is the table of contents.
+const tags = document.getElementById('tags');
+const tag = (x, y, n, t, cls = '') => { const p = document.createElement('p'); p.className = `tag mono ${cls}`; p.innerHTML = `<span>${n}</span><b>${t}</b>`; Object.assign(p.style, { left: `${x}px`, top: `${y}px` }); tags.append(p); };
+studies.forEach(([n, t], i) => tag(X + r + 26, H - ys[i], n, t));
+tag(X + R + 0, oy - R - 18, '01', 'Selected works', 'works');
+
+const pointer = { x: 0 };
+addEventListener('pointermove', (e) => { pointer.x = (e.clientX - X) / W; });
+const t0 = performance.now();
+let shot = false;
+function frame(now) {
+  const t = (now - t0) / 1000;
+  makeCord(t);
+  works.position.x = X + sway(Y, t);
+  works.rotation.set(0.05, 0.42 + Math.sin(t * 0.6) * 0.08 + pointer.x * 0.6, 0.02);
+  small.forEach((c, i) => { c.position.x = X + sway(ys[i], t); c.rotation.set(0.1, 0.9 + i * 0.55 + Math.sin(t * 0.8 + i) * 0.25 + pointer.x * (1.2 + i * 0.3), 0); });
+  knot.position.x = tassel.position.x = X + sway(knotY, t);
+  renderer.render(scene, camera);
+  if (!shot && t > 1.2) { shot = true; ready(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

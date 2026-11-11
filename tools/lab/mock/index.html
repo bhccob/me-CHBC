@@ -27,6 +27,21 @@
 <p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
 
 <section>
+  <h2 class="display">Round 29 · First view</h2>
+  <p class="idea">Three ways in, each one already showing the five coins: selected works, then the four studies that go into the robot later.</p>
+  <div class="grid" id="fv"></div>
+</section>
+<section>
+  <h2 class="display">Round 29 · The works domain</h2>
+  <p class="idea">The works coin's square hole opens and you are inside it: an endless, ordered space, the five works on a ring round you, all the same size. Scroll or drag to turn it; hover to lift one. <a href="domain.html">Open it live.</a></p>
+  <div class="grid" id="domain"></div>
+</section>
+<section>
+  <h2 class="display">Round 29 · Studies are coins</h2>
+  <p class="idea">The four studies are four more coins. Each one goes into the robot's slot, its visor names the study, and a part of it boots.</p>
+  <div class="grid" id="study"></div>
+</section>
+<section>
   <h2 class="display">A · The coin</h2>
   <p class="idea">Bob's brief. The O in BOB is a Chinese coin: Built on one face, Studies on the other, the square hole is mechatronics. Robot hands catch it and feed it to a visor; it ends on Bob's own monitor.</p>
   <div class="grid" id="coin"></div>
@@ -43,6 +58,22 @@
 </section>
 <script type="module">
 const frames = {
+  fv: [
+    ['fv-a-string', 'A · The string', 'The O is the works coin on a red cord; the four study coins hang below it. The first view is the table of contents, and it sways with your cursor.'],
+    ['fv-b-insert', 'B · Insert coin', 'A dark glass screen: INSERT COIN, credits 0 / 5, and your cursor is a coin. It is the robot’s visor; you find that out later.'],
+    ['fv-c-rubbing', 'C · The rubbing', 'Paper over Bob’s things: rub it with your cursor and the name and five coins come up in graphite.'],
+  ],
+  domain: [
+    ['domain-1-gate', '1 · The works coin', 'On the page, the domain already shows through its hole.'],
+    ['domain-2-opening', '2 · Opening', 'The hole grows past the screen; you go through the coin.'],
+    ['domain-3-inside', '3 · Inside', 'Concentric squares overhead and underfoot, far frames drifting; five works, one size.'],
+    ['domain-4-hover', '4 · Hover', 'The panel lifts and a gold square draws round it; the others dim; the cursor says Open.'],
+    ['domain-5-turning', '5 · Turning', 'Scroll or drag turns the ring a beat late; speed bends the panels.'],
+  ],
+  study: [
+    ['study-2', '02 · Software engineering', 'The second coin goes in; the visor names the study.'],
+    ['study-5', '05 · Mechatronics', 'The last coin: five of five, booted.'],
+  ],
   coin: [
     ['coin-01-name', '01 · Name', 'BOB as a poster. The O is a 3D ring with a real square hole into a dark shaft; a faint gold glow far down.'],
     ['coin-01-name', '01 · Name, phone', 'Stacked, so the O stays large.', '390x844'],
