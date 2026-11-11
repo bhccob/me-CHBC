@@ -16,7 +16,7 @@ export const STUDIES = [
   { n: '04', name: 'Cybersecurity', line: 'Keeps it safe.', glyph: 'security' },
   { n: '05', name: 'Mechatronics', line: 'Makes it move. Still being minted.', glyph: 'gear', fresh: true },
 ];
-const PATHS = {
+export const PATHS = {
   software: 'M38 18 L8 50 L38 82 L48 72 L27 50 L48 28 Z M62 18 L92 50 L62 82 L52 72 L73 50 L52 28 Z',
   game: 'M37 10 H63 V37 H90 V63 H63 V90 H37 V63 H10 V37 H37 Z',
   security: 'M50 6 L88 20 V48 C88 70 72 86 50 95 C28 86 12 70 12 48 V20 Z',
