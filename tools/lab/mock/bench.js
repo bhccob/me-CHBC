@@ -9,7 +9,7 @@ import { canvasTex, lockedScreen, lockedGame } from './kit.js';
 
 export const HS = 0.9; // half the hole's side
 export const RC = 9; // the ring's radius
-export const PW = 4.6, PH = 2.875, GAP = 0.13; // a picture is a plain 16:10 rectangle
+export const PW = 5.1, PH = 3.1875, GAP = 0.13; // a picture is a plain 16:10 rectangle
 export const STEP = (PW + GAP) / RC; // radians from one picture to the next
 const POOL = 9, CORNER = 0.07;
 

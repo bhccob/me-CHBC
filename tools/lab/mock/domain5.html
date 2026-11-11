@@ -41,7 +41,7 @@ function frame(now) {
   const t = (now - t0) / 1000;
   angle += (goal - angle) * (1 - Math.exp(-dt / 0.5));
   look.x += (aim.x - look.x) * 0.04; look.y += (aim.y - look.y) * 0.04;
-  const r = bench.update({ pos: home, fov: 40, pitch, angle, look, arrive: 1, dt, time: t, dragging: !!drag });
+  const r = bench.update({ pos: home, fov: 40, pitch: pitch - 0.075, angle, look, arrive: 1, dt, time: t, dragging: !!drag });
   document.body.style.cursor = r.hovered !== null ? 'pointer' : 'default';
   bench.render();
   bench.present();

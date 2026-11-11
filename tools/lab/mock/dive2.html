@@ -361,6 +361,7 @@ const home = dir.clone().multiplyScalar(-L);
 const lineUp = Math.asin(-dir.y);
 const bundle = Math.atan((HS * (rho0 + L + RC)) / rho0 / RC);
 const pitch = lineUp - Math.atan(PH / 2 / RC) - bundle - 0.08;
+// The camera looks a little further down than the band, so the works sit above the middle of the screen.
 const bandY = RC * Math.tan(pitch);
 const space = await createBench(renderer, { W, H, dpr, home, bandY });
 const portal = new THREE.Mesh(new THREE.PlaneGeometry(2 * (HOLE + 0.02), 2 * (HOLE + 0.02)), space.portalMaterial);
@@ -607,7 +608,7 @@ function frame(now) {
   const arrive = ease((u - uCross) / (uSettle - uCross));
   const bs = sNow - SD * uSettle;
   const angle = STEP * 1.25 * (bs <= 0 ? 0 : bs < 1 ? (bs * bs) / 2 : bs - 0.5);
-  const res = space.update({ pos: cs, fov: 30 + 10 * arrive, pitch: pitch * arrive, angle, look: lookS, arrive, dt, time: t, dragging: !!dragAt && arrive > 0.9 });
+  const res = space.update({ pos: cs, fov: 30 + 10 * arrive, pitch: (pitch - 0.075) * arrive, angle, look: lookS, arrive, dt, time: t, dragging: !!dragAt && arrive > 0.9 });
   space.render();
   document.body.style.cursor = arrive > 0.5 ? (res.hovered !== null ? 'pointer' : 'default') : '';
   if (inside) space.present();
