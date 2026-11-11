@@ -270,9 +270,10 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
   return {
     scene, camera, portalMaterial, hud,
     /** pos: the camera; fov; pitch (radians, down is negative); angle: how far the ring has turned; arrive: 0..1. */
-    update({ pos, fov, pitch = 0, angle = 0, look = { x: 0, y: 0 }, arrive = 1, dt = 1 / 60, time = 0, dragging = false }) {
+    update({ pos, fov, pitch = 0, angle = 0, look = { x: 0, y: 0 }, arrive = 1, dt = 1 / 60, time = 0, dragging = false, quaternion = null }) {
       camera.position.copy(pos);
       camera.rotation.set(pitch + look.y * 0.035 * arrive, -look.x * 0.05 * arrive, 0, 'YXZ');
+      if (quaternion) camera.quaternion.copy(quaternion);
       camera.fov = fov;
       camera.updateProjectionMatrix();
       camera.updateMatrixWorld();

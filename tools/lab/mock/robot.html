@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Studies · four coins into the robot</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  @font-face { font-family: Barlow; font-weight: 300; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-300-normal.woff2') format('woff2'); }
+  @font-face { font-family: Barlow; font-weight: 300; font-style: italic; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-300-italic.woff2') format('woff2'); }
+  @font-face { font-family: Barlow; font-weight: 600; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: Barlow; font-weight: 700; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-700-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Ma Shan Zheng'; font-display: block; src: url('/node_modules/@fontsource/ma-shan-zheng/files/ma-shan-zheng-latin-400-normal.woff2') format('woff2'); }
+  body.dark { --accent: #c9935f; --ink: #f2efe8; --ink-soft: rgb(242 239 232 / 0.62); --paper: #150923; }
+  body.light { --accent: #8a5a2f; --ink: #130724; --ink-soft: rgb(19 7 36 / 0.62); --paper: #f2efe8; }
+  body, body.dark, body.light { background: var(--paper); color: var(--ink); }
+  .light .chrome { color: var(--ink); }
+  .metal .name { color: transparent; }
+  body { --gold: #cf9a62; --violet: #b47ed4; }
+  .hand .name { color: var(--gold); }
+  /* The brush: what is personal and what is next. */
+  .hand .name .r2 { font-family: 'Ma Shan Zheng', cursive; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--accent); font-size: 1.16em; transform: rotate(-3.5deg) translateY(0.03em); transform-origin: left bottom; }
+  .hand .name .r2 .l { clip-path: none; }
+  .hand .name .r2 .l i { color: var(--violet) !important; }
+  .hand .intro .lead .hot { color: var(--violet); font-family: 'Ma Shan Zheng', cursive; font-weight: 400; font-size: 1.22em; letter-spacing: 0; line-height: 0.92; }
+  .hand .intro .lead .line { padding-bottom: 0.12em; }
+  .note { position: fixed; z-index: 6; margin: 0; font: 400 clamp(20px, 1.8vw, 28px)/1.05 'Ma Shan Zheng', cursive; color: var(--violet); transform: rotate(-5deg); pointer-events: none; }
+  .note svg { display: block; margin-top: 6px; overflow: visible; }
+  .metal .note { display: none; }
+  .name .r2 .l i { background: none !important; -webkit-text-stroke: 0 !important; }
+  .name .base { display: inline-block; width: 0; height: 0; }
+  /* CHUNG is drawn in pencil: hatched strokes inside a crisp edge, rubbed in from the left as the page arrives. */
+  .name .r2 .l i { color: transparent; -webkit-text-stroke: 0.011em var(--ink);
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.94 0 0 0 0 0.91 0 0 0 1.6 -0.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      repeating-linear-gradient(-61deg, rgb(30 24 38 / 0.78) 0 0.0065em, rgb(30 24 38 / 0.22) 0.0065em 0.011em, transparent 0.011em 0.0165em), linear-gradient(rgb(30 24 38 / 0.12), rgb(30 24 38 / 0.12));
+    -webkit-background-clip: text; background-clip: text; }
+  .name .r2 { -webkit-mask: linear-gradient(90deg, #000 calc(var(--rub, 1) * 120% - 20%), transparent calc(var(--rub, 1) * 120%)); mask: linear-gradient(90deg, #000 calc(var(--rub, 1) * 120% - 20%), transparent calc(var(--rub, 1) * 120%)); }
+  html { background: #150923; }
+  body:not(.dark):not(.light) { visibility: hidden; }
+  body { cursor: crosshair; overscroll-behavior: none; }
+  canvas.paper { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; }
+  canvas.full { z-index: 9; pointer-events: none; }
+  canvas.loader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 8; }
+  .name { position: fixed; left: 0; right: 0; margin: 0; display: flex; align-items: baseline; justify-content: center; font-weight: 800; line-height: 1; white-space: nowrap; text-transform: uppercase; letter-spacing: -0.025em; z-index: 2; }
+  .name span { display: inline-block; flex: none; }
+  .name .slot { visibility: hidden; }
+  .name .gap { width: 0.22em; }
+  .name .l { clip-path: inset(-10% -5% -5% -5%); }
+  .name .l i { display: inline-block; font-style: normal; will-change: transform; }
+  .phone .name { flex-direction: column; align-items: flex-start; padding-left: var(--gutter); }
+  .phone .name .row { display: flex; align-items: baseline; }
+  .phone .name .gap { display: none; }
+
+  /* The introduction: a big light sentence with a few heavy words, then where he is from, quietly. */
+  .intro { position: fixed; z-index: 4; margin: 0; }
+  .intro .lead { margin: 0; font: 700 clamp(30px, 3.6vw, 56px)/0.98 Barlow; letter-spacing: -0.03em; max-width: 19em; }
+  .intro .lead .hot { color: var(--accent); }
+  .intro .lead .dot { font-style: normal; color: var(--accent); }
+  .intro .sub { margin: 22px 0 0; max-width: 31ch; font: 400 17px/1.45 Barlow; color: var(--ink-soft); }
+  .intro .meta { display: flex !important; gap: 28px; margin-top: 22px !important; }
+  .intro .meta p { margin: 0; font: 500 15px Barlow; display: flex; align-items: baseline; gap: 8px; }
+  .intro .meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); transform: translateY(-2px); }
+  .intro .meta small { font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: var(--ink-soft); }
+  .eyebrow i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-right: 10px; transform: translateY(-1px); }
+  /* The coins' tags: engraved-style readouts that decode beside a coin when it turns to you. */
+  .ctag { position: fixed; z-index: 6; margin: 0; pointer-events: none; transform: translateY(-50%); white-space: nowrap; opacity: 0; transition: opacity 0.35s; }
+  .ctag.on { opacity: 1; }
+  .ctag .n { display: block; font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 5px; }
+  .ctag b { display: block; font: 700 19px/1 Barlow; letter-spacing: -0.01em; }
+  .ctag span.s { display: block; margin-top: 5px; font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--ink-soft); text-transform: uppercase; }
+  .intro .lead b { font-weight: 600; }
+  .intro .lead em { font-style: italic; }
+  .intro .lead u { text-decoration: none; position: relative; white-space: nowrap; }
+  .intro .lead u::after { content: ''; position: absolute; left: -0.06em; right: -0.1em; bottom: -0.18em; height: 0.3em; z-index: -1; filter: url(#graphite);
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 14' preserveAspectRatio='none'%3E%3Cpath d='M3 9 C 40 5, 82 11, 124 7 S 196 5, 236 8' stroke='%232c2632' stroke-width='2.2' fill='none' stroke-linecap='round' opacity='.85'/%3E%3Cpath d='M8 11 C 60 8, 110 12, 160 9 S 214 9, 232 10' stroke='%232c2632' stroke-width='1.3' fill='none' stroke-linecap='round' opacity='.45'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+  .intro .lead .line { display: block; overflow: hidden; padding-bottom: 0.06em; }
+  .intro .lead .line > span { display: inline-block; will-change: transform; }
+  .intro .meta { margin: 26px 0 0; display: grid; grid-template-columns: auto auto; gap: 6px 22px; align-items: baseline; width: max-content; }
+  .intro .meta p { margin: 0; }
+  .intro .meta .k { font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
+  .intro .meta .v { font: 500 16px Barlow; }
+  .intro .meta .v small { font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.1em; color: var(--ink-soft); margin-left: 10px; }
+  .vert { position: fixed; z-index: 4; margin: 0; writing-mode: vertical-rl; font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.32em; color: var(--ink-soft); }
+  .eyebrow { position: fixed; z-index: 4; margin: 0; }
+  .eyebrow b { font-weight: 500; color: var(--ink); }
+  .pull { position: fixed; right: var(--gutter); bottom: var(--gutter); z-index: 5; margin: 0; display: flex; align-items: center; gap: 14px; }
+  .pull i { display: block; width: 1px; height: 46px; background: linear-gradient(var(--ink), transparent); position: relative; overflow: hidden; }
+  .chrome .tl { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.22em; }
+  .reveal { opacity: 0; }
+  .phone .intro .lead { font-size: 27px; }
+  .phone .intro .sub { font-size: 14px; }
+  .phone .intro .meta { flex-wrap: wrap; gap: 6px 16px; width: auto; }
+  .phone .eyebrow { display: none; }
+  .phone .vert { display: none; }
+  .phone .tr span:not(:last-child) { display: none; }
+  .phone .tr::before { content: 'Menu'; }
+  .phone .intro .meta { grid-template-columns: auto; gap: 2px; }
+  .phone .intro .meta .k { margin-top: 10px; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="graphite"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5"/></filter></svg>
+<canvas class="paper" aria-hidden="true"></canvas>
+<h1 class="name" aria-label="Bob Chung"><span class="row"><span class="l"><i>B</i></span><span class="slot"></span><span class="l"><i>B</i></span><span class="base"></span></span><span class="gap"></span><span class="row r2"><span class="l"><i>C</i></span><span class="l"><i>h</i></span><span class="l"><i>u</i></span><span class="l"><i>n</i></span><span class="l"><i>g</i></span><span class="base"></span></span></h1>
+<canvas class="full" aria-hidden="true"></canvas>
+<p class="eyebrow mono reveal"><i></i>Software engineer <b>·</b> Est. BC—2006</p>
+<div id="ctags"></div>
+<p class="note reveal" aria-hidden="true">four more coins,<br>for later<svg width="120" height="46" viewBox="0 0 120 46"><path d="M4 6 C 30 30, 70 40, 112 30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M98 20 L113 30 L97 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></p>
+<p class="vert reveal" aria-hidden="true">BC—2006</p>
+<div class="intro">
+  <p class="lead">
+    <span class="line"><span>I build software<i class="dot">.</i></span></span>
+    <span class="line"><span class="hot">Next, the machines</span></span>
+    <span class="line"><span class="hot">it runs on.</span></span>
+  </p>
+  <p class="sub reveal">Apps, games and websites, written in Rotterdam by someone from Aruba. Keep the four coins; they’re for later.</p>
+  <div class="meta reveal">
+    <p><i></i>Aruba <small>12.52°N 70.03°W</small></p>
+    <p><i></i>Rotterdam <small>51.92°N 4.48°E</small></p>
+  </div>
+</div>
+<p class="pull mono reveal"><span>↓ Scroll in</span><i></i></p>
+<div class="chrome reveal"><p class="tl">BC—2006</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<canvas class="loader" aria-label="Loading"></canvas>
+<script type="module">
+import { THREE, HOLE, coin, fonts, pixelCamera, ready } from './kit.js';
+import { createBench, HS, RC, PH, STEP } from './bench.js';
+import { createRobot } from './robot.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+await Promise.all([fonts(), ...['300 40px Barlow', 'italic 300 40px Barlow', '600 40px Barlow', '700 40px Barlow', '400 17px Barlow', '400 40px "Ma Shan Zheng"'].map((f) => document.fonts.load(f))]);
+const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio);
+const phone = W / H < 0.8;
+document.body.classList.toggle('phone', phone);
+const frozen = new URLSearchParams(location.search).get('t');
+const params = new URLSearchParams(location.search);
+const light = (params.get('bg') ?? 'dark') === 'light';
+const hand = (params.get('type') ?? 'hand') === 'hand';
+// The scroll: the wheel (or a drag) moves you on; nothing on the page itself scrolls. ?s= fixes how far, in screen
+// heights, for stills.
+const fixedS = params.has('s') ? Number(params.get('s')) : null;
+let goal = fixedS ?? 0, shown = goal, dragAt = null;
+addEventListener('wheel', (e) => { e.preventDefault(); if (!loading) goal = Math.max(0, goal + (e.deltaY + e.deltaX * 0.5) / innerHeight); }, { passive: false });
+addEventListener('pointerdown', (e) => { dragAt = { x: e.clientX, y: e.clientY, start: goal }; });
+addEventListener('pointerup', () => { dragAt = null; });
+addEventListener('pointermove', (e) => { if (dragAt) goal = Math.max(0, dragAt.start - ((e.clientY - dragAt.y) + (e.clientX - dragAt.x)) / innerHeight * 1.4); });
+const aim = { x: 0, y: 0 }, lookS = { x: 0, y: 0 };
+addEventListener('pointermove', (e) => { aim.x = (e.clientX / innerWidth) * 2 - 1; aim.y = -(e.clientY / innerHeight) * 2 + 1; });
+document.body.classList.add(light ? 'light' : 'dark', hand ? 'hand' : 'metal');
+if (light) document.body.classList.remove('dark');
+if (hand) {
+  // In the brush, CHUNG is written as a name, not set in capitals.
+  const word = document.querySelector('.name .r2');
+  [...word.querySelectorAll('.l i')].forEach((el, i) => (el.textContent = 'Chung'[i]));
+}
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+const out = (x) => 1 - Math.pow(1 - clamp(x), 3);
+
+// ------------------------------------------------------------------ layout: the name, the O's slot, the introduction
+const name = document.querySelector('.name'), slot = document.querySelector('.slot');
+const probe = document.createElement('canvas').getContext('2d');
+probe.font = '800 1000px Barlow';
+const cap = probe.measureText('B').actualBoundingBoxAscent / 1000, D = cap * 1.03;
+const setSize = (size) => { name.style.fontSize = `${size}px`; slot.style.width = `${D * size}px`; slot.style.height = `${cap * size}px`; slot.style.margin = `0 ${0.02 * size}px`; };
+let size = 200;
+for (let i = 0; i < 4; i++) {
+  setSize(size);
+  const ls = name.querySelectorAll('.l');
+  const wide = phone ? name.getBoundingClientRect().width : ls[ls.length - 1].getBoundingClientRect().right - ls[0].getBoundingClientRect().left;
+  size *= phone ? (W * 0.72) / name.querySelector('.row').getBoundingClientRect().width : Math.min((W - 2 * 36) / wide, (H * 0.24) / (cap * size));
+}
+setSize(size);
+const nameTop = phone ? H * 0.13 : hand ? H * 0.12 : H * 0.17;
+name.style.top = `${nameTop}px`;
+const nr = name.getBoundingClientRect();
+const box = slot.getBoundingClientRect();
+const ox = box.left + box.width / 2, oy = box.top + box.height / 2, R = (D * size) / 2;
+const intro = document.querySelector('.intro');
+Object.assign(intro.style, phone ? { left: `${ox + R * 0.9}px`, right: 'var(--gutter)', top: `${nr.bottom + H * 0.06}px` } : { left: `${W * 0.44}px`, top: `${nr.bottom + H * 0.09}px` });
+const eyebrow = document.querySelector('.eyebrow');
+const rows = document.querySelectorAll('.name .row');
+const col = ox + R * 0.62; // on a phone, everything but the cord and its coins sits right of this
+if (phone) {
+  const full = rows[1].getBoundingClientRect().width;
+  rows[1].style.fontSize = `${Math.min(0.56, (W - col - 16) / full)}em`;
+  rows[1].style.marginLeft = `${col - name.getBoundingClientRect().left - parseFloat(getComputedStyle(name).paddingLeft)}px`;
+  rows[1].style.marginTop = `${size * 0.04}px`;
+}
+const nr2 = name.getBoundingClientRect();
+const eyeLeft = phone ? col : rows[1].getBoundingClientRect().left + size * 0.06;
+Object.assign(eyebrow.style, phone ? { left: `${eyeLeft}px`, top: `${nr2.bottom + 8}px`, right: 'var(--gutter)' } : { left: `${eyeLeft}px`, top: `${box.top - 34}px` });
+if (hand && !phone) {
+  // Above the brush word, clear of its tall C.
+  const br = rows[1].getBoundingClientRect();
+  Object.assign(eyebrow.style, { left: `${br.left + size * 0.05}px`, top: `${br.top - 6}px` });
+  Object.assign(intro.style, { top: `${box.bottom + H * 0.095}px` });
+}
+if (phone) Object.assign(intro.style, { left: `${col}px`, right: 'var(--gutter)', top: `${nr2.bottom + 20}px` });
+const note = document.querySelector('.note');
+if (note) Object.assign(note.style, phone ? { left: 'var(--gutter)', top: `${H * 0.86}px`, display: 'none' } : { left: `${Math.max(28, ox - R * 2.5)}px`, top: `${box.bottom + H * 0.2}px` });
+const vert = document.querySelector('.vert');
+Object.assign(vert.style, { left: `${ox + 14}px`, top: `${H * 0.03}px` });
+if (phone) intro.querySelector('.lead').innerHTML = intro.querySelector('.lead').innerHTML.replace(/<\/span><\/span>\s*<span class="line"><span>/g, ' ');
+
+// ------------------------------------------------------------------ the paper: fibres, and a coin under it the cursor can rub up
+const layer = () => { const c = document.createElement('canvas'); c.width = W * dpr; c.height = H * dpr; const x = c.getContext('2d'); x.scale(dpr, dpr); return [c, x]; };
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const [paper, pp] = layer();
+if (light) { pp.fillStyle = '#f2efe8'; pp.fillRect(0, 0, W, H); }
+else { const g0 = pp.createRadialGradient(W * 0.45, H * 0.38, 0, W * 0.45, H * 0.38, Math.max(W, H) * 0.8); g0.addColorStop(0, '#22103a'); g0.addColorStop(1, '#120720'); pp.fillStyle = g0; pp.fillRect(0, 0, W, H); }
+for (let i = 0; i < 9000; i++) { pp.fillStyle = light ? `rgba(${rnd() < 0.5 ? '120,100,90' : '255,255,255'},${rnd() * 0.045})` : `rgba(${rnd() < 0.5 ? '184,170,216' : '0,0,0'},${rnd() * 0.05})`; pp.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 3, 1); }
+const [graphite, gg] = layer();
+gg.fillStyle = light ? 'rgba(38,32,44,0.9)' : 'rgba(201,147,95,0.95)'; gg.fillRect(0, 0, W, H);
+gg.globalCompositeOperation = 'destination-out';
+for (let i = 0; i < 26000; i++) { gg.fillStyle = `rgba(0,0,0,${0.25 + rnd() * 0.6})`; gg.fillRect(rnd() * W, rnd() * H, 2 + rnd() * 6, 1); }
+/** A coin's relief: raised rims and marks opaque, the field faint, the hole cut out. */
+function coinRelief(x, cx, cy, r, marks = true) {
+  x.fillStyle = '#fff';
+  x.globalAlpha = 0.4; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+  x.globalAlpha = 1; x.strokeStyle = '#fff';
+  x.lineWidth = r * 0.12; x.beginPath(); x.arc(cx, cy, r * 0.93, 0, Math.PI * 2); x.stroke();
+  const h = r * 0.48; x.lineWidth = r * 0.07; x.strokeRect(cx - h - r * 0.035, cy - h - r * 0.035, (h + r * 0.035) * 2, (h + r * 0.035) * 2);
+  if (marks) {
+    x.lineWidth = r * 0.055; x.lineCap = 'square';
+    const m = r * 0.12, d = r * 0.71;
+    x.beginPath(); x.moveTo(cx - m, cy - d - m * 0.6); x.lineTo(cx - m * 1.7, cy - d); x.lineTo(cx - m, cy - d + m * 0.6); x.moveTo(cx + m, cy - d - m * 0.6); x.lineTo(cx + m * 1.7, cy - d); x.lineTo(cx + m, cy - d + m * 0.6); x.stroke();
+    x.fillRect(cx + d - m * 0.25, cy - m, m * 0.5, m * 2); x.fillRect(cx + d - m, cy - m * 0.25, m * 2, m * 0.5);
+    for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) x.fillRect(cx + a * m * 0.55 - m * 0.4, cy + d + b * m * 0.55 - m * 0.4, m * 0.8, m * 0.8);
+    x.beginPath(); x.moveTo(cx - d, cy - m * 1.1); x.lineTo(cx - d + m, cy - m * 0.6); x.lineTo(cx - d + m, cy + m * 0.3); x.lineTo(cx - d, cy + m * 1.2); x.lineTo(cx - d - m, cy + m * 0.3); x.lineTo(cx - d - m, cy - m * 0.6); x.closePath(); x.stroke();
+  }
+  x.globalCompositeOperation = 'destination-out'; x.fillRect(cx - h, cy - h, h * 2, h * 2); x.globalCompositeOperation = 'source-over';
+}
+const [pageRelief, pr] = layer();
+coinRelief(pr, phone ? W * 0.62 : W * 0.78, phone ? H * 0.78 : H * 0.7, phone ? W * 0.5 : H * 0.42);
+const [pageMask, pm] = layer();
+const rubOn = (x, cx, cy, size, a = 0.5) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, size); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, size, 0, Math.PI * 2); x.fill(); };
+const paperCanvas = document.querySelector('canvas.paper');
+paperCanvas.width = W * dpr; paperCanvas.height = H * dpr;
+const pc = paperCanvas.getContext('2d');
+function composite(target, reliefC, maskC, faint, strong) {
+  const [work, w] = layer(); w.setTransform(1, 0, 0, 1, 0, 0);
+  w.drawImage(graphite, 0, 0); w.globalCompositeOperation = 'destination-in'; w.drawImage(maskC, 0, 0);
+  const [solid, s] = layer(); s.setTransform(1, 0, 0, 1, 0, 0);
+  s.drawImage(work, 0, 0); s.globalCompositeOperation = 'destination-in'; s.drawImage(reliefC, 0, 0);
+  target.globalAlpha = faint; target.drawImage(work, 0, 0);
+  target.globalAlpha = strong; target.drawImage(solid, 0, 0);
+  target.globalAlpha = 1;
+}
+function drawPaper() {
+  pc.setTransform(1, 0, 0, 1, 0, 0);
+  pc.drawImage(paper, 0, 0);
+  composite(pc, pageRelief, pageMask, 0.03, 0.2);
+}
+// A little rubbing already, as if someone tried it before you.
+
+drawPaper();
+let pending = false;
+addEventListener('pointermove', (e) => {
+  if (loading) return;
+  rubOn(pm, e.clientX, e.clientY, 30, 0.22);
+  if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; drawPaper(); }); }
+});
+
+// ------------------------------------------------------------------ the loader: a pencil rubs up the coin as the site loads
+const loaderCanvas = document.querySelector('canvas.loader');
+loaderCanvas.width = W * dpr; loaderCanvas.height = H * dpr;
+const lc = loaderCanvas.getContext('2d');
+const LR = Math.min(W, H) * 0.17, LX = W / 2, LY = H * 0.47;
+const [loadRelief, lr] = layer();
+coinRelief(lr, LX, LY, LR);
+const [loadMask, lm] = layer();
+const zig = [];
+const Z = 22;
+for (let i = 0; i <= Z; i++) zig.push([LX - LR * 1.05 + (i / Z) * LR * 2.1 + Math.sin(i * 2.3) * LR * 0.06, LY + (i % 2 ? 1 : -1) * LR * (0.95 + Math.sin(i * 1.7) * 0.12)]);
+let rubbed = 0; // how far along the zigzag the pencil has gone, in segments
+function rubTo(p) {
+  const goal = p * Z;
+  while (rubbed < goal) {
+    const i = Math.floor(rubbed), f = rubbed - i, step = Math.min(goal - rubbed, 0.02);
+    const [x0, y0] = zig[i], [x1, y1] = zig[Math.min(Z, i + 1)];
+    const t = f + step;
+    rubOn(lm, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, LR * (0.2 + 0.06 * Math.sin(rubbed * 9)), 0.42);
+    rubbed += step;
+  }
+}
+function drawLoader(alpha, rubbing) {
+  lc.setTransform(1, 0, 0, 1, 0, 0);
+  lc.clearRect(0, 0, loaderCanvas.width, loaderCanvas.height);
+  lc.globalAlpha = alpha;
+  lc.drawImage(paper, 0, 0);
+  if (rubbing > 0) composite(lc, loadRelief, loadMask, 0.05 * rubbing * alpha, 0.95 * rubbing * alpha);
+  lc.globalAlpha = 1;
+}
+let loading = true;
+
+// ------------------------------------------------------------------ the 3D: the works coin, the cord, four plain coins below
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas.full'), antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap;
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.75;
+const camera = new THREE.PerspectiveCamera();
+const D0 = pixelCamera(camera, W, H);
+const proj0 = camera.projectionMatrix.clone(), proj0inv = camera.projectionMatrixInverse.clone();
+// For the zoom: every flat layer of the page goes in one wrapper, scaled as the camera flies in.
+let pageWrap = null;
+function wrapPage() {
+  pageWrap = document.createElement('div');
+  Object.assign(pageWrap.style, { position: 'fixed', inset: '0', transformOrigin: '50% 50%', willChange: 'transform' });
+  for (const el of [...document.body.children]) if (!el.matches('canvas.full, canvas.loader, script, svg, .bh, .rb, .end')) pageWrap.append(el);
+  document.body.prepend(pageWrap);
+}
+const X = ox, Y = H - oy;
+const r = R * 0.3;
+const ys = [0, 1, 2, 3].map((i) => Y - R - (H * (phone ? 0.06 : 0.078)) * (i + 1) - r * 0.6);
+const knotY = ys[3] - H * 0.06;
+const silk = light ? new THREE.MeshPhysicalMaterial({ color: '#8c2219', roughness: 0.55, sheen: 1, sheenColor: new THREE.Color('#ff8a6a'), sheenRoughness: 0.4 }) : new THREE.MeshPhysicalMaterial({ color: '#a8783f', roughness: 0.5, sheen: 1, sheenColor: new THREE.Color('#f0c890'), sheenRoughness: 0.35 });
+const sway = (y, t) => Math.sin(t * 1.1) * (H - y) * 0.004 + Math.sin(t * 0.7 + y * 0.004) * 2;
+let cord = null;
+function makeCord(t, drop) {
+  if (cord) { scene.remove(cord); cord.traverse((o) => o.geometry?.dispose()); cord = null; }
+  const bottom = H + 20 - (H + 20 - knotY) * drop;
+  if (bottom > H + 10) return;
+  // Tied to the coin's rim above and below (the knots sit behind it): the hole stays clear to look and fly through.
+  const runs = [[], []];
+  for (let y = H + 20; y >= bottom; y -= 8) {
+    const p = new THREE.Vector3(X + sway(y, t), y, -R * 0.13);
+    if (y > Y + R * 0.72) runs[0].push(p);
+    else if (y < Y - R * 0.72) runs[1].push(p);
+  }
+  cord = new THREE.Group();
+  for (const pts of runs) {
+    if (pts.length < 2) continue;
+    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 100, 2.4, 8), silk);
+    m.castShadow = true;
+    cord.add(m);
+  }
+  scene.add(cord);
+}
+const works = coin();
+scene.add(works);
+// The coin's hole is a window: what shows in it is the works' space, drawn from this same camera, so it moves as a real
+// place behind the page would. Past the coin, that picture is the whole screen.
+drawLoader(1, 0); // the loader's paper covers the page while the room is built
+// The dive's line, in the room's units: from where the camera rests, straight through the middle of the O, on into the
+// room behind it. The works stand on a ring round where you come to rest, just under that line, so at rest the O shows
+// only the dark room.
+const S = (HOLE * R) / HS; // CSS pixels per room unit
+const c0 = new THREE.Vector3((W / 2 - X) / S, (H / 2 - Y) / S, D0 / S);
+const rho0 = c0.length(), dir = c0.clone().normalize(); // the camera is at dir * rho; rho < 0 is through the hole
+const L = 6; // how far past the coin you come to rest
+const home = dir.clone().multiplyScalar(-L);
+const lineUp = Math.asin(-dir.y);
+const bundle = Math.atan((HS * (rho0 + L + RC)) / rho0 / RC);
+const pitch = lineUp - Math.atan(PH / 2 / RC) - bundle - 0.08;
+// The camera looks a little further down than the band, so the works sit above the middle of the screen.
+const bandY = RC * Math.tan(pitch);
+const space = await createBench(renderer, { W, H, dpr, home, bandY });
+// Beyond the works, in the same dark: the robot, its slot, and the four study coins still on their string.
+const robot = createRobot(renderer, space.scene, { home, bandY, W, H });
+const endEl = document.createElement('div');
+endEl.className = 'end';
+endEl.innerHTML = '<p class="mono">The brain, as it is now</p>';
+Object.assign(endEl.style, { position: 'fixed', inset: '0', zIndex: '14', background: '#000', opacity: '0', pointerEvents: 'none', display: 'grid', placeItems: 'center', color: 'rgb(239 181 61 / 0.8)' });
+document.body.append(endEl);
+const portal = new THREE.Mesh(new THREE.PlaneGeometry(2 * (HOLE + 0.02), 2 * (HOLE + 0.02)), space.portalMaterial);
+portal.position.z = -0.116;
+works.add(portal);
+
+const small = ys.map(() => { const c = coin(); c.scale.setScalar(r); scene.add(c); return c; });
+const knot = new THREE.Mesh(new THREE.TorusKnotGeometry(6, 2.4, 64, 8, 2, 3), silk);
+const threads = [];
+for (let i = 0; i < 46; i++) { const a = (i / 46) * Math.PI * 2, rr = 2 + (i % 5) * 1.2; threads.push(Math.cos(a) * rr, 0, Math.sin(a) * rr, Math.cos(a) * (rr + 6), -H * 0.055 - (i % 7) * 3, Math.sin(a) * (rr + 6)); }
+const tassel = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(threads, 3)), new THREE.LineBasicMaterial({ color: light ? '#9a2a1f' : '#c9935f' }));
+scene.add(knot, tassel);
+const catcher = new THREE.Mesh(new THREE.PlaneGeometry(W * 3, H * 3), new THREE.ShadowMaterial({ opacity: light ? 0.2 : 0.55, color: light ? '#1b0d24' : '#05010a' }));
+catcher.position.set(W / 2, H / 2, -R * 0.6);
+catcher.receiveShadow = true;
+scene.add(catcher);
+const sun = new THREE.DirectionalLight('#fff3e2', 2.4);
+sun.position.set(X - W * 0.4, H * 1.4, H * 1.2);
+sun.target.position.set(X, H / 2, 0);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.radius = 9;
+Object.assign(sun.shadow.camera, { left: -W, right: W, top: H, bottom: -H, near: 1, far: H * 5 });
+for (const c of [works, ...small]) c.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+scene.add(sun, sun.target, light ? new THREE.HemisphereLight('#fff6ea', '#3a2a40', 0.6) : new THREE.HemisphereLight('#fff0d8', '#1a0c2a', 0.45));
+// The raking light: it follows the cursor, over the coins and over the struck name.
+const rake = new THREE.PointLight('#ffe2b0', 3.2, 0, 0);
+scene.add(rake);
+const lightAt = new THREE.Vector3(W * 0.3, H * 0.9, H * 0.55), lightTo = lightAt.clone();
+let lightUser = false;
+addEventListener('pointermove', (e) => { lightUser = true; lightTo.set(e.clientX, H - e.clientY, H * 0.42); });
+
+// ------------------------------------------------------------------ the name, struck: BOB raised from the metal, CHUNG cut into it
+const heightC = document.createElement('canvas'), maskC = document.createElement('canvas');
+heightC.width = maskC.width = W * dpr; heightC.height = maskC.height = H * dpr;
+{
+  const mk = maskC.getContext('2d');
+  [...document.querySelectorAll('.name .row')].forEach((row, ri) => {
+    const fs = parseFloat(getComputedStyle(row).fontSize);
+    const base = row.querySelector('.base').getBoundingClientRect().bottom;
+    mk.font = `800 ${fs * dpr}px Barlow`;
+    mk.fillStyle = ri === 0 ? 'rgb(255,0,0)' : 'rgb(0,255,0)';
+    mk.globalCompositeOperation = 'lighter';
+    for (const l of row.querySelectorAll('.l')) mk.fillText(l.textContent.toUpperCase(), l.getBoundingClientRect().left * dpr, base * dpr);
+  });
+  const hk = heightC.getContext('2d');
+  hk.filter = `blur(${Math.max(4, size * 0.048) * dpr}px)`;
+  hk.drawImage(maskC, 0, 0);
+}
+const dataTex = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.NoColorSpace; t.generateMipmaps = false; t.minFilter = t.magFilter = THREE.LinearFilter; return t; };
+const struck = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false,
+  uniforms: { uPaperLight: { value: light ? 1 : 0 }, uH: { value: dataTex(heightC) }, uM: { value: dataTex(maskC) }, uTexel: { value: new THREE.Vector2(1 / (W * dpr), 1 / (H * dpr)) }, uRes: { value: new THREE.Vector2(W, H) }, uLight: { value: new THREE.Vector3() }, uReveal: { value: 0 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `
+    uniform sampler2D uH, uM; uniform vec2 uTexel, uRes; uniform vec3 uLight; uniform float uReveal; uniform float uPaperLight;
+    varying vec2 vUv;
+    // How much of the letter shape lies along a direction from here (1 = all inside).
+    float alongR(vec2 d, float from, float to) { float s = 0.0; for (int i = 0; i < 6; i++) { float k = mix(from, to, float(i) / 5.0); s += texture2D(uM, vUv + d * uTexel * k).r; } return s / 6.0; }
+    float alongG(vec2 d, float from, float to) { float s = 0.0; for (int i = 0; i < 6; i++) { float k = mix(from, to, float(i) / 5.0); s += texture2D(uM, vUv + d * uTexel * k).g; } return s / 6.0; }
+    void main() {
+      vec2 px = vUv * uRes;
+      vec2 toL = normalize(uLight.xy - px);
+      float front = uReveal * (uRes.x * 1.2 + 120.0) - 120.0;
+      float rev = smoothstep(px.x - 90.0, px.x, front);
+      vec4 m = texture2D(uM, vUv);
+      float a = max(m.r, m.g);
+      vec3 gold = vec3(0.8, 0.58, 0.37), deep = vec3(0.3, 0.17, 0.08), hot = vec3(1.0, 0.86, 0.66);
+      float near = clamp(1.25 - length(uLight.xy - px) / (uRes.x * 1.0), 0.45, 1.0);
+      if (a < 0.02) {
+        // The raised letters throw a short shadow on the paper, away from the light.
+        float sh = alongR(toL, 4.0, 22.0);
+        if (sh < 0.02) discard;
+        gl_FragColor = vec4(0.04, 0.01, 0.05, sh * mix(0.55, 0.28, uPaperLight) * rev);
+        return;
+      }
+      float grain = fract(sin(dot(floor(px * 1.5), vec2(12.9898, 78.233))) * 43758.5453) * 0.05;
+      vec3 col;
+      if (m.r >= m.g) {
+        // Raised: the bevel facing the light is bright, the one facing away is dark; the face is gold, warmer near the light.
+        float litEdge = 1.0 - alongR(toL, 2.0, 9.0);
+        float darkEdge = 1.0 - alongR(-toL, 2.0, 9.0);
+        vec3 face = mix(deep, gold, 0.55 + 0.45 * near) * (0.95 + grain);
+        col = face + hot * litEdge * 0.85 * near - vec3(0.28, 0.2, 0.08) * darkEdge;
+      } else {
+        // Cut in: a dark floor, the far wall lit gold, the floor shaded under the near edge.
+        float litWall = 1.0 - alongG(-toL, 2.0, 10.0);
+        float shadowed = 1.0 - alongG(toL, 3.0, 26.0);
+        vec3 floorC = mix(mix(vec3(0.2, 0.11, 0.26), vec3(0.06, 0.025, 0.1), shadowed), mix(vec3(0.86, 0.83, 0.78), vec3(0.58, 0.53, 0.5), shadowed), uPaperLight);
+        col = floorC + (gold * 1.1 + hot * 0.3 * near) * litWall * (0.45 + 0.55 * near);
+      }
+      float flash = exp(-pow((px.x - front + 45.0) / 40.0, 2.0)) * step(uReveal, 0.99) * step(0.001, uReveal);
+      gl_FragColor = vec4(col + hot * flash * 0.8, a * rev);
+    }`,
+}));
+struck.position.set(W / 2, H / 2, -0.5);
+struck.visible = !hand;
+scene.add(struck);
+
+// ------------------------------------------------------------------ the four coins' tags: what each one does, not what it is (yet)
+const TAGS = [
+  ['Nº 02', 'Makes it think.', 'Spend it later'],
+  ['Nº 03', 'Makes it playable.', 'Spend it later'],
+  ['Nº 04', 'Keeps it safe.', 'Spend it later'],
+  ['Nº 05', 'Makes it move.', 'Still being minted'],
+];
+const tagEls = TAGS.map(([n, line, small2], i) => {
+  const el = document.createElement('p');
+  el.className = 'ctag';
+  el.innerHTML = `<span class="n">${n}</span><b></b><span class="s">${small2}</span>`;
+  const sy = H - ys[i];
+  Object.assign(el.style, phone ? { left: 'var(--gutter)', top: `${H - knotY + H * 0.13}px` } : { left: `${X + r + 26}px`, top: `${sy}px` });
+  document.getElementById('ctags').append(el);
+  return { el, b: el.querySelector('b'), line };
+});
+const GLYPHS = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789#/+';
+const decode = (text, k) => text.split('').map((ch, j) => (ch === ' ' || j / text.length < k ? ch : GLYPHS[(j * 7 + Math.floor(k * 40)) % GLYPHS.length])).join('');
+let active = -1, activeAt = 0, hoverI = -1;
+const face = [0, 0, 0, 0];
+addEventListener('pointermove', (e) => {
+  hoverI = ys.findIndex((y, i) => Math.hypot(e.clientX - (X + sway(y, 0)), e.clientY - (H - y)) < r * 1.7);
+});
+
+// ------------------------------------------------------------------ the dive's path, in the space's units (the hole is 2·HS wide)
+// The camera's distance to the hole shrinks exponentially, so the O grows at an even rate as you scroll, passes the coin
+// at speed and slows to a stop L past it: one move, no cut.
+const K = Math.log((rho0 + L) / (0.012 * L));
+const SD = 3.6; // screens of scroll for the whole dive
+const rhoAt = (u) => (rho0 + L) * Math.exp(-K * u) - L;
+const uAt = (r) => Math.log((rho0 + L) / (r + L)) / K;
+const uCross = uAt(0), uSettle = uAt(-0.93 * L);
+const zBack = (-0.116 * R) / S;
+const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => new THREE.Vector3(a * HOLE, b * HOLE, 0));
+/** Whether the O's far opening now covers the whole screen (the page behind it can go). */
+function holeCovers() {
+  works.updateMatrixWorld(true);
+  const pts = [];
+  for (const c of corners) {
+    const v = portal.localToWorld(c.clone());
+    if (v.clone().applyMatrix4(camera.matrixWorldInverse).z > -1) return true;
+    v.project(camera);
+    pts.push([(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H]);
+  }
+  const inside = ([x, y]) => { let sign = 0; for (let i = 0; i < 4; i++) { const [ax, ay] = pts[i], [bx, by] = pts[(i + 1) % 4]; const c = (bx - ax) * (y - ay) - (by - ay) * (x - ax); if (c !== 0) { if (sign && Math.sign(c) !== sign) return false; sign = Math.sign(c); } } return true; };
+  return [[0, 0], [W, 0], [W, H], [0, H]].every(inside);
+}
+
+// ------------------------------------------------------------------ the sequence
+const letters = [...document.querySelectorAll('.name .row:not(.r2) .l i')];
+const r2 = document.querySelector('.name .r2');
+const lines = [...document.querySelectorAll('.intro .lead .line > span')];
+const reveals = [...document.querySelectorAll('.reveal')];
+const pointer = { x: 0 };
+addEventListener('pointermove', (e) => { pointer.x = (e.clientX - X) / W; });
+const t0 = performance.now();
+let shot = false;
+function frame(now) {
+  const t = frozen !== null ? Number(frozen) : (now - t0) / 1000;
+  // 0 to 2.2 s: the pencil rubs the coin up (in the site, this follows the real loading).
+  if (frozen !== null) { rubbed = 0; lm.setTransform(1, 0, 0, 1, 0, 0); lm.clearRect(0, 0, W * dpr, H * dpr); lm.scale(dpr, dpr); }
+  rubTo(ease(t / 2.2) * 0.999 + (t > 2.2 ? 0.001 : 0));
+  // 2.5 to 2.9 s: the rubbing turns into the bronze coin; 2.9 to 3.8 s it flies up into the O.
+  const turn = ease((t - 2.45) / 0.45);
+  const fly = out((t - 2.85) / 0.95);
+  loading = t < 3.2;
+  drawLoader(1 - ease((t - 2.85) / 0.5), 1 - turn);
+  loaderCanvas.style.display = t > 3.4 ? 'none' : 'block';
+  const sx = LX + (X - LX) * fly, sy = (H - LY) + (Y - (H - LY)) * fly;
+  works.visible = t > 2.45;
+  works.scale.setScalar(LR + (R - LR) * fly);
+  works.position.set(sx + sway(Y, t) * fly, sy, (1 - fly) * 60 + Math.sin(fly * Math.PI) * 120);
+  works.rotation.set(0.05 * fly, (1 - turn) * 0 + fly * (0.42 + Math.sin(t * 0.6) * 0.08 + pointer.x * 0.6) + Math.sin(fly * Math.PI) * 1.4, 0.02);
+  works.traverse((o) => { if (o.material && 'opacity' in o.material) { o.material.transparent = turn < 1; o.material.opacity = turn; } });
+  // The name rises round it, the cord drops through it, the plain coins slide down.
+  letters.forEach((el, i) => { el.style.transform = `translateY(${(1 - out((t - 3.15 - i * 0.045) / 0.7)) * 105}%)`; });
+  struck.material.uniforms.uReveal.value = ease((t - 3.05) / 1.3);
+  if (hand) {
+    const w = ease((t - 3.3) / 1.1) * 115;
+    r2.style.webkitMaskImage = r2.style.maskImage = `linear-gradient(90deg, #000 ${w - 15}%, transparent ${w}%)`;
+  }
+  // The light sweeps across as the name is struck, then follows you.
+  if (!lightUser || frozen !== null) lightTo.set(W * (-0.1 + 0.56 * ease((t - 3.0) / 1.8)), H * 0.98, H * 0.36);
+  lightAt.lerp(lightTo, frozen !== null ? 1 : 0.08);
+  struck.material.uniforms.uLight.value.copy(lightAt);
+  rake.position.set(lightAt.x, lightAt.y, H * 0.7);
+  const drop = ease((t - 3.45) / 0.8);
+  makeCord(t, drop);
+  // One coin at a time turns to you, spinning once, and its tag decodes; hovering a coin picks it.
+  const auto = t >= 5 ? Math.floor((t - 5) / 2.6) % 4 : -1;
+  const want = hoverI >= 0 && t > 4.6 ? hoverI : auto;
+  if (want !== active) { active = want; activeAt = frozen !== null && want >= 0 ? 5 + Math.floor((t - 5) / 2.6) * 2.6 : t; }
+  small.forEach((c, i) => {
+    const k = out((t - 3.75 - i * 0.12) / 0.6);
+    c.visible = k > 0;
+    c.position.set(X + sway(ys[i], t), ys[i] + (1 - k) * (Y - ys[i]), 0);
+    face[i] += ((i === active ? 1 : 0) - face[i]) * (frozen !== null ? 1 : 0.12);
+    const idle = 0.9 + i * 0.55 + t * 0.35 + Math.sin(t * 0.8 + i) * 0.25 + pointer.x * (1.2 + i * 0.3);
+    const spin = i === active ? (1 - out((t - activeAt) / 0.9)) * Math.PI * 2 : 0;
+    c.rotation.set(0.1 * (1 - face[i]), idle * (1 - face[i]) + (spin + 0.12) * face[i], 0);
+    c.scale.setScalar(r * (1 + 0.18 * face[i]));
+    const tag = tagEls[i];
+    tag.el.classList.toggle('on', i === active);
+    if (i === active) tag.b.textContent = decode(tag.line, clamp((t - activeAt - 0.15) / 0.55));
+  });
+  const kk = ease((t - 4.1) / 0.4);
+  knot.visible = tassel.visible = kk > 0;
+  knot.position.set(X + sway(knotY, t), knotY, 0);
+  tassel.position.set(X + sway(knotY, t), knotY - 6, 0);
+  tassel.scale.y = kk;
+  lines.forEach((el, i) => { el.style.transform = `translateY(${(1 - out((t - 3.7 - i * 0.12) / 0.8)) * 110}%)`; });
+  reveals.forEach((el, i) => { el.style.opacity = ease((t - 4.2 - i * 0.06) / 0.5); });
+  // ---- The dive: one straight line from where you are, through the middle of the O, into the room. Nothing else moves;
+  // the O stays where it is on the screen and opens until it is the screen.
+  const dt = Math.min(0.05, Math.max(0.001, t - (frame.last ?? t)));
+  frame.last = t;
+  if (fixedS === null) shown += (goal - shown) * (1 - Math.exp(-dt / 0.3));
+  const sNow = fixedS ?? shown;
+  const u = t > 5 ? clamp(sNow / SD) : 0;
+  const cs = dir.clone().multiplyScalar(rhoAt(u));
+  // The coin follows the pointer only at rest; while you dive it holds still.
+  if (!frame.rot) frame.rot = works.rotation.clone();
+  const hold = t < 5 ? 1 : u > 0 ? 0 : 0.1;
+  frame.rot.x += (works.rotation.x - frame.rot.x) * hold;
+  frame.rot.y += (works.rotation.y - frame.rot.y) * hold;
+  works.rotation.set(frame.rot.x, frame.rot.y, works.rotation.z);
+  const inside = cs.z < zBack;
+  portal.visible = turn >= 0.999;
+  let covered = false;
+  if (u > 0) {
+    if (!pageWrap) { wrapPage(); pageWrap.style.transformOrigin = '0 0'; }
+    camera.position.set(X + S * cs.x, Y + S * cs.y, S * cs.z);
+    camera.projectionMatrix.copy(proj0);
+    camera.projectionMatrixInverse.copy(proj0inv);
+    camera.updateMatrixWorld();
+    // The flat page is the z = 0 plane: it zooms exactly as the camera closes on it.
+    const m = Math.min(400, D0 / Math.max(S * cs.z, 1e-3));
+    pageWrap.style.transform = `matrix(${m}, 0, 0, ${m}, ${W / 2 - m * camera.position.x}, ${H / 2 - m * (H - camera.position.y)})`;
+    covered = inside || holeCovers();
+    pageWrap.style.visibility = covered ? 'hidden' : '';
+  }
+  // The room, from the same camera and lens until you are through; then the lens opens a little and you look down at
+  // the bench as you come to rest.
+  lookS.x += (aim.x - lookS.x) * 0.04; lookS.y += (aim.y - lookS.y) * 0.04;
+  const arrive = ease((u - uCross) / (uSettle - uCross));
+  // After the works: the band has turned until the fifth one is in front, then the camera rises over it and glides on to
+  // the robot in the dark beyond; the hand feeds it the four study coins, one per stretch of scroll; it boots; then the
+  // camera follows the last coin into the slot (the brain, as it is now, starts there).
+  const bs = sNow - SD * uSettle;
+  const spin = STEP * 1.25 * (bs <= 0 ? 0 : bs < 1 ? (bs * bs) / 2 : bs - 0.5);
+  const WORKS = STEP * 4.15;
+  const angle = spin < WORKS ? spin : WORKS + (1 - Math.exp(-(spin - WORKS) / STEP)) * 0.3 * STEP;
+  const sLift = SD * uSettle + WORKS / (STEP * 1.25) + 0.5 + 0.35;
+  const lift = clamp((sNow - sLift) / 1.7);
+  const sCoins = sLift + 1.8, PER = 0.85;
+  const cp = Math.max(0, Math.min(4, (sNow - sCoins) / PER));
+  const sBoot = sCoins + 4 * PER + 0.1;
+  const boot = clamp((sNow - sBoot) / 1.0);
+  const sDive = sBoot + 1.2;
+  const into = clamp((sNow - sDive) / 1.3);
+  const eye = cs.clone();
+  eye.y += (bandY - 0.35) * arrive;
+  const benchQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.03 * arrive + lookS.y * 0.035 * arrive, -lookS.x * 0.05 * arrive, 0, 'YXZ'));
+  let camPos = eye, camQ = null;
+  if (lift > 0) {
+    // One curve: up over the band, on through the dark, to stand before the visor, a little below its slot.
+    const f = ease(lift);
+    const c1 = eye.clone().add(new THREE.Vector3(0, 3.4, -3)), c2 = robot.view.clone().add(new THREE.Vector3(0, 2.2, 5));
+    const a = 1 - f;
+    camPos = eye.clone().multiplyScalar(a * a * a).addScaledVector(c1, 3 * a * a * f).addScaledVector(c2, 3 * a * f * f).addScaledVector(robot.view, f * f * f);
+    const m = new THREE.Matrix4().lookAt(robot.view, robot.target, new THREE.Vector3(0, 1, 0));
+    const robotQ = new THREE.Quaternion().setFromRotationMatrix(m);
+    // A breath of the pointer, as in the room.
+    robotQ.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(lookS.y * 0.02, -lookS.x * 0.03, 0, 'YXZ')));
+    camQ = benchQ.clone().slerp(robotQ, ease((lift - 0.1) / 0.9));
+    if (into > 0) {
+      // Into the slot: the camera keeps its eye on the slot, comes over the box and goes down into it.
+      const g = ease(into), a2 = 1 - g;
+      const deep = robot.slotPos.clone().addScaledVector(robot.n, 0.32);
+      const p1 = robot.view.clone().add(new THREE.Vector3(-0.3, 0.4, -3.2)), p2 = robot.slotPos.clone().add(new THREE.Vector3(0, 1.7, 1.1));
+      camPos = robot.view.clone().multiplyScalar(a2 * a2 * a2).addScaledVector(p1, 3 * a2 * a2 * g).addScaledVector(p2, 3 * a2 * g * g).addScaledVector(deep, g * g * g);
+      const toward = robot.slotPos.clone().addScaledVector(robot.n, -0.6);
+      const steep = THREE.MathUtils.smoothstep(-toward.clone().sub(camPos).normalize().y, 0.55, 0.98);
+      const up = new THREE.Vector3(0, 1, 0).lerp(new THREE.Vector3(0, 0, -1), steep).normalize();
+      const intoQ = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(camPos, toward, up));
+      camQ.slerp(intoQ, ease(into / 0.25));
+    }
+  }
+  const res = space.update({ pos: camPos, fov: 30 + 10 * arrive, pitch: -0.03 * arrive, angle, look: lookS, arrive: arrive * (1 - ease(lift * 3)), dt, time: t, dragging: !!dragAt && arrive > 0.9, quaternion: camQ });
+  robot.update({ reveal: lift, coins: cp, boot, time: t });
+  endEl.style.opacity = String(ease((into - 0.55) / 0.33));
+  space.render();
+  document.body.style.cursor = arrive > 0.5 && lift === 0 ? (res.hovered !== null ? 'pointer' : 'default') : arrive > 0.5 ? 'default' : '';
+  if (inside) space.present();
+  else renderer.render(scene, camera);
+  window.__dive = { u, inside, covered, s: sNow, lift, cp, boot, into, marks: { sLift, sCoins, sBoot, sDive } };
+  if (!shot && t > (frozen !== null ? -1 : 5.2)) { shot = true; ready(); }
+  if (frozen === null) requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
