@@ -27,6 +27,11 @@
 <p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
 
 <section>
+  <h2 class="display">Round 39 · One straight zoom, a dark workbench inside</h2>
+  <p class="idea">Scrolling is now one straight move: the camera goes from where it rests through the middle of the O, so the O stays where it is on the screen and opens until it is the screen. Nothing else moves on the way (the string is tied to the coin's rim, so the hole is clear). Inside, after jesperlandberg.com's works band: a dark room, a fine grid bench with a degree dial under the works, and the works as plain rectangles on one curved band that waves when it turns; title bottom left, a round arrow button bottom right, small labels in the corners. <a href="dive2.html">Open it live</a> (wait for the loader, then scroll), or <a href="domain5.html">the room alone</a>.</p>
+  <div class="grid" id="dive2"></div>
+</section>
+<section>
   <h2 class="display">Round 38 · One scene: through the O, into a real space</h2>
   <p class="idea">The first view and the works' space are now one 3D scene seen by one camera, so there is no cut: the O's hole is a window onto the space behind the page, with true depth from the first frame. Scrolling dives straight into it; the string runs down through the hole and away; the works build themselves in with a scan line while the coin fills the screen; you pass between the coin's bronze walls and slow to a stop among them. Inside: the works as glass slabs with bronze edges catching a low sun, a band that bends with speed (the way jesperlandberg.com scrolls), a planet below, a violet nebula, drifting rocks and dust that streaks when you move fast, a light HUD. <a href="dive.html">Open it live</a> (wait for the loader, then scroll), or <a href="domain4.html">the space alone</a>.</p>
   <div class="grid" id="dive"></div>
@@ -103,6 +108,13 @@
 </section>
 <script type="module">
 const frames = {
+  dive2: [
+    ['dive2', 'At rest', 'The O shows only the dark room.', '0-1440x810'],
+    ['dive2', 'Zooming in', 'The O stays where it is and opens.', '1-1440x810'],
+    ['dive2', 'Through', 'The coin’s wall passes at the edge.', '2-1440x810'],
+    ['dive2', 'Arrived', 'The bench, the dial, the works on one band.', '4-1440x810'],
+    ['domain5', 'Further round', 'The dial turns with the works.', 'b-1440x810'],
+  ],
   dive: [
     ['dive', 'At rest', 'Only space shows in the O; the works are not built yet.', '0-1440x810'],
     ['dive', 'Diving in', 'The works build themselves in, a scan line at a time.', '1-1440x810'],

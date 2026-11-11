@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Selected works · The workbench</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  body { background: #040306; color: var(--light); overscroll-behavior: none; }
+  canvas.full { z-index: 1; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark">
+<canvas class="full" aria-hidden="true"></canvas>
+<script type="module">
+// LAB ONLY (throwaway): the works' room on its own. ?a= sets how far the ring has turned (in pictures), for stills.
+import { THREE, fonts, ready } from './kit.js';
+import { createBench, RC, PH, STEP } from './bench.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio);
+const q = new URLSearchParams(location.search);
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas'), antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(dpr);
+renderer.setSize(W, H, false);
+const pitch = -0.2;
+const home = new THREE.Vector3(0, 0, -6);
+const bench = await createBench(renderer, { W, H, dpr, home, bandY: RC * Math.tan(pitch) });
+let goal = q.has('a') ? Number(q.get('a')) * STEP : 0, angle = goal, drag = null;
+const look = { x: 0, y: 0 }, aim = { x: 0, y: 0 };
+addEventListener('wheel', (e) => { e.preventDefault(); goal += (e.deltaY + e.deltaX) * 0.0016; }, { passive: false });
+addEventListener('pointerdown', (e) => { drag = { x: e.clientX, start: goal }; });
+addEventListener('pointerup', () => { drag = null; });
+addEventListener('pointermove', (e) => { aim.x = (e.clientX / W) * 2 - 1; aim.y = -(e.clientY / H) * 2 + 1; if (drag) goal = drag.start - (e.clientX - drag.x) * 0.0032; });
+const t0 = performance.now();
+let last = t0, said = false;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const t = (now - t0) / 1000;
+  angle += (goal - angle) * (1 - Math.exp(-dt / 0.5));
+  look.x += (aim.x - look.x) * 0.04; look.y += (aim.y - look.y) * 0.04;
+  const r = bench.update({ pos: home, fov: 40, pitch, angle, look, arrive: 1, dt, time: t, dragging: !!drag });
+  document.body.style.cursor = r.hovered !== null ? 'pointer' : 'default';
+  bench.render();
+  bench.present();
+  if (!said && t > 1.2) { said = true; ready(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
