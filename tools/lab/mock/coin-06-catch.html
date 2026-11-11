@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coin · 06 The catch</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style> canvas.full { z-index: 1; } </style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body>
+<canvas class="full" aria-hidden="true"></canvas>
+<div class="chrome">
+  <p class="tl">Bob Chung</p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="br"><span>Scroll</span><i></i></p>
+</div>
+<script type="module">
+import { THREE, coin, robotHand, fonts, pixelCamera, pageWithHole, pageLight, ready } from './kit.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight;
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas'), antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap;
+const scene = new THREE.Scene();
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.8;
+const camera = new THREE.PerspectiveCamera();
+pixelCamera(camera, W, H);
+
+// The page is back, flat, with the round hole still in it. A robot hand reaches up through it and catches the coin.
+const r = H * 0.27, cx = W * 0.5, cy = H * 0.3;
+scene.add(pageWithHole(W, H, cx, cy, r, { shadow: 0.3, glow: 0.15 }));
+pageLight(scene, W, H, { x: -0.5, y: 0.7, z: 1.4, intensity: 2.3 });
+
+const k = H * 0.205;
+const hand = robotHand({
+  curl: [[0.55, 0.85, 0.6], [0.5, 0.8, 0.55], [0.5, 0.75, 0.5], [0.6, 0.85, 0.6]],
+  spread: 0.07,
+  thumb: [0.75, 0.55],
+  glow: 1.2,
+});
+hand.scale.setScalar(k);
+// The back of the hand to the visitor, fingers up and out of the hole; the arm runs back into the dark, cut by the hole.
+hand.position.set(cx + W * 0.005, cy - r * 0.25, 0);
+hand.rotation.set(0.72, Math.PI + 0.25, -0.1);
+scene.add(hand);
+
+// The coin, caught mid-spin, its lower edge in the cup of the fingers.
+const c = coin();
+c.position.set(0.05, 2.45, 0.55);
+c.rotation.set(0.15, Math.PI + 0.45, 0.25);
+hand.add(c);
+renderer.render(scene, camera);
+ready();
+</script>
+</body>
+</html>

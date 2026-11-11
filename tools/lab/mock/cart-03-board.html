@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cartridge · 03 The board</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  .label { position: fixed; z-index: 5; margin: 0; transform: translate(-50%, 0); text-align: center; white-space: nowrap; }
+  .label span { display: block; color: var(--glow); margin-bottom: 6px; }
+  .label b { font: 800 clamp(16px, 1.6vw, 24px)/1 Barlow; text-transform: uppercase; color: var(--light); }
+  .label.next b { color: var(--glow); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, C, stage, fonts, rounded, ready } from './kit.js';
+import { boardTexture } from './cart.js';
+
+await fonts();
+const s = stage(document.querySelector('canvas'), { fov: 30, env: 0.45 }).post({ focus: 6.4, range: 2.2, bokeh: 1.4, bloom: 0.7, threshold: 0.8, vignette: 0.55 });
+const { scene, camera } = s;
+scene.background = new THREE.Color('#08060c');
+
+// The cartridge opened: its board, four chips and one empty socket.
+const board = new THREE.Group();
+board.rotation.x = -1.05;
+scene.add(board);
+const pcb = new THREE.Mesh(rounded(4.8, 3.3, 0.08, 0.05), new THREE.MeshPhysicalMaterial({ map: boardTexture(), roughness: 0.45, clearcoat: 0.6, clearcoatRoughness: 0.25 }));
+board.add(pcb);
+const chipMat = new THREE.MeshPhysicalMaterial({ color: '#121016', roughness: 0.55, metalness: 0.1 });
+const legMat = new THREE.MeshPhysicalMaterial({ color: '#b8b2c2', metalness: 1, roughness: 0.3 });
+const at = [[-1.65, 0.55], [-0.55, 0.55], [0.55, 0.55], [1.65, 0.55]];
+for (const [x, y] of at) {
+  const chip = new THREE.Mesh(rounded(0.8, 0.8, 0.14, 0.03), chipMat);
+  chip.position.set(x, y, 0.11);
+  board.add(chip);
+  for (let i = 0; i < 7; i++) for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.03), legMat);
+    leg.position.set(x - 0.3 + i * 0.1, y + side * 0.46, 0.06);
+    board.add(leg);
+  }
+}
+// The socket: empty, lit round its edge.
+const socket = new THREE.Mesh(rounded(1.05, 0.75, 0.16, 0.04), new THREE.MeshPhysicalMaterial({ color: '#1d1a22', metalness: 0.6, roughness: 0.4 }));
+socket.position.set(0, -0.62, 0.12);
+board.add(socket);
+const hollow = new THREE.Mesh(rounded(0.82, 0.52, 0.18, 0.03), new THREE.MeshStandardMaterial({ color: '#000', emissive: new THREE.Color(C.glow), emissiveIntensity: 0.35 }));
+hollow.position.set(0, -0.62, 0.13);
+board.add(hollow);
+const key = new THREE.DirectionalLight('#fff0dc', 2.2);
+key.position.set(-3, 6, 5);
+scene.add(key, new THREE.PointLight(C.glow, 6, 3, 2), new THREE.HemisphereLight('#2a2036', '#060508', 0.3));
+camera.position.set(0, 0.4, 6.4);
+camera.lookAt(0, -0.15, 0);
+camera.updateMatrixWorld();
+board.updateMatrixWorld(true);
+
+const W = innerWidth, H = innerHeight;
+const toScreen = (v) => { const p = v.project(camera); return [(p.x * 0.5 + 0.5) * W, (-p.y * 0.5 + 0.5) * H]; };
+const names = [['01', 'Software'], ['02', 'Game dev'], ['03', 'App dev'], ['04', 'Cybersecurity']];
+names.forEach(([n, t], i) => {
+  const [x, y] = toScreen(board.localToWorld(new THREE.Vector3(at[i][0], at[i][1] + 0.62, 0.2)));
+  const el = document.createElement('p');
+  el.className = 'label';
+  el.innerHTML = `<span class="mono">${n}</span><b>${t}</b>`;
+  Object.assign(el.style, { left: `${x}px`, top: `${y - 70}px` });
+  document.body.append(el);
+});
+const [sx, sy] = toScreen(board.localToWorld(new THREE.Vector3(0, -1.05, 0.2)));
+const next = document.createElement('p');
+next.className = 'label next';
+next.innerHTML = '<span class="mono">05 · next</span><b>Mechatronics</b>';
+Object.assign(next.style, { left: `${sx}px`, top: `${sy + 10}px` });
+document.body.append(next);
+s.render();
+ready();
+</script>
+</body>
+</html>

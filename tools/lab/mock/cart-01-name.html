@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cartridge · 01 Name</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  /* A poster. Only three small things say it is a label: the arrow, the code, and a hairline inset that follows its corners. */
+  .inset { position: fixed; inset: 14px; border: 1px solid rgb(19 7 36 / 0.14); border-radius: 26px 26px 10px 10px; pointer-events: none; }
+  .up { position: fixed; top: 22px; left: 50%; transform: translateX(-50%); margin: 0; color: var(--ink-soft); }
+  .name { position: fixed; left: var(--gutter); right: var(--gutter); top: 50%; transform: translateY(-52%); margin: 0; font-size: 21.5vw; line-height: 0.8; }
+  .name span { display: block; white-space: nowrap; }
+  .code { position: fixed; right: calc(var(--gutter) + 120px); bottom: var(--gutter); margin: 0; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="inset" aria-hidden="true"></div>
+<p class="up mono" aria-hidden="true">▲ This end in</p>
+<h1 class="name display" aria-label="Bob Chung"><span>Bob</span><span>Chung</span></h1>
+<p class="code mono">BC-2006 · 1 player</p>
+<div class="chrome">
+  <p class="tl">Bob Chung</p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="bl">Software engineer. I build apps, games and websites.</p>
+  <p class="br"><span>Scroll</span><i></i></p>
+</div>
+<script type="module">
+await document.fonts.load('800 100px Barlow');
+window.__ready = true;
+</script>
+</body>
+</html>

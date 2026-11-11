@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Seal · 03 Stamped</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  :root { --seal: #c4402c; }
+  .copy { position: fixed; left: var(--gutter); bottom: 15vh; z-index: 3; }
+  .copy .mono { color: var(--seal); margin: 0 0 16px; white-space: nowrap; }
+  .copy h2 { margin: 0; font-size: clamp(64px, 10.5vw, 156px); }
+  .copy p { margin: 16px 0 0; max-width: 30ch; font-size: 18px; color: var(--ink-soft); }
+  /* The print: a square of seal paste with a rough edge; the project shows through where the paste is. */
+  .print { position: fixed; right: 9vw; top: 50%; width: min(46vh, 34vw); aspect-ratio: 1; transform: translateY(-52%) rotate(-2.2deg); filter: url(#rough); }
+  .print::before { content: ''; position: absolute; inset: 0; background: var(--seal); }
+  .print img { position: absolute; inset: 7%; width: 86%; height: 86%; object-fit: cover; object-position: top; mix-blend-mode: multiply; filter: grayscale(1) contrast(1.4) brightness(1.15); }
+  .row { position: fixed; right: var(--gutter); bottom: var(--gutter); z-index: 3; display: flex; gap: 14px; align-items: end; }
+  .row i { width: 26px; height: 26px; background: var(--seal); opacity: 0.85; filter: url(#rough); }
+  .row i.blank { background: none; outline: 1.5px dashed rgb(196 64 44 / 0.6); filter: none; }
+  .row span { margin-right: 10px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="7"/></filter></svg>
+<div class="copy">
+  <p class="mono">01 / 05 · Android app · 2026</p>
+  <h2 class="display">Lumo</h2>
+  <p>A grocery list that merges your recipes into one list, sorted by your store's aisles. Works offline.</p>
+</div>
+<div class="print" aria-hidden="true"><img src="img/lumo.webp" alt="" /></div>
+<p class="row mono"><span>Stamped</span><i></i><i></i><i></i><i></i><i class="blank" title="Roblox, not stamped yet"></i></p>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<script type="module">
+await document.fonts.load('800 100px Barlow');
+await new Promise((r) => (document.querySelector('img').complete ? r() : (document.querySelector('img').onload = r)));
+window.__ready = true;
+</script>
+</body>
+</html>

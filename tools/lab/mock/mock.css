@@ -1,0 +1,43 @@
+/* LAB ONLY (throwaway): the mock-ups' type and colour. Barlow and IBM Plex Mono are the site's own two families. */
+@font-face { font-family: Barlow; font-weight: 800; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: Barlow; font-weight: 500; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 500; font-display: block; src: url('/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+:root {
+  --page: #f2efe8;
+  --ink: #130724;
+  --ink-soft: rgb(19 7 36 / 0.62);
+  --glow: #efb53d;
+  --cool: #8ea4ff;
+  --warm: #ff8f52;
+  --light: #f2efe8;
+  --light-soft: rgb(242 239 232 / 0.6);
+  --gutter: clamp(18px, 2.6vw, 40px);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { background: var(--page); color: var(--ink); font: 500 16px/1.4 Barlow, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body.dark { background: #05040a; color: var(--light); }
+
+canvas.full { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+.chrome { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+.chrome > * { position: absolute; margin: 0; }
+.tl { top: var(--gutter); left: var(--gutter); font-size: 15px; letter-spacing: 0.01em; }
+.tr { top: var(--gutter); right: var(--gutter); display: flex; gap: 26px; font-size: 15px; }
+.tr span:last-child { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; opacity: 0.6; padding-top: 3px; }
+.bl { bottom: var(--gutter); left: var(--gutter); font-size: 17px; max-width: 30ch; line-height: 1.35; }
+.br { bottom: var(--gutter); right: var(--gutter); font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; display: flex; align-items: center; gap: 12px; }
+.br i { display: block; width: 1px; height: 28px; background: currentColor; opacity: 0.6; }
+.dark .chrome { color: var(--light); }
+.dark .bl, .dark .tr span:last-child { color: var(--light-soft); }
+
+.mono { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; }
+.display { font-weight: 800; text-transform: uppercase; letter-spacing: -0.035em; line-height: 0.84; }
+
+/* A little grain on the dark scenes, as on the brain's pages. */
+.grain::after {
+  content: ''; position: fixed; inset: -50%; z-index: 4; pointer-events: none; opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}

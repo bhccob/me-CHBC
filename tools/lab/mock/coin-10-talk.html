@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coin · 10 Let's talk</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<script type="module">
+import { THREE, C, coin, stage, fonts, canvasTex, rounded, ready } from './kit.js';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+await fonts();
+RectAreaLightUniformsLib.init();
+
+// The coin for the screen: rendered on its own, then painted into the page the monitor shows.
+const coinShot = (() => {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 640;
+  const r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  r.toneMapping = THREE.AgXToneMapping;
+  r.toneMappingExposure = 1.2;
+  const sc = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(r);
+  sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  sc.environmentIntensity = 0.8;
+  const c = coin();
+  c.rotation.set(0.12, 0.62, 0.05);
+  sc.add(c, new THREE.DirectionalLight('#fff3e2', 2));
+  const cam = new THREE.PerspectiveCamera(26, 1, 0.1, 20);
+  cam.position.set(0, 0, 5.2);
+  r.render(sc, cam);
+  return cv;
+})();
+
+// The monitor's page: the first view's off-white and type, "Let's talk.", the links, the coin spinning by the headline.
+const screen = canvasTex(1920, 1080, (x, w, h) => {
+  x.fillStyle = C.page; x.fillRect(0, 0, w, h);
+  x.fillStyle = C.ink;
+  x.font = '500 26px Barlow'; x.fillText('Bob Chung', 64, 84);
+  x.textAlign = 'right'; x.fillText('Work      About      Contact', w - 64, 84); x.textAlign = 'left';
+  x.font = '800 250px Barlow'; x.fillText("LET'S", 56, 470); x.fillText('TALK.', 56, 690);
+  x.font = '500 34px Barlow'; x.fillStyle = 'rgba(19,7,36,0.7)';
+  x.fillText('Questions, opportunities or simply a hello: my inbox is open.', 64, 790);
+  x.fillStyle = C.ink; x.font = '500 30px "IBM Plex Mono"';
+  x.fillText('SEND A MESSAGE  →', 64, 920); x.fillText('GITHUB', 560, 920); x.fillText('INSTAGRAM', 760, 920);
+  x.font = '500 22px "IBM Plex Mono"'; x.fillStyle = 'rgba(19,7,36,0.55)';
+  x.fillText('ROTTERDAM · BORN IN ARUBA', 64, 1010);
+  // The coin's shadow on the page, as in beat 2, then the coin.
+  x.fillStyle = 'rgba(27,13,36,0.22)'; x.filter = 'blur(18px)';
+  x.beginPath(); x.ellipse(1430, 830, 230, 40, 0, 0, Math.PI * 2); x.fill(); x.filter = 'none';
+  x.drawImage(coinShot, 1060, 140, 680, 680);
+});
+
+const s = stage(document.querySelector('canvas'), { fov: 46, env: 0.08 }).post({ focus: 1.0, range: 0.14, bokeh: 3.4, bloom: 0.22, threshold: 0.97, vignette: 0.62, radius: 0.35 });
+const { scene, camera, renderer } = s;
+scene.background = new THREE.Color('#07060a');
+const matte = (c, r = 0.7, m = 0.1) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+const add = (geo, mat, x, y, z, parent = scene) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; parent.add(o); return o; };
+
+// Desk, wall, mat.
+add(new THREE.BoxGeometry(2.4, 0.04, 1.2), matte('#1b1512', 0.62), 0, -0.02, 0.1);
+add(new THREE.PlaneGeometry(4, 2.4), matte('#050407', 1), 0, 1.0, -0.7);
+add(rounded(0.95, 0.004, 0.42, 0.01), matte('#0f0e12', 0.95), 0.02, 0.002, 0.16);
+
+// The monitor: the only bright thing in the room.
+const mon = new THREE.Group();
+mon.position.set(0, 0.075, -0.18);
+scene.add(mon);
+add(rounded(0.64, 0.37, 0.025, 0.006), matte('#0b0a0d', 0.4, 0.4), 0, 0.27, 0, mon);
+const display = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.349), new THREE.MeshStandardMaterial({ color: '#000', emissive: new THREE.Color(1, 1, 1), emissiveMap: screen, emissiveIntensity: 1.55 }));
+display.position.set(0, 0.27, 0.0131);
+mon.add(display);
+add(new THREE.BoxGeometry(0.05, 0.16, 0.03), matte('#141317', 0.5, 0.5), 0, 0.06, -0.04, mon);
+add(rounded(0.26, 0.012, 0.16, 0.006), matte('#141317', 0.5, 0.5), 0, -0.069, 0.0, mon);
+const glow = new THREE.RectAreaLight('#fff2e2', 3.2, 0.62, 0.349);
+glow.position.set(0, 0.345, -0.16);
+glow.lookAt(0, 0.2, 1);
+scene.add(glow);
+
+// Keyboard and mouse: quiet and out of focus.
+const kb = new THREE.Group();
+kb.position.set(0.02, 0.012, 0.14);
+scene.add(kb);
+add(rounded(0.44, 0.022, 0.14, 0.008), matte('#121115', 0.6, 0.3), 0, 0, 0, kb);
+const keys = new THREE.InstancedMesh(rounded(0.022, 0.012, 0.022, 0.004, 2), matte('#1d1b21', 0.55), 15 * 5);
+const m4 = new THREE.Matrix4();
+for (let r = 0; r < 5; r++) for (let c = 0; c < 15; c++) keys.setMatrixAt(r * 15 + c, m4.makeTranslation(-0.196 + c * 0.028, 0.015, -0.056 + r * 0.028));
+keys.castShadow = keys.receiveShadow = true;
+kb.add(keys);
+add(rounded(0.06, 0.03, 0.1, 0.02), matte('#121115', 0.5, 0.3), 0.34, 0.015, 0.16);
+
+// The controller, on the desk, its light blinking in the glow colour. A generic pad of my own shape.
+const pad = new THREE.Group();
+pad.position.set(-0.36, 0.022, 0.2);
+pad.rotation.y = 0.5;
+scene.add(pad);
+const shell = new THREE.MeshPhysicalMaterial({ color: '#16141a', roughness: 0.45, metalness: 0.1, clearcoat: 0.6, clearcoatRoughness: 0.3 });
+add(rounded(0.15, 0.03, 0.075, 0.02), shell, 0, 0, 0, pad);
+for (const sx of [-1, 1]) {
+  const grip = add(new THREE.CapsuleGeometry(0.026, 0.06, 8, 16), shell, sx * 0.068, -0.002, 0.04, pad);
+  grip.rotation.set(Math.PI / 2, 0, sx * 0.45);
+  const stick = add(new THREE.CylinderGeometry(0.011, 0.012, 0.016, 24), matte('#0b0a0d', 0.6), sx * 0.032, 0.022, 0.018, pad);
+  stick.scale.set(1, 1, 1);
+}
+for (const [bx, bz] of [[0.052, -0.012], [0.064, -0.002], [0.04, -0.002], [0.052, 0.008]]) add(new THREE.CylinderGeometry(0.005, 0.005, 0.006, 16), matte('#2a2730', 0.4, 0.3), bx, 0.017, bz, pad);
+add(new THREE.BoxGeometry(0.022, 0.005, 0.007), matte('#2a2730', 0.4), -0.052, 0.016, -0.004, pad);
+add(new THREE.BoxGeometry(0.007, 0.005, 0.022), matte('#2a2730', 0.4), -0.052, 0.016, -0.004, pad);
+add(rounded(0.03, 0.004, 0.006, 0.002), new THREE.MeshStandardMaterial({ color: '#000', emissive: new THREE.Color(C.glow), emissiveIntensity: 3 }), 0, 0.016, -0.03, pad);
+const padGlow = new THREE.PointLight(C.glow, 0.02, 0.15, 2);
+padGlow.position.set(-0.36, 0.05, 0.2);
+scene.add(padGlow, new THREE.HemisphereLight('#2a2036', '#060508', 0.06));
+
+renderer.shadowMap.enabled = true;
+camera.position.set(-0.03, 0.46, 0.78);
+camera.lookAt(0.0, 0.18, -0.18);
+s.dof.cocMaterial && (s.dof.target = new THREE.Vector3(0, 0.345, -0.17));
+s.render();
+ready();
+</script>
+</body>
+</html>

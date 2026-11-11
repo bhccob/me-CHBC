@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coin · 05 Studies</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  .dim { position: fixed; top: var(--gutter); left: 50%; transform: translateX(-50%); z-index: 5; margin: 0; color: var(--warm); }
+  .label { position: fixed; z-index: 5; margin: 0; white-space: nowrap; }
+  .label span { display: block; color: var(--warm); margin-bottom: 6px; }
+  .label b { font: 800 clamp(20px, 2.1vw, 30px)/1 Barlow; text-transform: uppercase; letter-spacing: -0.01em; color: var(--light); }
+  .hole { position: fixed; z-index: 5; margin: 0; transform: translate(-50%, -50%); text-align: center; color: var(--glow); line-height: 1.7; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<p class="dim mono">Studies</p>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, C, MARK_AT, coin, stage, fonts, gridFloor, ready } from './kit.js';
+
+await fonts();
+const s = stage(document.querySelector('canvas'), { fov: 30, env: 0.5 }).post({ focus: 6.6, range: 1.6, bokeh: 1.6, bloom: 0.8, threshold: 0.75, vignette: 0.5 });
+const { scene, camera } = s;
+scene.background = new THREE.Color(C.warmBg);
+scene.fog = new THREE.FogExp2(C.warmBg, 0.09);
+scene.add(gridFloor(C.warm, { y: -1.6, step: 0.5, opacity: 0.09 }));
+
+// The Studies face, face-on. Its four marks, in order, joined by one glowing trace; the hole stays empty.
+const c = coin();
+c.rotation.y = Math.PI;
+c.position.set(0, -0.06, 0);
+scene.add(c);
+const back = c.children[3];
+// The trace runs mark to mark (top, right, bottom, left), stopping short of each one, with a node where it arrives.
+const glowMat = new THREE.MeshStandardMaterial({ color: '#000', emissive: new THREE.Color(C.glow), emissiveIntensity: 3.4 });
+for (let k = 0; k < 3; k++) {
+  const a0 = Math.PI / 2 - k * (Math.PI / 2) - 0.3, a1 = a0 - Math.PI / 2 + 0.6;
+  const pts = [];
+  for (let i = 0; i <= 40; i++) { const a = a0 + (a1 - a0) * (i / 40); pts.push(new THREE.Vector3(Math.cos(a) * 0.68, Math.sin(a) * 0.68, 0.05)); }
+  back.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, 0.008, 8), glowMat));
+}
+MARK_AT.forEach(([x, y], i) => {
+  const a = Math.atan2(y, x);
+  for (const sgn of i === 0 ? [-1] : i === 3 ? [1] : [1, -1]) {
+    const node = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 8), glowMat);
+    node.position.set(Math.cos(a + sgn * 0.3) * 0.68, Math.sin(a + sgn * 0.3) * 0.68, 0.05);
+    back.add(node);
+  }
+});
+const key = new THREE.DirectionalLight('#ffe2bf', 2.6);
+key.position.set(-2.5, 3, 4);
+const rim = new THREE.DirectionalLight(C.warm, 3);
+rim.position.set(3, 1.5, -3);
+scene.add(key, rim, new THREE.PointLight(C.glow, 3, 4, 2));
+camera.position.set(0, 0, 6.6);
+camera.lookAt(0, 0, 0);
+camera.updateMatrixWorld();
+c.updateMatrixWorld(true);
+
+// The labels sit just outside the rim, next to their marks; no lines.
+const names = [['01', 'Software engineering'], ['02', 'Game development'], ['03', 'App development'], ['04', 'Cybersecurity internship']];
+const W = innerWidth, H = innerHeight;
+const toScreen = (v) => { const p = v.clone().project(camera); return [(p.x * 0.5 + 0.5) * W, (-p.y * 0.5 + 0.5) * H]; };
+const [ox, oy] = toScreen(c.localToWorld(new THREE.Vector3(0, 0, 0)));
+const [, ty] = toScreen(c.localToWorld(new THREE.Vector3(0, 1, 0)));
+const rad = Math.abs(oy - ty) + 30;
+names.forEach(([n, title], i) => {
+  const el = document.createElement('p');
+  el.className = 'label';
+  el.innerHTML = `<span class="mono">${n}</span><b>${title}</b>`;
+  document.body.append(el);
+  const r = el.getBoundingClientRect();
+  const [x, y] = [[ox - r.width / 2, oy - rad - r.height], [ox + rad, oy - r.height / 2], [ox - r.width / 2, oy + rad], [ox - rad - r.width, oy - r.height / 2]][i];
+  Object.assign(el.style, { left: `${x}px`, top: `${y}px`, textAlign: i === 3 ? 'right' : i === 1 ? 'left' : 'center' });
+});
+const [hx, hy] = toScreen(c.localToWorld(new THREE.Vector3(0, 0, 0)));
+const hole = document.createElement('p');
+hole.className = 'hole mono';
+hole.innerHTML = 'Mechatronics<br>next';
+Object.assign(hole.style, { left: `${hx}px`, top: `${hy}px` });
+document.body.append(hole);
+s.render();
+ready();
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Seal · 02 The stone</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  canvas.full { z-index: 1; }
+  .note { position: fixed; z-index: 3; margin: 0; }
+  .note span { display: block; color: #c4402c; margin-bottom: 6px; }
+  .note b { font: 800 clamp(18px, 1.9vw, 28px)/1.05 Barlow; text-transform: uppercase; }
+  .head { left: var(--gutter); bottom: 15vh; }
+  .head h2 { margin: 0; font-size: clamp(56px, 8vw, 120px); }
+  .head p { margin: 14px 0 0; max-width: 32ch; font-size: 18px; color: var(--ink-soft); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body>
+<canvas class="full" aria-hidden="true"></canvas>
+<div class="note head"><h2 class="display">A seal.</h2><p>The full stop was its print. Carved in traces, not strokes: BC 2006. One study on each side; the knob is still rough.</p></div>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, C, fonts, canvasTex, rounded, ready } from './kit.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight;
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas'), antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap;
+const scene = new THREE.Scene();
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.6;
+const camera = new THREE.PerspectiveCamera(28, W / H, 0.1, 100);
+
+// The carved face: "BC" over "2006" as circuit traces in a square border, inked red, mirrored as a seal is.
+const face = canvasTex(1024, 1024, (x, w, h) => {
+  x.fillStyle = '#2a2329'; x.fillRect(0, 0, w, h);
+  x.translate(w, 0); x.scale(-1, 1);
+  x.strokeStyle = '#c4402c'; x.lineWidth = 34; x.lineCap = 'square'; x.lineJoin = 'miter';
+  x.strokeRect(70, 70, w - 140, h - 140);
+  x.lineWidth = 26;
+  const path = (pts) => { x.beginPath(); x.moveTo(...pts[0]); pts.slice(1).forEach((p) => x.lineTo(...p)); x.stroke(); };
+  // B
+  path([[190, 190], [190, 470], [330, 470], [380, 420], [380, 360], [330, 330], [190, 330]]);
+  path([[190, 190], [320, 190], [370, 240], [370, 290], [320, 330]]);
+  // C
+  path([[640, 190], [500, 190], [460, 230], [460, 430], [500, 470], [640, 470]]);
+  // 2 0 0 6
+  const digit = (ox, d) => {
+    const g = { 2: [[0, 0], [90, 0], [110, 25], [110, 70], [0, 160], [0, 210], [110, 210]], 0: [[20, 0], [90, 0], [110, 25], [110, 185], [90, 210], [20, 210], [0, 185], [0, 25], [20, 0]], 6: [[110, 0], [20, 0], [0, 25], [0, 185], [20, 210], [90, 210], [110, 185], [110, 125], [90, 105], [0, 105]] }[d];
+    path(g.map(([px, py]) => [ox + px, 590 + py]));
+  };
+  digit(170, 2); digit(345, 0); digit(520, 0); digit(695, 6);
+  for (const [a, b] of [[[380, 395], [460, 395]], [[640, 330], [800, 330]], [[800, 330], [800, 190]]]) path([a, b]);
+  for (const [cx, cy] of [[800, 190], [640, 330], [190, 190]]) { x.beginPath(); x.arc(cx, cy, 26, 0, Math.PI * 2); x.fillStyle = '#c4402c'; x.fill(); }
+});
+const side = (text) => canvasTex(512, 1200, (x, w, h) => {
+  x.fillStyle = '#1e191f'; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 1200; i++) { x.fillStyle = `rgba(255,255,255,${Math.random() * 0.025})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+  x.save(); x.translate(w / 2, h * 0.55); x.rotate(-Math.PI / 2);
+  x.fillStyle = 'rgba(0,0,0,0.65)'; x.font = '500 54px "IBM Plex Mono"'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 2, 3);
+  x.fillStyle = 'rgba(232,214,196,0.32)'; x.fillText(text, 0, 0);
+  x.restore();
+});
+const stone = (map) => new THREE.MeshPhysicalMaterial({ color: '#ffffff', map, roughness: 0.42, metalness: 0.05, clearcoat: 0.4, clearcoatRoughness: 0.35 });
+const sideNames = ['SOFTWARE ENGINEERING', 'GAME DEVELOPMENT', 'APP DEVELOPMENT', 'CYBERSECURITY'];
+// BoxGeometry faces: +x, -x, +y, -y, +z, -z. The carved face is the bottom (-y).
+const plain = stone(canvasTex(64, 64, (x) => { x.fillStyle = '#1e191f'; x.fillRect(0, 0, 64, 64); }));
+const mats = [stone(side(sideNames[1])), stone(side(sideNames[3])), plain, stone(face), stone(side(sideNames[0])), stone(side(sideNames[2]))];
+const seal = new THREE.Group();
+const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2.3, 1), mats);
+body.castShadow = true;
+seal.add(body);
+// The knob: rough stone, not carved yet. Mechatronics.
+const knob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 1), new THREE.MeshPhysicalMaterial({ color: '#2b2429', roughness: 0.8, flatShading: true }));
+knob.scale.set(1, 0.85, 1);
+knob.position.y = 1.55;
+knob.castShadow = true;
+seal.add(knob);
+seal.rotation.set(-1.05, -0.62, 0.1);
+seal.position.set(1.15, 0.85, 0);
+scene.add(seal);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.22, color: '#1b0d24' }));
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -1.0;
+floor.receiveShadow = true;
+scene.add(floor);
+const sun = new THREE.DirectionalLight('#fff3e2', 2.4);
+sun.position.set(-4, 7, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.radius = 10;
+Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 });
+scene.add(sun, new THREE.HemisphereLight('#fff6ea', '#3a2a40', 0.7));
+camera.position.set(0.2, 1.4, 8.2);
+camera.lookAt(0.7, 0.55, 0);
+renderer.render(scene, camera);
+ready();
+</script>
+</body>
+</html>

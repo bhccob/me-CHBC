@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cartridge · 02 Pulled back</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  .say { position: fixed; left: var(--gutter); bottom: 15vh; z-index: 5; margin: 0; }
+  .say h2 { margin: 0; font-size: clamp(56px, 7.6vw, 112px); color: var(--light); }
+  .say p { margin: 14px 0 0; max-width: 30ch; font-size: 18px; color: var(--light-soft); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<div class="say"><h2 class="display">Press start.</h2><p>The page was a label. Four chips inside are what I study; one socket is still empty.</p></div>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, C, stage, fonts, canvasTex, rounded, ready } from './kit.js';
+import { cartridge } from './cart.js';
+
+await fonts();
+const s = stage(document.querySelector('canvas'), { fov: 30, env: 0.5 }).post({ focus: 7.2, range: 2.5, bokeh: 1.6, bloom: 0.5, threshold: 0.85, vignette: 0.5 });
+const { scene, camera } = s;
+scene.background = new THREE.Color('#08060c');
+const cart = cartridge();
+cart.rotation.set(-0.22, -0.55, 0.08);
+cart.position.set(1.25, 0.15, 0);
+scene.add(cart);
+const key = new THREE.DirectionalLight('#fff0dc', 2.4);
+key.position.set(-3, 5, 6);
+const rim = new THREE.DirectionalLight('#8a6cff', 2.6);
+rim.position.set(5, 2, -4);
+scene.add(key, rim, new THREE.HemisphereLight('#2a2036', '#060508', 0.3));
+camera.position.set(0, 0.3, 7.2);
+camera.lookAt(0.55, 0.1, 0);
+s.render();
+ready();
+</script>
+</body>
+</html>

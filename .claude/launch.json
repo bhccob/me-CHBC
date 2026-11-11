@@ -38,6 +38,14 @@
       "port": 5175
     },
     {
+      "name": "mock",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tools/lab/mock/serve.mjs"
+      ],
+      "port": 5180
+    },
+    {
       "name": "journey",
       "runtimeExecutable": "node",
       "runtimeArgs": [

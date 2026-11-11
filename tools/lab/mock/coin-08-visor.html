@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coin · 08 Insert coin</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<script type="module">
+import { THREE, C, coin, robotHand, visorHead, stage, fonts, ready } from './kit.js';
+
+await fonts();
+const boot = !new URLSearchParams(location.search).has('insert');
+const s = stage(document.querySelector('canvas'), { fov: 30, env: 0.45 }).post({ focus: boot ? 12.5 : 10.5, range: 4, bokeh: 1.2, bloom: 0.9, threshold: 0.7, vignette: 0.55 });
+const { scene, camera } = s;
+scene.background = new THREE.Color('#07050b');
+
+// The face behind the page: a visor and a coin slot. Before the coin: INSERT COIN. After: the boot lines.
+const lines = boot
+  ? [['BOB CHUNG', 96], ['Software engineering · games · apps · cybersecurity', 52], ['I build apps, games and websites.', 52], ['Next: mechatronics', 52]]
+  : [['INSERT COIN', 120]];
+const head = visorHead(lines);
+head.position.set(0, 0.9, -1.5);
+scene.add(head);
+head.updateMatrixWorld(true);
+const slot = head.userData.slot;
+
+// One hand drops the coin into the slot; its wrist leaves the frame at the right edge.
+if (!boot) {
+  const at = slot.localToWorld(new THREE.Vector3(0, 0.45, 0.32));
+  const c = coin();
+  c.scale.setScalar(0.62);
+  c.position.copy(at);
+  c.rotation.set(-0.55, Math.PI / 2, 0);
+  scene.add(c);
+  // Fingers pointing left at the coin, the armoured back to the visitor, the wrist out past the right edge.
+  const hand = robotHand({ curl: [[0.25, 0.45, 0.35], [0.2, 0.4, 0.3], [0.55, 0.85, 0.6], [0.7, 0.95, 0.65]], thumb: [1.1, 0.35], glow: 1.4 });
+  hand.scale.setScalar(1.25);
+  const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 0, -1));
+  hand.quaternion.setFromRotationMatrix(basis).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0.35, 0.25, 0)));
+  hand.position.set(at.x + 2.95, at.y + 0.55, at.z + 0.35);
+  scene.add(hand);
+}
+const key = new THREE.DirectionalLight('#ffe9cc', 1.4);
+key.position.set(-6, 8, 9);
+const rimL = new THREE.DirectionalLight('#8a6cff', 2.2);
+rimL.position.set(-8, 3, -6);
+const rimR = new THREE.DirectionalLight(C.glow, 1.4);
+rimR.position.set(8, 2, -6);
+const glowLight = new THREE.PointLight(C.glow, 10, 9, 2);
+glowLight.position.set(0, 0.9, 3.2);
+scene.add(key, rimL, rimR, glowLight, new THREE.HemisphereLight('#3a2a50', '#05040a', 0.35));
+camera.position.set(boot ? 0 : 6.2, boot ? -0.2 : -0.4, boot ? 11.5 : 9.2);
+camera.lookAt(boot ? 0 : 0.9, boot ? 0.15 : -0.15, 0);
+s.render();
+ready();
+</script>
+</body>
+</html>

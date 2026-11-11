@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coin · 02 Lift</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  canvas.full { z-index: 1; }
+  .side { position: fixed; top: 50%; z-index: 3; margin: 0; font-size: clamp(48px, 7.4vw, 112px); transform: translateY(-50%); }
+  .built { left: var(--gutter); }
+  .studies { right: var(--gutter); }
+  .studies em { font-style: normal; opacity: 0.16; }
+  .tag { position: fixed; left: 50%; bottom: 13vh; z-index: 3; transform: translateX(-50%); margin: 0; color: var(--ink-soft); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body>
+<canvas class="full" aria-hidden="true"></canvas>
+<p class="side built display">Built</p>
+<p class="side studies display">Stud<em>ies</em></p>
+<p class="tag mono">Two sides, one coin</p>
+<div class="chrome">
+  <p class="tl">Bob Chung</p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="br"><span>Scroll</span><i></i></p>
+</div>
+<script type="module">
+import { THREE, coin, fonts, pixelCamera, pageWithHole, pageLight, ready } from './kit.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight;
+const canvas = document.querySelector('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap;
+const scene = new THREE.Scene();
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.7;
+const camera = new THREE.PerspectiveCamera();
+pixelCamera(camera, W, H);
+
+// Where the O sat: the round hole it left in the page.
+const r = H * 0.335, cx = W / 2, cy = H * 0.52;
+scene.add(pageWithHole(W, H, cx, cy, r, { shadow: 0.3, glow: 0.22 }));
+pageLight(scene, W, H, { x: -0.75, y: 0.55, z: 0.9, intensity: 2.0 });
+
+// The coin: lifted towards the visitor, warmed into bronze, tipping up onto its edge and starting to spin.
+const c = coin();
+c.scale.setScalar(r);
+c.position.set(cx + W * 0.01, cy + H * 0.02, H * 0.2);
+c.rotation.set(-0.3, 1.0, 0.1);
+scene.add(c);
+renderer.render(scene, camera);
+ready();
+</script>
+</body>
+</html>

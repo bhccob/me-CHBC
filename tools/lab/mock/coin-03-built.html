@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coin · 03 Built</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  body { background: #05070f; }
+  .copy { position: fixed; left: var(--gutter); bottom: 16vh; z-index: 5; max-width: 40vw; }
+  .copy .mono { color: var(--cool); margin: 0 0 18px; white-space: nowrap; }
+  .copy h2 { margin: 0; font-size: clamp(64px, 10.5vw, 156px); color: var(--light); }
+  .copy p { margin: 18px 0 0; font-size: 18px; line-height: 1.4; color: var(--light-soft); max-width: 30ch; }
+  .count { position: fixed; right: var(--gutter); bottom: var(--gutter); z-index: 5; margin: 0; color: var(--light-soft); }
+  .count b { color: var(--cool); font-weight: 500; }
+  .dim { position: fixed; top: var(--gutter); left: 50%; transform: translateX(-50%); z-index: 5; margin: 0; color: var(--cool); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<p class="dim mono">Built</p>
+<div class="copy">
+  <p class="mono">01 / 05 · Android app · 2026</p>
+  <h2 class="display">Lumo</h2>
+  <p>A grocery list that merges your recipes into one list, sorted by your store's aisles. Works offline.</p>
+</div>
+<p class="count mono">Locked · Jontai Energy · Cookies Clicker · <b>Roblox, in development</b></p>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, C, stage, fonts, gridFloor, loadTexture, lockedScreen, lockedGame, ready } from './kit.js';
+
+await fonts();
+const s = stage(document.querySelector('canvas'), { fov: 38, env: 0.4 }).post({ focus: 3.6, range: 2.4, bokeh: 1.1, bloom: 0.45, threshold: 0.85, vignette: 0.5 });
+const { scene, camera } = s;
+scene.background = new THREE.Color(C.coolBg);
+scene.fog = new THREE.FogExp2(C.coolBg, 0.14);
+scene.add(gridFloor(C.cool, { y: -1.25, step: 0.5, opacity: 0.09 }));
+// A second, fainter grid overhead: the inside of a system, closed above as well.
+scene.add(gridFloor(C.cool, { y: 2.6, step: 1, opacity: 0.05 }));
+
+// The five on a ring round the camera, frameless. Lumo has come to the front; the Roblox game waits at the back.
+const [lumo, jontai, cookies] = await Promise.all([loadTexture('img/lumo.webp'), loadTexture('/public/flight/jontai.webp'), loadTexture('/public/flight/cookies.webp')]);
+const screens = [
+  { tex: lumo, w: 0.82, h: 1.6, at: 0.21, y: 0.0 },
+  { tex: lockedScreen(), w: 0.82, h: 1.6, at: 0.58, y: 0.12 },
+  { tex: jontai, w: 2.1, h: 1.18, at: 1.0, y: 0.1 },
+  { tex: cookies, w: 1.5, h: 0.94, at: -0.56, y: 0.42 },
+  { tex: lockedGame(), w: 2.1, h: 1.18, at: Math.PI, y: 0.2 },
+];
+const R = 3.6;
+for (const sc of screens) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(sc.w, sc.h), new THREE.MeshBasicMaterial({ map: sc.tex, toneMapped: false, fog: true }));
+  m.position.set(Math.sin(sc.at) * R, sc.y, -Math.cos(sc.at) * R);
+  m.lookAt(0, sc.y, 0);
+  scene.add(m);
+  // A faint reflection in the floor, the only thing under each one.
+  const ref = m.clone();
+  ref.material = new THREE.MeshBasicMaterial({ map: sc.tex, transparent: true, opacity: 0.08, toneMapped: false });
+  ref.scale.y = -1;
+  ref.position.y = -1.25 - (sc.h / 2 + sc.y + 1.25) + 0.02;
+  scene.add(ref);
+}
+camera.position.set(0, 0.15, 0);
+camera.lookAt(0.05, -0.05, -3.6);
+s.render();
+ready();
+</script>
+</body>
+</html>

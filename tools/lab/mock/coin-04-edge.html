@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coin · 04 The edge</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  .side { position: fixed; top: 50%; z-index: 5; margin: 0; transform: translateY(-50%); }
+  .l { left: var(--gutter); color: var(--cool); }
+  .r { right: var(--gutter); color: var(--warm); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<canvas class="full" aria-hidden="true"></canvas>
+<p class="side l mono">Built</p>
+<p class="side r mono">Studies</p>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, C, coin, stage, fonts, ready } from './kit.js';
+
+await fonts();
+const s = stage(document.querySelector('canvas'), { fov: 32, env: 0.55 }).post({ focus: 3.7, range: 1.2, bokeh: 0.9, bloom: 0.5, threshold: 0.8, vignette: 0.45 });
+const { scene, camera } = s;
+
+// The two worlds meet at the coin: cool on the left, warm on the right, each with its own floor.
+const sky = new THREE.Mesh(new THREE.SphereGeometry(40, 64, 32), new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false,
+  uniforms: { cool: { value: new THREE.Color(C.coolBg) }, warm: { value: new THREE.Color(C.warmBg) }, coolGlow: { value: new THREE.Color('#1a2448') }, warmGlow: { value: new THREE.Color('#4a1f0e') } },
+  vertexShader: 'varying vec3 v; void main(){ v = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }',
+  fragmentShader: `uniform vec3 cool, warm, coolGlow, warmGlow; varying vec3 v;
+    void main(){ float k = smoothstep(-0.004, 0.004, v.x); float h = exp(-abs(v.y) * 5.0);
+      vec3 c = mix(cool + coolGlow * h, warm + warmGlow * h, k); gl_FragColor = vec4(c, 1.); }`,
+}));
+scene.add(sky);
+const half = (color, sign) => {
+  const pts = [];
+  for (let z = -30; z <= 4; z += 0.4) pts.push(0, 0, z, sign * 30, 0, z);
+  for (let x = 0; x <= 30; x += 0.4) pts.push(sign * x, 0, -30, sign * x, 0, 4);
+  const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.12 }));
+  l.position.y = -1.3;
+  return l;
+};
+scene.add(half(C.cool, -1), half(C.warm, 1));
+scene.fog = new THREE.Fog('#07050a', 2, 16);
+
+// The coin side-on: for a moment, only its rim.
+const c = coin();
+c.rotation.set(0.03, Math.PI / 2 - 0.035, 0);
+scene.add(c);
+const key = new THREE.DirectionalLight('#ffe7c4', 2.2);
+key.position.set(2, 3, 3);
+const coolRim = new THREE.DirectionalLight(C.cool, 2.4);
+coolRim.position.set(-4, 1, -2);
+const warmRim = new THREE.DirectionalLight(C.warm, 2.4);
+warmRim.position.set(4, 1, -2);
+scene.add(key, coolRim, warmRim);
+camera.position.set(0, 0.05, 3.7);
+camera.lookAt(0, 0, 0);
+s.render();
+ready();
+</script>
+</body>
+</html>

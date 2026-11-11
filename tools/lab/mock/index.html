@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Opening mock-ups</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  html, body { overflow: auto; height: auto; }
+  body { padding: 56px var(--gutter) 96px; }
+  h1 { margin: 0 0 8px; font-size: clamp(48px, 7vw, 104px); }
+  .lede { margin: 0 0 56px; max-width: 62ch; color: var(--ink-soft); font-size: 18px; }
+  section { margin: 0 0 72px; }
+  h2 { margin: 0 0 6px; font-size: clamp(32px, 4vw, 56px); }
+  .idea { margin: 0 0 24px; max-width: 70ch; color: var(--ink-soft); font-size: 17px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 28px 24px; }
+  a.frame { color: inherit; text-decoration: none; display: block; }
+  a.frame img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #ddd8cf; border-radius: 4px; }
+  a.frame.tall img { aspect-ratio: 390 / 844; width: 46%; }
+  a.frame p { margin: 10px 0 0; font-size: 15px; line-height: 1.4; }
+  a.frame .mono { display: block; margin-bottom: 4px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<h1 class="display">Opening mock-ups</h1>
+<p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
+
+<section>
+  <h2 class="display">A · The coin</h2>
+  <p class="idea">Bob's brief. The O in BOB is a Chinese coin: Built on one face, Studies on the other, the square hole is mechatronics. Robot hands catch it and feed it to a visor; it ends on Bob's own monitor.</p>
+  <div class="grid" id="coin"></div>
+</section>
+<section>
+  <h2 class="display">B · The seal</h2>
+  <p class="idea">The full stop after CHUNG is a square of seal paste. It lifts: a stone seal carved in circuit traces with BC 2006, one study on each side, the knob still uncarved (mechatronics). Each project is a print it stamps on the page.</p>
+  <div class="grid" id="seal"></div>
+</section>
+<section>
+  <h2 class="display">C · The cartridge</h2>
+  <p class="idea">The first view is a poster, and it is a label. Pulling back shows a game cartridge; inside, four chips are the studies and one socket is still empty. It plays in the console under Bob's monitor at the end.</p>
+  <div class="grid" id="cart"></div>
+</section>
+<script type="module">
+const frames = {
+  coin: [
+    ['coin-01-name', '01 · Name', 'BOB as a poster. The O is a 3D ring with a real square hole into a dark shaft; a faint gold glow far down.'],
+    ['coin-01-name', '01 · Name, phone', 'Stacked, so the O stays large.', '390x844'],
+    ['coin-02-lift', '02 · Lift', 'The O leaves its hole as worn bronze and tips up; the Bs have become Built and Studies.'],
+    ['coin-03-built', '03 · Built', 'Cool dimension, thin floor, fog. The five on a ring; Lumo has come to the front.'],
+    ['coin-04-edge', '04 · The edge', 'Side-on: only the rim. Cool world left, warm world right; the coin is the border.'],
+    ['coin-05-studies', '05 · Studies', 'Warm dimension. Four marks joined by one trace; the empty hole is mechatronics.'],
+    ['coin-06-catch', '06 · The catch', 'A robot hand reaches up through the round hole and catches the coin. Cut at the wrist by the hole.'],
+    ['coin-07-push', '07 · The push', 'Both hands push the page down; the visor already glows over its edge. Wrists cut by the frame.'],
+    ['coin-08-visor', '08 · Booted', 'The coin is in the slot; the visor types who Bob is. A helmet, not a face.'],
+    ['coin-10-talk', "10 · Let's talk", "Through the eyes, onto Bob's own monitor: the same off-white page, the coin spinning by the headline, the controller's gold light."],
+  ],
+  seal: [
+    ['seal-01-name', '01 · Name', 'BOB CHUNG. The full stop is the only colour.'],
+    ['seal-02-stone', '02 · The stone', 'The full stop lifts: a seal carved with BC 2006 in traces.'],
+    ['seal-03-stamp', '03 · Stamped', 'Each project is a print; the row of prints counts them, the Roblox one still blank.'],
+  ],
+  cart: [
+    ['cart-01-name', '01 · Name', 'A poster with three small tells: the arrow, the code, the rounded inset.'],
+    ['cart-02-pull', '02 · Pulled back', 'The page was the label.'],
+    ['cart-03-board', '03 · The board', 'Four chips, one empty socket.'],
+  ],
+};
+for (const [id, list] of Object.entries(frames)) {
+  const grid = document.getElementById(id);
+  for (const [page, title, text, size = '1440x810'] of list) {
+    const a = document.createElement('a');
+    a.className = `frame${size === '390x844' ? ' tall' : ''}`;
+    a.href = `${page}.html`;
+    a.innerHTML = `<img src="/proof-out/lab/mock/${page}-${size}.jpg" alt="${title}" loading="lazy" /><p><span class="mono">${title}</span>${text}</p>`;
+    grid.append(a);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Seal · 01 Name</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  .name { position: fixed; left: var(--gutter); right: 0; top: 50%; transform: translateY(-54%); margin: 0; font-size: 23.5vw; line-height: 0.8; }
+  .name span { display: block; white-space: nowrap; }
+  /* The full stop: a square of seal paste, the page's only colour. It reads as punctuation. */
+  .stop { display: inline-block; width: 0.2em; height: 0.2em; margin-left: 0.05em; background: #c4402c; vertical-align: baseline;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.09' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.2'/%3E%3C/filter%3E%3Crect x='2' y='2' width='96' height='96' fill='black'/%3E%3Crect width='100' height='100' filter='url(%23r)' fill='black' opacity='0.0'/%3E%3C/svg%3E") center / cover;
+    filter: url(#rough); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 1 1 1"/></feComponentTransfer></filter></svg>
+<h1 class="name display" aria-label="Bob Chung."><span>Bob</span><span>Chung<i class="stop"></i></span></h1>
+<div class="chrome">
+  <p class="tl">Bob Chung</p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="bl">Software engineer. I build apps, games and websites.</p>
+  <p class="br"><span>Scroll</span><i></i></p>
+</div>
+<script type="module">
+await document.fonts.load('800 100px Barlow');
+window.__ready = true;
+</script>
+</body>
+</html>

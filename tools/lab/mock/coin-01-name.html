@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coin · 01 Name</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  .name { position: fixed; left: 0; right: 0; top: 0; margin: 0; display: flex; align-items: baseline; justify-content: center; font-weight: 800; line-height: 1; white-space: nowrap; color: var(--ink); z-index: 2; }
+  .name span { display: inline-block; flex: none; }
+  .name .slot { visibility: hidden; }
+  .phone .name { flex-direction: column; align-items: center; }
+  .phone .name span { line-height: 0.8; }
+  .phone .tr span:not(:last-child) { display: none; }
+  .phone .tr::before { content: 'Menu'; }
+  canvas.full { z-index: 3; pointer-events: none; }
+  #grab { position: fixed; z-index: 4; border-radius: 50%; cursor: grab; }
+  .chrome > * { opacity: 0; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body>
+<h1 class="name" aria-label="Bob"><span class="b b1">B</span><span class="slot"></span><span class="b b2">B</span></h1>
+<div id="grab" aria-hidden="true"></div>
+<canvas class="full" aria-hidden="true"></canvas>
+<div class="chrome">
+  <p class="tl">Bob Chung</p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="bl">Software engineer. I build apps, games and websites.</p>
+  <p class="br"><span>Scroll</span><i></i></p>
+</div>
+<script type="module">
+import { THREE, C, HOLE, coin, fonts, pixelCamera, ready } from './kit.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight;
+const phone = W / H < 0.8;
+document.body.classList.toggle('phone', phone);
+const name = document.querySelector('.name');
+const slot = document.querySelector('.slot');
+
+// Cap height and the B's ink, from the font itself.
+const probe = document.createElement('canvas').getContext('2d');
+probe.font = '800 1000px Barlow';
+const mB = probe.measureText('B');
+const cap = mB.actualBoundingBoxAscent / 1000; // share of the font size
+const D = cap * 1.03; // a round letter overshoots the cap height a little
+const gap = phone ? 0.04 : 0.025;
+
+function setSize(size) {
+  name.style.fontSize = `${size}px`;
+  slot.style.width = `${D * size}px`;
+  slot.style.height = `${cap * size}px`;
+  slot.style.margin = phone ? `${(gap + 0.048) * size}px 0 ${(gap - 0.048) * size}px` : `0 ${gap * size}px`;
+}
+// "BOB" edge to edge, a little cropped at both sides; on a phone stacked, the O as big as it can be.
+const b1el = document.querySelector('.b1'), b2el = document.querySelector('.b2');
+let size = 400;
+for (let i = 0; i < 4; i++) {
+  setSize(size);
+  const a = b1el.getBoundingClientRect(), b = b2el.getBoundingClientRect();
+  const wide = b.right - a.left, tall = b.bottom - a.top;
+  size *= phone ? Math.min((H * 0.8) / tall, (W * 0.94) / (D * size)) : Math.min((W * 1.03) / wide, (H * 0.74) / (cap * size));
+}
+setSize(size);
+const nr = name.getBoundingClientRect();
+name.style.top = `${(H - nr.height) / 2 - (phone ? H * 0.01 : H * 0.03)}px`;
+const box = slot.getBoundingClientRect();
+const cx = box.left + box.width / 2, cy = box.top + box.height / 2, R = (D * size) / 2;
+const grab = document.getElementById('grab');
+Object.assign(grab.style, { left: `${cx - R}px`, top: `${cy - R}px`, width: `${2 * R}px`, height: `${2 * R}px` });
+
+// ------------------------------------------------------------------ the 3D: the O, the hole in the page, the space behind
+const canvas = document.querySelector('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.AgXToneMapping;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera();
+const d = pixelCamera(camera, W, H);
+const X = cx, Y = H - cy; // the O's centre in the camera's pixel space
+
+// The O: the cap is flat ink, exactly the type's colour; only its bevel and the hole's walls take light.
+const O = coin({ ink: true });
+const capMat = new THREE.MeshBasicMaterial({ color: C.ink, toneMapped: false });
+const edgeMat = new THREE.MeshStandardMaterial({ color: '#000000', emissive: new THREE.Color(C.ink), emissiveIntensity: 1, roughness: 0.22, metalness: 0, toneMapped: false });
+O.children[0].material = [capMat, edgeMat];
+O.scale.setScalar(R);
+O.position.set(X, Y, 0);
+scene.add(O);
+
+// The page around the O, with a square opening a hair larger than the O's (so the page never shows inside it).
+const pageShape = new THREE.Shape();
+pageShape.absarc(X, Y, R * 0.97, 0, Math.PI * 2, false);
+const hs = HOLE * R + 3;
+const opening = new THREE.Path();
+opening.moveTo(X - hs, Y - hs); opening.lineTo(X - hs, Y + hs); opening.lineTo(X + hs, Y + hs); opening.lineTo(X + hs, Y - hs); opening.closePath();
+pageShape.holes.push(opening);
+const page = new THREE.Mesh(new THREE.ShapeGeometry(pageShape), new THREE.MeshBasicMaterial({ color: C.page, toneMapped: false }));
+page.position.z = -R * 0.16 * 0.5 - 1;
+scene.add(page);
+
+// Behind the page: a square shaft going down into the dark, thin gold frames receding, a glow far down.
+const shaft = new THREE.Group();
+const side = HOLE * R * 2.6, depth = R * 14;
+const wallMat = new THREE.MeshBasicMaterial({ color: '#0b0714', toneMapped: false, side: THREE.DoubleSide });
+for (const [rx, ry, px, py] of [[0, Math.PI / 2, -side / 2, 0], [0, -Math.PI / 2, side / 2, 0], [-Math.PI / 2, 0, 0, side / 2], [Math.PI / 2, 0, 0, -side / 2]]) {
+  const wall = new THREE.Mesh(px ? new THREE.PlaneGeometry(depth, side) : new THREE.PlaneGeometry(side, depth), wallMat);
+  wall.rotation.set(rx, ry, 0);
+  wall.position.set(X + px, Y + py, page.position.z - depth / 2);
+  shaft.add(wall);
+}
+const frames = [];
+for (let i = 1; i < 26; i++) {
+  const z = page.position.z - i * (depth / 26);
+  const s = side * 0.999;
+  const pts = [-s / 2, -s / 2, 0, s / 2, -s / 2, 0, s / 2, s / 2, 0, -s / 2, s / 2, 0, -s / 2, -s / 2, 0];
+  const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const m = new THREE.LineBasicMaterial({ color: C.glow, transparent: true, opacity: 0.55 * Math.pow(1 - i / 26, 1.6), toneMapped: false });
+  const l = new THREE.Line(g, m);
+  l.position.set(X, Y, z);
+  shaft.add(l);
+  frames.push(m);
+}
+const glowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d'); const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+  g.addColorStop(0, 'rgba(255,214,130,0.9)'); g.addColorStop(0.3, 'rgba(239,181,61,0.32)'); g.addColorStop(1, 'rgba(239,181,61,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(side, side), wallMat);
+floor.position.set(X, Y, page.position.z - depth);
+shaft.add(floor);
+const glow = new THREE.Mesh(new THREE.PlaneGeometry(side * 1.6, side * 1.6), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+glow.position.set(X, Y, page.position.z - depth * 0.62);
+shaft.add(glow);
+scene.add(shaft);
+
+// The cursor's light: it slides a thin highlight round the O's rim and a shadow round the hole's walls.
+const key = new THREE.PointLight('#fff1dc', 9, 0, 0);
+scene.add(key, new THREE.AmbientLight('#ffffff', 0.05));
+const pointer = { x: 0.35, y: 0.55 };
+const lean = { x: pointer.x, y: pointer.y };
+addEventListener('pointermove', (e) => { pointer.x = e.clientX / W; pointer.y = e.clientY / H; });
+
+// Hover turns it like a loose dial; dragging turns it further and it springs back.
+let turn = 0, turnTo = 0, dragging = false, dragX = 0;
+grab.addEventListener('pointerenter', () => { if (!dragging) turnTo = 0.07; });
+grab.addEventListener('pointerleave', () => { if (!dragging) turnTo = 0; });
+grab.addEventListener('pointerdown', (e) => { dragging = true; dragX = e.clientX; grab.setPointerCapture(e.pointerId); });
+grab.addEventListener('pointermove', (e) => { if (dragging) turnTo = Math.max(-1.2, Math.min(1.2, (e.clientX - dragX) / 120)); });
+grab.addEventListener('pointerup', () => { dragging = false; turnTo = 0; });
+
+// ------------------------------------------------------------------ the load: the Bs rise, the O drops in last and rings to rest
+const t0 = performance.now();
+const b1 = document.querySelector('.b1'), b2 = document.querySelector('.b2');
+const backOut = (x) => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const clamp = (x) => Math.max(0, Math.min(1, x));
+let shot = false;
+function frame(now) {
+  const t = (now - t0) / 1000;
+  const rise = (k) => (1 - backOut(clamp(k))) * 0.5;
+  b1.style.transform = `translateY(${rise((t - 0.05) / 0.6) * 100}%)`;
+  b2.style.transform = `translateY(${rise((t - 0.15) / 0.6) * 100}%)`;
+  b1.style.opacity = clamp((t - 0.05) / 0.25); b2.style.opacity = clamp((t - 0.15) / 0.25);
+  // The O: drops from above, lands at 0.95 s, then wobbles like a coin settling on a table, fast and damped.
+  const fall = clamp((t - 0.55) / 0.4);
+  const land = Math.max(0, t - 0.95);
+  const wob = land > 0 ? Math.exp(-land * 5) * Math.sin(land * 38) : 0;
+  O.position.y = Y + (1 - fall * fall) * H * 0.6;
+  O.visible = t > 0.55;
+  turn += (turnTo - turn) * 0.12;
+  O.rotation.set(wob * 0.22, wob * 0.16 * Math.cos(land * 19), turn);
+  document.querySelectorAll('.chrome > *').forEach((el) => (el.style.opacity = clamp((t - 1.2) / 0.4)));
+  // Light and parallax follow the cursor a beat late.
+  lean.x += (pointer.x - lean.x) * 0.06; lean.y += (pointer.y - lean.y) * 0.06;
+  key.position.set(lean.x * W, H - lean.y * H, R * 2.2);
+  pixelCamera(camera, W, H, (lean.x - 0.5) * 60, (0.5 - lean.y) * 40);
+  // Every few seconds, a faint glow far down the shaft: the colour the visor and the controller's light will have.
+  const pulse = 0.12 + 0.4 * Math.pow(Math.max(0, Math.sin(((t % 4.5) / 4.5) * Math.PI)), 3);
+  glow.material.opacity = pulse;
+  renderer.render(scene, camera);
+  if (!shot && t > 2.4) { shot = true; ready(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
