@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Selected works · The domain, real</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  html, body { overflow-x: hidden; overflow-y: auto; height: auto; }
+  body { background: #07040b; color: var(--light); cursor: none; }
+  .track { height: 800vh; }
+  canvas.full { z-index: 1; }
+  .label { position: fixed; left: 0; top: 0; z-index: 4; margin: 0; pointer-events: none; white-space: nowrap; }
+  .label b { display: block; font: 500 17px Barlow; color: var(--light); }
+  .label span { display: block; margin-top: 5px; color: rgb(242 239 232 / 0.55); }
+  .label.locked b { color: #c9935f; }
+  .cursor { position: fixed; left: 0; top: 0; z-index: 9; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%; border: 1px solid rgb(242 239 232 / 0.5); display: grid; place-items: center; pointer-events: none;
+    font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--light); transition: width 0.4s, height 0.4s, margin 0.4s, background 0.4s, color 0.4s; }
+  .cursor.open { width: 108px; height: 108px; margin: -54px 0 0 -54px; background: var(--light); color: #130724; }
+  .count { position: fixed; right: var(--gutter); bottom: var(--gutter); z-index: 5; margin: 0; color: rgb(242 239 232 / 0.6); }
+  .count b { color: var(--light); font-weight: 500; }
+  .hintx { position: fixed; left: 50%; bottom: var(--gutter); transform: translateX(-50%); z-index: 5; margin: 0; color: rgb(242 239 232 / 0.5); }
+  .focus { position: fixed; left: var(--gutter); bottom: 9vh; z-index: 5; margin: 0; opacity: 0; transform: translateY(18px); transition: opacity 0.55s, transform 0.55s; pointer-events: none; }
+  .focus.on { opacity: 1; transform: none; }
+  .focus h2 { margin: 0; font-size: clamp(56px, 8vw, 128px); }
+  .focus p { margin: 14px 0 0; max-width: 34ch; color: rgb(242 239 232 / 0.7); font-size: 17px; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark grain">
+<div class="track"></div>
+<canvas class="full" aria-hidden="true"></canvas>
+<div id="labels"></div>
+<div class="focus"><h2 class="display"></h2><p></p></div>
+<p class="hintx mono">Drag or scroll</p>
+<p class="count mono"><b>01</b> / 05</p>
+<div class="cursor">Drag</div>
+<div class="chrome"><p class="tl">Bob Chung</p><p class="tr"><span>Selected works</span><span>EN</span></p></div>
+<script type="module">
+import { THREE, stage, fonts, canvasTex, lockedScreen, lockedGame, ready } from './kit.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight;
+const q = new URLSearchParams(location.search);
+const embed = q.has('embed');
+
+// ------------------------------------------------------------------ the space: a dark hall inside the coin's hole
+const s = stage(document.querySelector('canvas'), { fov: 36, env: 0.18 }).post({ focus: 11, range: 4, bokeh: 1.3, bloom: 0.35, threshold: 0.88, vignette: 0.6, radius: 0.55 });
+const { scene, camera, renderer } = s;
+scene.background = new THREE.Color('#07040b');
+scene.fog = new THREE.FogExp2('#0b0613', 0.042);
+
+// A glossy dark floor: a real reflection under a dark glaze, a little uneven.
+const floor = new Reflector(new THREE.PlaneGeometry(120, 120), { textureWidth: Math.round(W * 0.6), textureHeight: Math.round(H * 0.6), color: 0x9a90a8, clipBias: 0.003 });
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+const glaze = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshBasicMaterial({
+  color: '#0a0612', transparent: true, opacity: 0.74,
+  alphaMap: canvasTex(512, 512, (x, w, h) => { x.fillStyle = '#c8c8c8'; x.fillRect(0, 0, w, h); for (let i = 0; i < 3000; i++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '255,255,255' : '90,90,90'},${Math.random() * 0.18})`; x.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 14, 1 + Math.random() * 3); } }, false),
+}));
+glaze.material.alphaMap.repeat.set(10, 10);
+glaze.rotation.x = -Math.PI / 2;
+glaze.position.y = 0.004;
+scene.add(glaze);
+
+// Huge dark-bronze squares standing in the haze: the coin's hole, as architecture.
+const bronze = new THREE.MeshStandardMaterial({ color: '#2c1e14', metalness: 0.95, roughness: 0.32 });
+for (const [z, size] of [[-21, 23], [-33, 28], [-47, 34], [-64, 40]]) {
+  const frame = new THREE.Group();
+  const t = 0.34;
+  const beam = (w, h, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), bronze); m.position.set(x, y, 0); frame.add(m); };
+  beam(size, t, 0, size); beam(size, t, 0, 0.45); beam(t, size, -size / 2, size / 2); beam(t, size, size / 2, size / 2);
+  frame.position.set(0, 0, z);
+  scene.add(frame);
+}
+// Faint shafts of light falling through the haze.
+const shaftTex = canvasTex(64, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(255,214,160,0.9)'); g.addColorStop(1, 'rgba(255,214,160,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); });
+for (const [x, z, w] of [[-7, -15, 3], [6, -19, 4], [0, -30, 6]]) {
+  const shaft = new THREE.Mesh(new THREE.PlaneGeometry(w, 22), new THREE.MeshBasicMaterial({ map: shaftTex, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false }));
+  shaft.position.set(x, 11, z);
+  shaft.rotation.z = 0.12;
+  scene.add(shaft);
+}
+const key = new THREE.DirectionalLight('#ffd9a8', 1.1);
+key.position.set(4, 14, 6);
+scene.add(key, new THREE.HemisphereLight('#3a2a50', '#05030a', 0.35));
+
+// ------------------------------------------------------------------ the works: big pictures, all one size, on a sweeping band
+const card = (draw) => canvasTex(1600, 1000, draw);
+const cover = (img) => card((x, w, h) => { const s2 = Math.max(w / img.width, h / img.height); x.drawImage(img, (w - img.width * s2) / 2, (h - img.height * s2) / 2, img.width * s2, img.height * s2); });
+const phone = (bg, im) => card((x, w, h) => {
+  const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, bg[0]); g.addColorStop(1, bg[1]); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  const ph = h * 0.86, pw = ph * (im.width / im.height);
+  x.save(); x.beginPath(); x.roundRect((w - pw) / 2, (h - ph) / 2, pw, ph, 34); x.clip(); x.drawImage(im, (w - pw) / 2, (h - ph) / 2, pw, ph); x.restore();
+});
+const img = (src) => new Promise((done) => { const i = new Image(); i.onload = () => done(i); i.src = src; });
+const [lumoImg, jontaiImg, cookiesImg] = await Promise.all([img('img/lumo.webp'), img('/public/flight/jontai.webp'), img('/public/flight/cookies.webp')]);
+const works = [
+  { title: 'Lumo', meta: '01 · Android app · 2026', line: 'A grocery list that merges your recipes into one list, sorted by your store’s aisles.', tex: phone(['#1f7a34', '#0b3b17'], lumoImg) },
+  { title: 'Locked', meta: '02 · Android app · 2026', line: 'A gym log that gives you your next weight from your own history.', tex: phone(['#2a1a12', '#0d0b0f'], lockedScreen().image) },
+  { title: 'Jontai Energy', meta: '03 · Website · 2025', line: 'A clean-energy company’s site.', tex: cover(jontaiImg) },
+  { title: 'Cookies Clicker', meta: '04 · Browser game · 2025', line: 'A browser game built with a classmate around one loop: click, earn, reinvest.', tex: cover(cookiesImg) },
+  { title: 'Roblox game', meta: '05 · In development', line: 'Not named yet. Locked until it ships.', tex: card((x, w, h) => x.drawImage(lockedGame().image, 0, 0, w, h)), locked: true },
+];
+// Each picture's average colour: the light it throws on the floor.
+for (const w of works) {
+  const c = document.createElement('canvas'); c.width = c.height = 1;
+  const x = c.getContext('2d'); x.drawImage(w.tex.image, 0, 0, 1, 1);
+  const [r, g, b] = x.getImageData(0, 0, 1, 1).data;
+  w.glow = new THREE.Color(`rgb(${r},${g},${b})`);
+}
+const PW = 5.9, PH = 3.7, RING = 11, N = 10, Y0 = 2.15;
+const vert = `
+  uniform float uBend, uLift;
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    vec3 p = position;
+    p.z += uBend * (p.x * p.x) * 0.09 + uLift * 0.7;
+    p.y += uBend * p.x * 0.03;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  }`;
+const frag = `
+  uniform sampler2D uMap; uniform float uHover, uDim, uLocked, uIn;
+  varying vec2 vUv;
+  void main() {
+    vec2 uv = (vUv - 0.5) * (1.0 - uHover * 0.04) + 0.5;
+    vec3 c = texture2D(uMap, uv).rgb;
+    c = mix(c, vec3(dot(c, vec3(0.3, 0.59, 0.11))), uLocked * 0.6);
+    c *= mix(0.92, 0.5, uDim) * (1.0 + uHover * 0.08) * uIn;
+    gl_FragColor = vec4(c, 1.0);
+  }`;
+const glowTex = canvasTex(256, 256, (x) => { const g = x.createRadialGradient(128, 128, 0, 128, 128, 128); g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 256, 256); });
+const panels = [];
+for (let i = 0; i < N; i++) {
+  const w = works[i % works.length];
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH, 48, 24), new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, uniforms: { uMap: { value: w.tex }, uBend: { value: 0 }, uLift: { value: 0 }, uHover: { value: 0 }, uDim: { value: 0 }, uLocked: { value: w.locked ? 1 : 0 }, uIn: { value: 1 } } }));
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(PW * 1.3, PW * 0.8), new THREE.MeshBasicMaterial({ map: glowTex, color: w.glow, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+  pool.rotation.x = -Math.PI / 2;
+  pool.scale.set(1.25, 1.4, 1);
+  scene.add(m, pool);
+  const el = document.createElement('p');
+  el.className = `label${w.locked ? ' locked' : ''}`;
+  el.innerHTML = `<b>${w.title}</b><span class="mono">${w.meta}</span>`;
+  document.getElementById('labels').append(el);
+  panels.push({ m, pool, el, work: w, hover: 0 });
+}
+
+// ------------------------------------------------------------------ motion: weight, drag, hover; from the pull, the way in
+const cursor = document.querySelector('.cursor');
+const focusEl = document.querySelector('.focus');
+const count = document.querySelector('.count b');
+const step = (Math.PI * 2) / N;
+let target = 0.12, angle = 0.12, vel = 0, drag = null;
+const ext = { open: embed ? 0 : 1, turn: 0 };
+const mouse = new THREE.Vector2(9, 9), look = { x: 0, y: 0 };
+cursor.style.opacity = '0';
+let lastScroll = scrollY;
+if (!embed) addEventListener('scroll', () => { const d = scrollY - lastScroll; lastScroll = scrollY; target += d * 0.0014; });
+if (embed) {
+  document.querySelector('.track').style.display = 'none';
+  addEventListener('message', (e) => {
+    if (!e.data || typeof e.data.open !== 'number') return;
+    target += ((e.data.turn ?? 0) - ext.turn) * 1.2;
+    ext.open = e.data.open;
+    ext.turn = e.data.turn ?? 0;
+  });
+  addEventListener('wheel', (e) => parent.postMessage({ wheel: e.deltaY }, '*'), { passive: true });
+}
+addEventListener('pointermove', (e) => {
+  cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+  cursor.style.opacity = '1';
+  mouse.set((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1);
+  if (drag) target = drag.start - (e.clientX - drag.x) * 0.0035;
+});
+addEventListener('pointerdown', (e) => { drag = { x: e.clientX, start: target }; });
+addEventListener('pointerup', () => { drag = null; });
+const ease = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+const ray = new THREE.Raycaster();
+let last = performance.now(), hovered = null, said = false;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const k = ext.open;
+  const prev = angle;
+  angle += (target - angle) * (1 - Math.exp(-dt / 0.4));
+  vel += ((angle - prev) / Math.max(dt, 1e-3) - vel) * 0.18;
+  // Arriving from the coin: the camera is still flying forward and the space settles round it.
+  const arrive = ease(k);
+  const mx = Math.abs(mouse.x) > 2 ? 0 : mouse.x, my = Math.abs(mouse.y) > 2 ? 0 : mouse.y;
+  look.x += (mx * 0.06 - look.x) * 0.05; look.y += (my * 0.04 - look.y) * 0.05;
+  camera.position.set(Math.sin(now * 0.00021) * 0.05, 1.7 + (1 - arrive) * 1.1 + Math.sin(now * 0.00033) * 0.03, (1 - arrive) * 7);
+  camera.lookAt(look.x * 10, 1.95 + look.y * 6 - (1 - arrive) * 0.8, -10);
+  camera.fov = 36 + (1 - arrive) * 34;
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld();
+  if (s.dof) s.dof.cocMaterial.worldFocusDistance = RING - (1 - arrive) * 0;
+  ray.setFromCamera(mouse, camera);
+  const hit = k >= 0.98 && !drag ? ray.intersectObjects(panels.map((p) => p.m))[0]?.object ?? null : null;
+  const hp = panels.find((p) => p.m === hit) ?? null;
+  if (hp !== hovered) { hovered = hp; cursor.classList.toggle('open', !!hp); cursor.textContent = hp ? (hp.work.locked ? 'Soon' : 'Open') : 'Drag'; }
+  let front = 0, best = -9;
+  panels.forEach((p, i) => {
+    // While you come in, the view down the middle is the gap and the arches; the first work swings into place as you arrive.
+    const a = i * step - angle - (1 - arrive) * step * 0.5;
+    p.m.position.set(Math.sin(a) * RING, Y0, -Math.cos(a) * RING);
+    p.m.lookAt(0, Y0, 0);
+    p.hover += ((p === hovered ? 1 : 0) - p.hover) * 0.1;
+    const u = p.m.material.uniforms;
+    u.uHover.value = p.hover;
+    u.uLift.value = p.hover;
+    u.uDim.value += ((hovered && p !== hovered ? 1 : 0) - u.uDim.value) * 0.08;
+    u.uBend.value = THREE.MathUtils.clamp(-vel * 0.5, -0.7, 0.7);
+    u.uIn.value = 0.25 + 0.75 * arrive;
+    p.m.scale.setScalar(0.75 + 0.25 * arrive);
+    // The pool of light each picture throws on the floor in front of it.
+    p.pool.position.set(Math.sin(a) * (RING - 1.6), 0.01, -Math.cos(a) * (RING - 1.6));
+    p.pool.rotation.z = -a;
+    p.pool.material.opacity = 0.2 * arrive * (0.7 + 0.6 * p.hover);
+    const facing = Math.cos(a);
+    if (facing > best) { best = facing; front = i % works.length; }
+    const foot = new THREE.Vector3(-PW / 2, -PH / 2 - 0.22, 0).applyMatrix4(p.m.matrixWorld).project(camera);
+    p.el.style.opacity = facing > 0.5 && foot.z < 1 && p !== hovered ? Math.min(1, (facing - 0.5) * 3) * arrive : 0;
+    p.el.style.transform = `translate(${(foot.x * 0.5 + 0.5) * W}px, ${(-foot.y * 0.5 + 0.5) * H}px)`;
+  });
+  count.textContent = String(front + 1).padStart(2, '0');
+  focusEl.classList.toggle('on', !!hovered);
+  if (hovered) { focusEl.querySelector('h2').textContent = hovered.work.title; focusEl.querySelector('p').textContent = hovered.work.line; }
+  s.render();
+  if (!said && now > 1500) { said = true; ready(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
