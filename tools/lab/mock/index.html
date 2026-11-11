@@ -27,6 +27,11 @@
 <p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
 
 <section>
+  <h2 class="display">Round 38 · One scene: through the O, into a real space</h2>
+  <p class="idea">The first view and the works' space are now one 3D scene seen by one camera, so there is no cut: the O's hole is a window onto the space behind the page, with true depth from the first frame. Scrolling dives straight into it; the string runs down through the hole and away; the works build themselves in with a scan line while the coin fills the screen; you pass between the coin's bronze walls and slow to a stop among them. Inside: the works as glass slabs with bronze edges catching a low sun, a band that bends with speed (the way jesperlandberg.com scrolls), a planet below, a violet nebula, drifting rocks and dust that streaks when you move fast, a light HUD. <a href="dive.html">Open it live</a> (wait for the loader, then scroll), or <a href="domain4.html">the space alone</a>.</p>
+  <div class="grid" id="dive"></div>
+</section>
+<section>
   <h2 class="display">Round 37 · Straight into the O, out into space</h2>
   <p class="idea">The camera dives straight into the O where it sits in the name (the coin never leaves it); stars show in its hole from the first scroll. Inside: a scroll through space in the way of jesperlandberg.com: the wheel drives one band of same-size rounded pictures (the page does not scroll), a beat late; it waves and bends with speed while the stars streak past; title bottom left, a round button bottom right, a fine grid floor, the site's purple nebula. <a href="pull3.html">Open it live</a>, or <a href="domain3.html">the space alone</a>.</p>
   <div class="grid" id="pull3"></div>
@@ -98,6 +103,14 @@
 </section>
 <script type="module">
 const frames = {
+  dive: [
+    ['dive', 'At rest', 'Only space shows in the O; the works are not built yet.', '0-1440x810'],
+    ['dive', 'Diving in', 'The works build themselves in, a scan line at a time.', '1-1440x810'],
+    ['dive', 'Through the coin', 'Its bronze walls pass either side.', '2-1440x810'],
+    ['dive', 'Out the other side', 'Still moving, slowing down among them.', '3-1440x810'],
+    ['dive', 'Arrived', 'The band, a planet below, rocks; the HUD fades in.', '6-1440x810'],
+    ['domain4', 'Further along', 'The band moves past you; the reticle locks on the middle one.', 'b-1440x810'],
+  ],
   pull3: [
     ['pull3', 'First scroll', 'Stars already show in the O.', '0_7-1440x810'],
     ['pull3', 'Diving in', 'The camera centres on the O as it goes.', '2-1440x810'],

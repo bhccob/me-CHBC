@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Selected works · In space</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<style>
+  body { background: #020104; color: var(--light); cursor: none; overscroll-behavior: none; }
+  canvas.full { z-index: 1; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="dark">
+<canvas class="full" aria-hidden="true"></canvas>
+<script type="module">
+// LAB ONLY (throwaway): the works' space on its own. ?x= sets where along the band you are (in pictures), for stills.
+import { THREE, fonts, ready } from './kit.js';
+import { createSpace, L, FOV_IN, SP } from './space.js';
+
+await fonts();
+const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio);
+const q = new URLSearchParams(location.search);
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas'), antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(dpr);
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.AgXToneMapping;
+const space = await createSpace(renderer, { W, H, dpr });
+window.__space = space;
+let goal = q.has('x') ? Number(q.get('x')) : 0, x = goal, drag = null;
+const look = { x: 0, y: 0 }, aim = { x: 0, y: 0 };
+addEventListener('wheel', (e) => { e.preventDefault(); goal += (e.deltaY + e.deltaX) * 0.0022; }, { passive: false });
+addEventListener('pointerdown', (e) => { drag = { x: e.clientX, start: goal }; });
+addEventListener('pointerup', () => { drag = null; });
+addEventListener('pointermove', (e) => { aim.x = (e.clientX / W) * 2 - 1; aim.y = -(e.clientY / H) * 2 + 1; if (drag) goal = drag.start - (e.clientX - drag.x) * 0.0045; });
+const t0 = performance.now();
+let last = t0, said = false;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const t = (now - t0) / 1000;
+  x += (goal - x) * (1 - Math.exp(-dt / 0.45));
+  look.x += (aim.x - look.x) * 0.04; look.y += (aim.y - look.y) * 0.04;
+  // On load you drift in the last few metres, as if you had just come through.
+  const z = q.has('x') ? -L : -L + 3.5 * Math.exp(-t * 1.6);
+  space.update({ pos: new THREE.Vector3(x * SP, 0, z), fov: FOV_IN, look, arrive: 1, dt, time: t, dragging: !!drag });
+  space.render();
+  space.present();
+  if (!said && t > 1.5) { said = true; ready(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
