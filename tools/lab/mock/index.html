@@ -27,6 +27,11 @@
 <p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
 
 <section>
+  <h2 class="display">Round 43 · Made in Blender, coins that glide in</h2>
+  <p class="idea">Bob: slightly more modern; use Blender; inserting the coins more seamless. The hand and the head are now Blender models (built by script in tools/lab/blender, exported as glTF): the hand with turned capsule finger segments, slim curved plates, gold joint rings and one lit seam a finger, each segment its own node pivoting at its joint; the head a smooth modern helm, a face narrowing to the chin with layered cheek plates and a centre ridge, a dark glass visor with slit eyes, lit seams, a crest, and the emblem with its four sockets marked for the page. The coins now orbit the emblem at their sockets' size; each press draws the next one in along a spiral until it clicks home, the rest close up, and the camera leans in a little each time, so the last coin's move carries straight on through its square hole. <a href="robot3.html">Open it live</a> (scroll through the works, then press).</p>
+  <div class="grid" id="robot43"></div>
+</section>
+<section>
   <h2 class="display">Round 42 · The colossus</h2>
   <p class="idea">Bob on round 41: the hands looked uncanny without flowing motion, and only need to tear; the face should be modern and advanced; the robot a giant entity (inspired by Marvel's Celestials; here an original design in that spirit). After the fifth work a crack of light runs down the works; armoured fingers push through it from behind, one after another, curl over the torn edges and strain to pull the page apart (each joint eases toward its pose, with a breath of motion and a tremor while it pulls). Behind it, a face so large only its brow and eyes fit the screen: a monumental armoured mask, an emblem on its forehead (three sockets round a centre one), slit eyes and seams of circuitry, all flickering with interference. Press (click or space): the next study coin flies up into its socket and the face comes on a step at a time; the last, mechatronics, docks in the centre. It wakes, and you fly through that coin's square hole, down a shaft of traces to the CPU, where the brain sits. <a href="robot3.html">Open it live</a> (scroll through the works, then press).</p>
   <div class="grid" id="robot3"></div>
@@ -123,6 +128,14 @@
 </section>
 <script type="module">
 const frames = {
+  robot43: [
+    ['robot3', 'The tear', 'Blender hands: capsule fingers, curved plates.', '43-1-1440x810'],
+    ['robot3', 'The orbit', 'The four coins circle the emblem.', '43-2-1440x810'],
+    ['robot3', 'Drawn in', 'A press: the next one spirals into its socket.', '43-3-1440x810'],
+    ['robot3', 'All four in', 'Awake.', '43-4-1440x810'],
+    ['robot3', 'Through the coin', 'Down the shaft.', '43-5-1440x810'],
+    ['robot3', 'The CPU', 'The brain in the coin’s square hole.', '43-6-1440x810'],
+  ],
   robot3: [
     ['robot3', 'Through the crack', 'Fingers push through from behind.', '1-1440x810'],
     ['robot3', 'The grip', 'They curl over the torn edges.', '2-1440x810'],

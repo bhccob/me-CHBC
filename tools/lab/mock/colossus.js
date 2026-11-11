@@ -11,6 +11,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { C } from './kit.js';
 import { STUDIES, studyCoin, circuitMaterial, socketTexture, brain } from './stage.js';
 
@@ -111,7 +112,7 @@ function animator(hand) {
         j.rotation.x = cur.f[i][s] + Math.sin(time * 1.6 + i * 1.3 + s * 0.8) * 0.03 + strain * Math.sin(time * 29 + i * 2.3 + s * 1.1) * 0.025;
       });
     });
-    thumb.base.rotation.set(0.3, 0, 0.6 + cur.t[0] * 0.5);
+    if (!hand.userData.glb) thumb.base.rotation.set(0.3, 0, 0.6 + cur.t[0] * 0.5);
     thumb.joints.forEach((j, s) => { cur.t[s] += (target.t[s] - cur.t[s]) * k; j.rotation.x = s === 0 ? 0.15 + cur.t[0] * 0.3 : cur.t[s]; });
   };
 }
@@ -210,6 +211,61 @@ function colossusHead() {
   return { group: g, metal, eyeM, vents, emblem, arcs, arcM, socketGlows, sockets: SOCK };
 }
 
+// ------------------------------------------------------------------ the Blender models (tools/lab/blender/*.py)
+const gltf = new GLTFLoader();
+const loadGlb = (url) => new Promise((ok, no) => gltf.load(url, (g) => ok(g.scene), undefined, no));
+const baseName = (m) => (m?.name || '').replace(/\.\d+$/, '');
+function handMaterials() {
+  return {
+    armor: new THREE.MeshPhysicalMaterial({ color: '#3d3846', metalness: 1, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.1 }),
+    shell: new THREE.MeshPhysicalMaterial({ color: '#6b6475', metalness: 1, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.05 }),
+    joint: new THREE.MeshStandardMaterial({ color: '#0d0b11', metalness: 0.8, roughness: 0.42 }),
+    gold: new THREE.MeshPhysicalMaterial({ color: '#d6a352', metalness: 1, roughness: 0.22 }),
+    glow: new THREE.MeshStandardMaterial({ color: '#140c04', emissive: GLOW.clone(), emissiveIntensity: 2.0 }),
+  };
+}
+/** One hand from the Blender model: finger segments are nodes with their pivots at the joints. */
+function handFromGlb(src) {
+  const hand = src.clone(true);
+  const body = handMaterials(), fing = handMaterials();
+  hand.traverse((o) => {
+    if (!o.isMesh) return;
+    let p = o, finger = false;
+    while (p) { if (/^(f\d_base|thumb_base)$/.test(p.name)) { finger = true; break; } p = p.parent; }
+    const set = finger ? fing : body;
+    o.material = set[baseName(o.material)] ?? set.armor;
+  });
+  const node = (n) => hand.getObjectByName(n);
+  hand.userData = {
+    glb: true,
+    fingers: [0, 1, 2, 3].map((f) => ({ base: node(`f${f}_base`), joints: [0, 1, 2].map((s) => node(`f${f}_s${s}`)) })),
+    thumb: { base: node('thumb_base'), joints: [0, 1, 2].map((s) => node(`thumb_s${s}`)) },
+    body: Object.values(body),
+  };
+  return hand;
+}
+/** The colossus from the Blender model, with handles on what the page lights and where the coins go. */
+function headFromGlb(src) {
+  const g = src;
+  const M = {
+    shell: new THREE.MeshPhysicalMaterial({ color: '#141219', metalness: 1, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.18 }),
+    plate: new THREE.MeshPhysicalMaterial({ color: '#2e2a36', metalness: 1, roughness: 0.24, clearcoat: 1, clearcoatRoughness: 0.12 }),
+    glass: new THREE.MeshPhysicalMaterial({ color: '#05040a', metalness: 0.3, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.04 }),
+    eye: new THREE.MeshStandardMaterial({ color: '#000', emissive: new THREE.Color('#ffd9a0'), emissiveIntensity: 0 }),
+    seam: new THREE.MeshStandardMaterial({ color: '#000', emissive: new THREE.Color('#a57cff'), emissiveIntensity: 0 }),
+    gold: new THREE.MeshPhysicalMaterial({ color: '#c89443', metalness: 1, roughness: 0.26 }),
+    recess: new THREE.MeshStandardMaterial({ color: '#050407', metalness: 0.5, roughness: 0.6 }),
+  };
+  const socketGlows = [0, 1, 2, 3].map(() => new THREE.MeshStandardMaterial({ color: '#000', emissive: GLOW.clone(), emissiveIntensity: 0 }));
+  g.traverse((o) => {
+    if (!o.isMesh) return;
+    const m = /^socket_(\d)_light/.exec(o.name);
+    o.material = m ? socketGlows[Number(m[1])] : M[baseName(o.material)] ?? M.shell;
+  });
+  const sockets = [0, 1, 2, 3].map((i) => { const n = g.getObjectByName(`socket_${i}`); return { node: n, r: n.userData.radius ?? 0.25 }; });
+  return { group: g, eyeM: M.eye, metal: M.seam, vents: [], socketGlows, arcM: M.seam, arcs: new THREE.Group(), emblem: g.getObjectByName('emblem'), sockets };
+}
+
 // ------------------------------------------------------------------ interference over everything while it is not powered
 const GLITCH = {
   uniforms: { tDiffuse: { value: null }, uAmt: { value: 0 }, uTime: { value: 0 }, uKick: { value: 0 } },
@@ -301,13 +357,18 @@ export async function createColossus(renderer, { W, H, dpr, pageTexture, hudPare
   });
 
   // ---------------------------------------------------------------- the colossus
-  const head = colossusHead();
+  const [handSrc, headSrc] = await Promise.all([loadGlb('models/hand.glb'), loadGlb('models/head.glb')]);
+  const head = headFromGlb(headSrc);
   const HEAD = 4.6;
   head.group.scale.setScalar(HEAD);
-  head.group.position.set(0, -2.6, -44);
+  // Placed so its emblem sits where the camera will look, high in the frame, the face going on below the screen.
+  head.group.updateMatrixWorld(true);
+  const emblemLocal = head.emblem.getWorldPosition(new THREE.Vector3()).divideScalar(HEAD);
+  const headBase = new THREE.Vector3(0, 8.4, -40).sub(emblemLocal.clone().multiplyScalar(HEAD));
+  head.group.position.copy(headBase);
   scene.add(head.group);
   const eyeLights = [-1, 1].map((sx) => { const l = new THREE.PointLight('#ffcf8a', 0, 0, 2); scene.add(l); l.userData.sx = sx; return l; });
-  const camEnd = new THREE.Vector3(0, 3.0, -2.5), lookEnd = new THREE.Vector3(0, 5.2, -36);
+  const camEnd = new THREE.Vector3(0, 2.2, -4.5), lookEnd = new THREE.Vector3(0, 3.4, -40);
   // Dust between you and it: it is far, and huge.
   {
     let sd = 2; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
@@ -320,10 +381,10 @@ export async function createColossus(renderer, { W, H, dpr, pageTexture, hudPare
 
   // ---------------------------------------------------------------- the hands
   const HS_ = 2.5;
-  const right = gauntlet();
+  const right = handFromGlb(handSrc);
   const leftRoot = new THREE.Group();
   leftRoot.scale.x = -1;
-  const left = gauntlet();
+  const left = handFromGlb(handSrc);
   leftRoot.add(left);
   scene.add(right, leftRoot);
   const animR = animator(right), animL = animator(left);
@@ -402,7 +463,9 @@ export async function createColossus(renderer, { W, H, dpr, pageTexture, hudPare
   const tags = [...hud.querySelectorAll('.st-tag')], fly = hud.querySelector('.st-fly'), press = hud.querySelector('.st-press'), endEl = hud.querySelector('.st-end'), countEl = hud.querySelector('.st-n'), sigEl = hud.querySelector('.st-state b');
 
   const bez = (a, b, c, d, t) => { const u = 1 - t; return a.clone().multiplyScalar(u * u * u).addScaledVector(b, 3 * u * u * t).addScaledVector(c, 3 * u * t * t).addScaledVector(d, t * t * t); };
-  const FLIGHT = 1.7, POVT = 9.0;
+  const FLIGHT = 1.25, POVT = 9.0;
+  const orbitA = [0, 0, 0, 0], glideFrom = [null, null, null, null];
+  let approach = 0;
   let presses = [], lastT = null, sigShown = 0;
 
   return {
@@ -465,49 +528,71 @@ export async function createColossus(renderer, { W, H, dpr, pageTexture, hudPare
       const flicker = (k) => (Math.sin(time * 37 + k) * Math.sin(time * 13.7 + k * 2.1) > 0.2 ? 1 : 0.25);
       const awake = ease(pov / 0.12);
       head.eyeM.emissiveIntensity = lerp(0.25 * flicker(1), 3.2, ease((sigShown - 0.15) / 0.85)) + awake * 1.5 + kick * 1.5;
-      head.metal.emissiveIntensity = lerp(0.04 * flicker(3), 0.32, sigShown) + awake * 0.25;
+      head.metal.emissiveIntensity = lerp(0.15 * flicker(3), 2.4, sigShown) + awake * 1.2;
       head.vents.forEach((v, k) => (v.material.emissiveIntensity = lerp(0.1 * flicker(k + 5), 1.6, ease((sigShown - k * 0.12) / 0.4))));
       head.socketGlows.forEach((m, i) => (m.emissiveIntensity = i < inserted ? 2.4 + Math.sin(time * 3 + i) * 0.4 : 0.15 * flicker(i + 9)));
       head.arcM.emissiveIntensity = 0.3 + sigShown * 2.2 + awake;
       head.arcs.rotation.z += (0.05 + sigShown * 0.9 + awake * 2) * (dt || 0.016);
-      head.group.position.y = -2.6 + Math.sin(time * 0.35) * 0.15 + awake * 0.6;
+      head.group.position.set(headBase.x, headBase.y + Math.sin(time * 0.35) * 0.15 + awake * 0.6, headBase.z);
       head.group.rotation.set(-0.04 + Math.sin(time * 0.27) * 0.008 - awake * 0.05, Math.sin(time * 0.21) * 0.01, 0);
       head.group.updateMatrixWorld(true);
-      eyeLights.forEach((l) => { l.position.copy(head.group.localToWorld(new THREE.Vector3(l.userData.sx * 1.7, 0.45, 2.5))); l.intensity = head.eyeM.emissiveIntensity * 60; });
+      eyeLights.forEach((l) => { l.position.copy(head.group.localToWorld(new THREE.Vector3(l.userData.sx * 1.25, 0.72, 4.2))); l.intensity = head.eyeM.emissiveIntensity * 60; });
       glitch.uniforms.uAmt.value = (1 - sigShown) * 0.6 * ease((r - 0.85) / 0.2);
       glitch.uniforms.uKick.value = kick * 0.6;
       glitch.uniforms.uTime.value = time;
-      // ---- the coins: a row before you; the one in flight rises, flipping, into its socket and stays there
-      const socketWorld = (i) => head.emblem.localToWorld(new THREE.Vector3(head.sockets[i][0], head.sockets[i][1], 0.07));
-      const socketScale = (i) => head.sockets[i][2] * HEAD * 0.96;
-      camera.updateMatrixWorld();
-      const rowAt = (i) => camEnd.clone().add(new THREE.Vector3((i - 1.5) * 1.25, -1.35 + Math.sin(time * 1.2 + i) * 0.06, -6));
+      // ---- the coins: a slow orbit round the emblem, at the size of their sockets; a press draws the next one in along a
+      // spiral and it clicks home; the camera leans in a little each time.
+      const socketWorld = (i) => head.sockets[i].node.getWorldPosition(new THREE.Vector3());
+      const socketScale = (i) => head.sockets[i].r * HEAD * 0.96;
+      const E = head.emblem.getWorldPosition(new THREE.Vector3());
       const back = ease((r - 1.0) / 0.22);
+      const RO = 7.6, ZO = 5.5;
+      const rem = [0, 1, 2, 3].filter((i) => i >= inserted && i !== flyI);
+      const kA = dt <= 0 ? 1 : 1 - Math.exp(-dt * 3);
+      rem.forEach((i, k) => {
+        const want = Math.PI / 2 + (k / Math.max(1, rem.length)) * Math.PI * 2 + time * 0.16;
+        let d = want - orbitA[i]; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2));
+        orbitA[i] += d * kA;
+      });
       coins.forEach((c, i) => {
-        const home = rowAt(i).add(new THREE.Vector3(0, (1 - back) * -3, 0));
+        const orbitPos = E.clone().add(new THREE.Vector3(Math.cos(orbitA[i]) * RO, Math.sin(orbitA[i]) * RO * 0.55, ZO + Math.sin(time * 0.9 + i) * 0.3));
         if (i < inserted) {
           c.position.copy(socketWorld(i));
           c.quaternion.copy(head.group.quaternion);
           c.scale.setScalar(socketScale(i));
           c.visible = true;
+          glideFrom[i] = null;
         } else if (i === flyI) {
-          const f = ease(flyT / FLIGHT);
-          const to = socketWorld(i);
-          c.position.copy(bez(home, home.clone().add(new THREE.Vector3(0, 3, -4)), to.clone().add(new THREE.Vector3(0, 6, 8)), to, f));
-          c.rotation.set(f * Math.PI * 4, Math.sin(f * Math.PI) * 0.6, 0);
-          c.scale.setScalar(lerp(0.4, socketScale(i), Math.pow(f, 1.6)));
+          if (!glideFrom[i]) glideFrom[i] = { a: orbitA[i] };
+          const f = clamp(flyT / FLIGHT), e = ease(f);
+          const S = socketWorld(i).sub(E);
+          const aS = Math.atan2(S.y, S.x), rS = Math.hypot(S.x, S.y);
+          let d = aS - glideFrom[i].a; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2));
+          const a = glideFrom[i].a + (d + Math.PI) * e;
+          const rr = lerp(RO, rS, e), ry = lerp(0.55, 1, e);
+          const z = lerp(ZO, S.z, Math.pow(e, 1.5)) - 0.5 * Math.sin(clamp((f - 0.82) / 0.18) * Math.PI);
+          c.position.copy(E).add(new THREE.Vector3(Math.cos(a) * rr, Math.sin(a) * rr * ry, z));
+          c.rotation.set(0, 0, (1 - e) * Math.PI * 3);
+          c.scale.setScalar(lerp(socketScale(i) * 1.15, socketScale(i), e));
           c.visible = true;
+          orbitA[i] = a;
         } else {
-          c.position.copy(home);
-          c.rotation.set(0.12, Math.sin(time * 0.8 + i * 1.3) * 0.5, 0);
-          c.scale.setScalar(i === inserted ? 0.46 : 0.4);
+          c.position.copy(orbitPos);
+          c.rotation.set(0.1 * Math.sin(time + i), Math.sin(time * 0.7 + i * 1.3) * 0.45, 0);
+          c.scale.setScalar(socketScale(i) * (i === inserted ? 1.22 + Math.sin(time * 4) * 0.04 : 1.1) * back);
           c.visible = back > 0.01;
         }
         tags[i].classList.toggle('in', i < inserted);
         tags[i].classList.toggle('next', i === inserted || i === flyI);
       });
-      coinLight.position.copy(camEnd).add(new THREE.Vector3(0, 0.5, -3.5));
-      coinLight.intensity = 30 * back;
+      coinLight.position.copy(E).add(new THREE.Vector3(0, -2, 14));
+      coinLight.intensity = 260 * back;
+      // The camera leans toward the emblem a step with each coin.
+      approach += (inserted / 4 + (flyI >= 0 ? 0.25 * ease(flyT / FLIGHT) : 0) - approach) * (dt <= 0 ? 1 : 1 - Math.exp(-dt * 1.8));
+      const camBase = camera.position.clone().lerp(E.clone().add(new THREE.Vector3(0, -3.5, 20)), 0.32 * approach);
+      camera.position.copy(camBase);
+      camera.lookAt(new THREE.Vector3(0, 0, 0).lerp(lookEnd, inF).lerp(E, 0.4 * approach));
+      camera.updateMatrixWorld();
       if (flyI >= 0) {
         const s = STUDIES[flyI];
         fly.querySelector('span').textContent = `${s.n} / 05`;
@@ -522,7 +607,7 @@ export async function createColossus(renderer, { W, H, dpr, pageTexture, hudPare
         if (P < 3.6) {
           const g = ease((P - 1.8) / 1.8);
           if (g > 0) {
-            camera.position.copy(camEnd).lerp(centre.clone().add(new THREE.Vector3(0, 0, 0.15)), Math.pow(g, 1.8));
+            camera.position.copy(camBase).lerp(centre.clone().add(new THREE.Vector3(0, 0, 0.15)), Math.pow(g, 1.8));
             camera.lookAt(centre.clone().add(new THREE.Vector3(0, 0, -2)));
           }
           inside.visible = false;
