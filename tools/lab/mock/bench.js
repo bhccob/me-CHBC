@@ -269,6 +269,8 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
 
   return {
     scene, camera, portalMaterial, hud,
+    /** The room's last finished picture (for whoever shows it as a page). */
+    texture: () => portalMaterial.uniforms.uTex.value,
     /** pos: the camera; fov; pitch (radians, down is negative); angle: how far the ring has turned; arrive: 0..1. */
     update({ pos, fov, pitch = 0, angle = 0, look = { x: 0, y: 0 }, arrive = 1, dt = 1 / 60, time = 0, dragging = false, quaternion = null }) {
       camera.position.copy(pos);
