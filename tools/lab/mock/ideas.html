@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Works to brain · three ideas</title>
+<link rel="icon" href="data:," />
+<style>
+  html, body { margin: 0; height: 100%; background: #06030c; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  .tag { position: fixed; left: 28px; bottom: 26px; margin: 0; color: rgb(242 239 232 / 0.75); font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; }
+  .tag b { color: #efb53d; font-weight: 500; }
+  .cap { position: fixed; left: 28px; top: 26px; margin: 0; max-width: 520px; color: #f2efe8; font: 800 26px/1.05 Barlow, sans-serif; text-transform: uppercase; letter-spacing: 0.01em; }
+  .cap span { display: block; margin-top: 8px; font: 400 15px/1.35 Barlow, sans-serif; text-transform: none; color: rgb(242 239 232 / 0.72); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body>
+<canvas></canvas>
+<p class="cap"></p>
+<p class="tag"></p>
+<script type="module">
+// LAB ONLY (throwaway). Mock-up stills for three ways from the works to the brain, all with a digital robot (made of
+// light: hologram shells, gold edges, pixels, LED eyes) instead of a realistic one. ?idea=a|b|c &f=1|2|3
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
+import { coin, loadTexture, lockedScreen, lockedGame, ready, fonts } from './kit.js';
+import { STUDIES, PATHS, studyCoin, socketTexture, brain } from './stage.js';
+
+await fonts();
+const q = new URLSearchParams(location.search);
+const IDEA = q.get('idea') ?? 'a', F = Number(q.get('f') ?? 2);
+const W = innerWidth, H = innerHeight;
+const GOLD = new THREE.Color('#efb53d'), VIOLET = new THREE.Color('#9b74ff'), V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas'), antialias: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#06030c');
+scene.fog = new THREE.FogExp2('#0a0416', 0.012);
+const camera = new THREE.PerspectiveCamera(40, W / H, 0.05, 800);
+scene.add(new THREE.HemisphereLight('#4a3576', '#05030a', 1.0));
+const key = new THREE.DirectionalLight('#ffe8cc', 2.2); key.position.set(-4, 7, 9); scene.add(key);
+const rim = new THREE.DirectionalLight('#a582ff', 2.5); rim.position.set(6, 3, -8); scene.add(rim);
+
+// ------------------------------------------------------------------ the digital look: a shell of light, gold edges, scanlines
+function holoMat(color = VIOLET, { build = 999, alpha = 1 } = {}) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, toneMapped: false,
+    uniforms: { uC: { value: color.clone() }, uBuild: { value: build }, uA: { value: alpha } },
+    vertexShader: 'varying vec3 vN; varying vec3 vV; varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vec4 mv = viewMatrix * w; vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+    fragmentShader: `uniform vec3 uC; uniform float uBuild, uA; varying vec3 vN; varying vec3 vV; varying vec3 vW;
+      float h(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+      void main(){
+        float edge = vW.y - uBuild + (h(floor(vW * 3.0)) - 0.5) * 0.9;
+        if (edge > 0.0) discard;
+        float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
+        float scan = 0.6 + 0.4 * step(0.5, fract(vW.y * 5.0));
+        vec3 c = uC * (0.035 + f * 0.75) * scan + vec3(1.0, 0.75, 0.35) * smoothstep(-0.25, 0.0, edge) * 1.2;
+        gl_FragColor = vec4(c * uA, 1.0);
+      }`,
+  });
+}
+const edgeMat = (op = 0.55) => new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+function holoify(root, { color = VIOLET, edges = 0.55, build = 999, angle = 30, skip = () => false } = {}) {
+  const mats = [];
+  root.traverse((o) => {
+    if (!o.isMesh || skip(o)) return;
+    const m = holoMat(color, { build });
+    mats.push(m);
+    o.material = m;
+    if (edges > 0) {
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry, angle), edgeMat(edges));
+      e.userData.edge = true;
+      o.add(e);
+    }
+  });
+  return mats;
+}
+const gltf = new GLTFLoader();
+const load = (u) => new Promise((ok, no) => gltf.load(u, (g) => ok(g.scene), undefined, no));
+
+/** The robot's face on its visor: two big LED eyes, readable at a glance; or the slot hint. */
+function visorTex({ happy = false, open = 1, hint = false, lookY = 0 } = {}) {
+  const c = document.createElement('canvas'); c.width = 384; c.height = 224;
+  const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, 384, 224);
+  x.fillStyle = x.strokeStyle = '#ffe6bf';
+  for (const sx of [-1, 1]) {
+    const cx = 192 + sx * 72, cy = 100 + lookY * 18;
+    if (happy) { x.lineWidth = 22; x.lineCap = 'round'; x.beginPath(); x.arc(cx, cy + 24, 40, Math.PI * 1.12, Math.PI * 1.88); x.stroke(); }
+    else { x.beginPath(); x.roundRect(cx - 30, cy - 52 * open, 60, 104 * open, 30); x.fill(); }
+  }
+  if (hint) { x.lineWidth = 6; x.beginPath(); x.arc(192, 186, 12, 0, Math.PI * 2); x.stroke(); }
+  // LED dots: everything is drawn through a grid of round pixels.
+  const img = x.getImageData(0, 0, 384, 224), o = document.createElement('canvas'); o.width = 384; o.height = 224;
+  const y = o.getContext('2d'); y.fillStyle = '#000'; y.fillRect(0, 0, 384, 224);
+  for (let j = 2; j < 224; j += 6) for (let i = 2; i < 384; i += 6) {
+    const k = img.data[(j * 384 + i) * 4] / 255;
+    y.fillStyle = k > 0.2 ? `rgba(255,${200 + 30 * k},${150 + 60 * k},${0.25 + 0.75 * k})` : 'rgba(110,80,180,0.16)';
+    y.beginPath(); y.arc(i + 1, j + 1, 2.3, 0, Math.PI * 2); y.fill();
+  }
+  const t = new THREE.CanvasTexture(o); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+async function digitalRobot({ build = 999, face = {}, hands = true } = {}) {
+  const [headSrc, handSrc] = await Promise.all([load('models/head2.glb'), load('models/hand3.glb')]);
+  const head = headSrc;
+  const isGold = (o) => /rim|pip|slot_floor|bezel_light|face_light/.test(o.name);
+  const mats = holoify(head, { build, skip: (o) => o.name === 'screen' || isGold(o) });
+  head.traverse((o) => {
+    if (o.name === 'screen') o.material = new THREE.MeshBasicMaterial({ map: visorTex(face), toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    else if (o.isMesh && isGold(o)) o.material = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffc46a').multiplyScalar(1.6), toneMapped: false });
+  });
+  const group = new THREE.Group(); group.add(head);
+  const handsOut = [];
+  if (hands) for (const sx of [-1, 1]) {
+    const root = new THREE.Group(); root.scale.x = sx;
+    const h = handSrc.clone(true);
+    holoify(h, { color: new THREE.Color('#b394ff'), edges: 0.4, angle: 35, build });
+    h.scale.setScalar(2.5);
+    h.position.set(7.4, -3.2, 1.2);
+    const f = V(0.1, 1, 0.05).normalize(), n = V(-0.45, 0, 1); n.addScaledVector(f, -n.dot(f)).normalize();
+    h.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(V().crossVectors(f, n), f, n));
+    root.add(h); group.add(root); handsOut.push(h);
+  }
+  return { group, head, mats, hands: handsOut };
+}
+
+// ------------------------------------------------------------------ pieces
+const cover = (t) => new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(0.82, 0.82, 0.82), side: THREE.DoubleSide });
+const [lumo, jontai, cookies] = await Promise.all([loadTexture('img/lumo.webp'), loadTexture('/public/flight/jontai.webp'), loadTexture('/public/flight/cookies.webp')]);
+const SHOTS = [lumo, lockedScreen(), jontai, cookies, lockedGame()];
+function worksRing({ radius = 9, y = 0, count = 5, arc = 1.6, w = 3.2, h = 2.0 } = {}) {
+  const g = new THREE.Group();
+  for (let i = 0; i < count; i++) {
+    const a = (i - (count - 1) / 2) * (arc / (count - 1));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), cover(SHOTS[i % SHOTS.length]));
+    m.position.set(Math.sin(a) * radius, y, -Math.cos(a) * radius);
+    m.lookAt(0, y, 0);
+    g.add(m);
+  }
+  return g;
+}
+function grid(size = 80, step = 1.6, y = -2.2, color = '#6d55b8', op = 0.35) {
+  const p = [];
+  for (let i = -size / 2; i <= size / 2; i += step) p.push(-size / 2, 0, i, size / 2, 0, i, i, 0, -size / 2, i, 0, size / 2);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false }));
+  l.position.y = y; return l;
+}
+function dust(n = 900, spread = 80) {
+  let sd = 3; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) p.set([(r() - 0.5) * spread, (r() - 0.4) * spread * 0.6, -r() * spread], i * 3);
+  return new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(p, 3)), new THREE.PointsMaterial({ color: '#a891d8', size: 0.07, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+}
+/** Pixels in flight: from points `from` toward `to`, `t` of the way (each its own pace). */
+function pixels(from, to, t, { size = 0.09, gold = 0.35 } = {}) {
+  const n = Math.min(from.length, to.length);
+  const m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ toneMapped: false }), n);
+  let sd = 5; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion();
+  for (let i = 0; i < n; i++) {
+    const k = THREE.MathUtils.clamp((t - r() * 0.45) / 0.55, 0, 1), e = k * k * (3 - 2 * k);
+    const p = from[i].clone().lerp(to[i], e); p.y += Math.sin(e * Math.PI) * (1.5 + r() * 2.5);
+    const s = size * (0.5 + r()) * (k >= 1 ? 0 : 1);
+    m.setMatrixAt(i, M.compose(p, Q, V(s, s, s)));
+    m.setColorAt(i, (r() < gold ? GOLD.clone() : VIOLET.clone()).multiplyScalar(0.9 + r() * 0.8));
+  }
+  return m;
+}
+function pointsOn(mesh, n, matrix) {
+  const s = new MeshSurfaceSampler(mesh).build(), p = V(), out = [];
+  for (let i = 0; i < n; i++) { s.sample(p); out.push(p.clone().applyMatrix4(matrix)); }
+  return out;
+}
+function screenPoints(ring, n) {
+  const out = [];
+  ring.updateMatrixWorld(true);
+  ring.children.forEach((m, j) => { for (let i = 0; i < n / ring.children.length; i++) out.push(V((Math.random() - 0.5) * 3.2, (Math.random() - 0.5) * 2.0, 0).applyMatrix4(m.matrixWorld)); });
+  return out;
+}
+/** A board of traces for the coin to land on, the CPU socket in the middle. */
+function boardTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 2048;
+  const x = c.getContext('2d');
+  x.fillStyle = '#0d0618'; x.fillRect(0, 0, 2048, 2048);
+  let sd = 21; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  x.lineCap = 'round';
+  for (let i = 0; i < 420; i++) {
+    const a = Math.floor(r() * 8) * (Math.PI / 4), len = 80 + r() * 380, x0 = r() * 2048, y0 = r() * 2048;
+    const d = Math.hypot(x0 - 1024, y0 - 1024);
+    x.strokeStyle = `rgba(239,181,61,${0.08 + 0.35 * Math.max(0, 1 - d / 1100)})`; x.lineWidth = 2 + r() * 3;
+    x.beginPath(); x.moveTo(x0, y0); const x1 = x0 + Math.cos(a) * len, y1 = y0 + Math.sin(a) * len; x.lineTo(x1, y1);
+    x.lineTo(x1 + Math.cos(a + Math.PI / 4) * len * 0.4, y1 + Math.sin(a + Math.PI / 4) * len * 0.4); x.stroke();
+    x.fillStyle = x.strokeStyle; x.beginPath(); x.arc(x1, y1, 5, 0, Math.PI * 2); x.fill();
+  }
+  for (let i = 0; i < 26; i++) {
+    const w = 80 + r() * 200, h = 60 + r() * 160, x0 = r() * 1900, y0 = r() * 1900;
+    if (Math.hypot(x0 - 1024, y0 - 1024) < 420) continue;
+    x.fillStyle = '#1a1028'; x.fillRect(x0, y0, w, h); x.strokeStyle = 'rgba(155,116,255,0.45)'; x.lineWidth = 3; x.strokeRect(x0, y0, w, h);
+  }
+  // Traces running in to the socket, lit.
+  x.strokeStyle = 'rgba(255,205,120,0.9)'; x.lineWidth = 5;
+  for (let i = 0; i < 48; i++) { const a = (i / 48) * Math.PI * 2; x.beginPath(); x.moveTo(1024 + Math.cos(a) * 330, 1024 + Math.sin(a) * 330); x.lineTo(1024 + Math.cos(a) * (520 + r() * 420), 1024 + Math.sin(a) * (520 + r() * 420)); x.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+
+// ------------------------------------------------------------------ the three ideas
+const CAP = {
+  a: ['A · Built from what I built', ['The last work breaks into pixels; every project streams up out of the ring.', 'The pixels build the robot: a shell of light, LED eyes, hands of light, all made from the work.', 'Built. It wakes; the coins go into its slot, and the last one takes you in, to the brain.']],
+  b: ['B · The coin turns over', ['You leave the works the way you came: back out through the coin’s square hole.', 'The coin turns to its Studies face; one trace lights its four marks; it falls toward a board of light.', 'It lands flat in the CPU socket: the brain rises into its square hole. No robot needed.']],
+  c: ['C · It was in its head', ['The works ring starts to curve: a shell of light appears around it.', 'Pull back: the whole ring is turning inside the robot’s glass head, round its brain. The study coins fly to its ports.', 'Plugged in, it wakes; the works pour into the brain, and you dive back in through the visor. One continuous move.']],
+};
+const [title, lines] = CAP[IDEA];
+document.querySelector('.cap').innerHTML = `${title}<span>${lines[F - 1]}</span>`;
+document.querySelector('.tag').innerHTML = `Idea <b>${IDEA.toUpperCase()}</b> · frame <b>${F}</b> / 3 · works → brain`;
+
+scene.add(dust());
+if (IDEA === 'a') {
+  const ring = worksRing({ y: 0.4 });
+  scene.add(ring, grid());
+  const build = [999, -1.0, 999][F - 1];
+  const robot = await digitalRobot({ build: F === 1 ? -99 : build, face: F === 3 ? { open: 1, hint: true } : { open: 0.5 } });
+  robot.group.position.set(0, 3.2, -16);
+  robot.group.scale.setScalar(F === 3 ? 1.15 : 1);
+  scene.add(robot.group);
+  robot.group.updateMatrixWorld(true);
+  const shell = robot.head.getObjectByName('shell');
+  const N = [700, 1600, 10][F - 1];
+  const targets = pointsOn(shell, N, shell.matrixWorld);
+  const from = screenPoints(ring, N);
+  const t = [0.1, 0.6, 1.2][F - 1];
+  scene.add(pixels(from, targets, t, { size: [0.05, 0.08, 0.1][F - 1] }));
+  ring.children.forEach((m, i) => { m.material.transparent = true; m.material.opacity = [1, 0.3, 0][F - 1]; if (F === 3) m.visible = false; });
+  if (F === 1) robot.group.visible = false;
+  if (F === 3) {
+    STUDIES.forEach((s, i) => { const c = studyCoin(s); c.scale.setScalar(0.55); c.position.set(-2.5 + i * 1.65, -1.2, -4); c.rotation.set(-0.15, 0.3 * Math.sin(i * 1.7), 0); scene.add(c); });
+    const l = new THREE.PointLight('#ffd9a0', 30, 0, 2); l.position.set(0, 0.5, 0); scene.add(l);
+  }
+  camera.position.set(0, [0.6, 1.4, 1.2][F - 1], [3, 4, 2][F - 1]);
+  camera.lookAt(0, [0.6, 2.4, 2.4][F - 1], -16);
+} else if (IDEA === 'b') {
+  const big = coin();
+  if (F === 1) {
+    scene.add(worksRing({ radius: 14, y: 0.2 }), grid(80, 1.6, -2.4));
+    big.scale.setScalar(2.2); big.position.set(0, 0.2, 2.2); scene.add(big);
+    camera.position.set(0, 0.2, 7.2); camera.lookAt(0, 0.2, -10);
+  } else {
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshBasicMaterial({ map: boardTex(), toneMapped: false }));
+    board.rotation.x = -Math.PI / 2; scene.add(board);
+    const sock = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.3, 6.2), [0, 0, new THREE.MeshStandardMaterial({ map: socketTexture(), roughness: 0.5, metalness: 0.4 }), 0, 0, 0].map((m) => m || new THREE.MeshStandardMaterial({ color: '#120b1c' })));
+    sock.position.y = 0.15; scene.add(sock);
+    const br = brain(); br.material.uniforms.uA.value = F === 3 ? 1.2 : 0.5; br.scale.setScalar(F === 3 ? 0.62 : 0.5); br.position.y = F === 3 ? 0.9 : 0.5; scene.add(br);
+    const sc = studyCoin(STUDIES[3]);
+    sc.traverse((o) => { if (o.isMesh && o.material.emissive && o.material.emissiveIntensity > 0) o.material.emissiveIntensity = 0.9; });
+    sc.scale.setScalar(2.4);
+    if (F === 2) { sc.position.set(0, 7.5, 6); sc.rotation.set(-0.55, 0.25, 0.2); camera.position.set(1.5, 11, 15.5); camera.lookAt(0, 3.0, 0); }
+    else { sc.position.set(0, 1.5, 0); sc.rotation.set(-Math.PI / 2, 0, 0.35); camera.position.set(0.5, 7.5, 6.5); camera.lookAt(0, 0.6, 0); }
+    scene.add(sc);
+    const l = new THREE.PointLight('#ffcf86', F === 2 ? 45 : 120, 0, 2); l.position.set(0, 5, 3); scene.add(l);
+    scene.fog.density = 0.02;
+  }
+} else {
+  const robot = await digitalRobot({ face: F === 3 ? { happy: true } : { open: 0.8 }, hands: F > 1 });
+  robot.head.getObjectByName('screen').material.opacity = F === 3 ? 0.5 : 0.18;
+  const S = F === 1 ? 4.2 : 1;
+  robot.group.scale.setScalar(S);
+  scene.add(robot.group);
+  // Inside the head: the works ring, small, round a brain.
+  const inner = new THREE.Group();
+  const ring = worksRing({ radius: 2.5, y: 0, count: 6, arc: Math.PI * 2 * (5 / 6), w: 1.35, h: 0.84 });
+  inner.add(ring);
+  const br = brain(); br.material.uniforms.uA.value = F === 3 ? 1.6 : 0.9; br.scale.setScalar(0.9); inner.add(br);
+  inner.position.set(0, 0.4, 0.2);
+  inner.rotation.y = 0.5;
+  robot.group.add(inner);
+  // The study coins, flying to four ports on the head (and plugged in on frame 3).
+  const ports = [V(-3.9, 0.9, 0.8), V(3.9, 0.9, 0.8), V(-2.4, 3.6, 1.2), V(2.4, 3.6, 1.2)];
+  STUDIES.forEach((s, i) => {
+    const c = studyCoin(s); c.scale.setScalar(0.42);
+    const p = ports[i];
+    if (F === 2) c.position.copy(p.clone().multiplyScalar(1.7).add(V(0, -1.5 + i, 4)));
+    else c.position.copy(p);
+    c.lookAt(p.clone().multiplyScalar(3));
+    if (F > 1) robot.group.add(c);
+    const ring_ = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.05, 12, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffc46a').multiplyScalar(F === 3 ? 2 : 0.8), toneMapped: false }));
+    ring_.position.copy(p); ring_.lookAt(p.clone().multiplyScalar(3)); robot.group.add(ring_);
+  });
+  if (F === 3) {
+    // The works pour into the brain as streaks of light.
+    const from = screenPoints(ring, 500), to = from.map(() => V((Math.random() - 0.5) * 0.4, 0.4 + (Math.random() - 0.5) * 0.4, 0.2));
+    robot.group.updateMatrixWorld(true);
+    scene.add(pixels(from.map((p) => p.applyMatrix4(inner.matrixWorld)), to.map((p) => p.applyMatrix4(robot.group.matrixWorld)), 0.55, { size: 0.05, gold: 0.7 }));
+  }
+  if (F === 1) {
+    // From inside: the works around you, and past them the inside of a head made of light.
+    const cage = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.SphereGeometry(15, 28, 18), 1), edgeMat(0.22));
+    cage.scale.set(1, 1.1, 0.95); cage.position.y = 1.5; scene.add(cage);
+    robot.head.visible = false;
+    camera.position.set(0.8, 2.6, 3.2); camera.lookAt(-1.5, 1.2, -10);
+  }
+  else if (F === 2) { camera.position.set(9, 2.5, 19); camera.lookAt(0, 0.6, 0); }
+  else { camera.position.set(1.2, 1.4, 11.5); camera.lookAt(0, 0.7, 0); }
+}
+
+// ------------------------------------------------------------------ the picture
+const composer = new EffectComposer(renderer);
+composer.setPixelRatio(Math.min(2, devicePixelRatio));
+composer.setSize(W, H);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), 0.6, 0.5, 0.78));
+composer.addPass(new ShaderPass({
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); } void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb; c *= 1.0 - smoothstep(0.45, 1.2, length((vUv - 0.5) * vec2(1.6, 1.0))) * 0.75; c += (h(vUv * 900.0) - 0.5) * 0.03; gl_FragColor = vec4(c, 1.0); }',
+}));
+composer.addPass(new OutputPass());
+composer.render();
+requestAnimationFrame(() => { composer.render(); ready(); });
+</script>
+</body>
+</html>
