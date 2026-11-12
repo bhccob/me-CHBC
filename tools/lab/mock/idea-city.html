@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Board City</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<link rel="stylesheet" href="r60.css" />
+<style>
+  #gl { z-index: 0; }
+  .over { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  .hero .eyebrow { position: absolute; left: var(--gutter); }
+  .hero .lead { position: absolute; left: var(--gutter); font-size: clamp(34px, 4.2vw, 66px); }
+  .hero .copy { position: absolute; left: var(--gutter); }
+  .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgb(10 5 19 / 0.82), rgb(10 5 19 / 0) 52%); }
+  .board::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(10 5 19 / 0.94) 0%, rgb(10 5 19 / 0.86) 30%, rgb(10 5 19 / 0) 46%); }
+  .board .col { position: absolute; left: calc(var(--gutter) * 2); top: 50%; transform: translateY(-50%); width: min(33vw, 470px); }
+  .board .lead { font-size: clamp(28px, 2.8vw, 44px); margin-top: 16px; }
+  .board .copy { margin-top: 18px; }
+  .silk { position: absolute; margin: 0; padding: 5px 9px 6px; background: rgb(10 5 19 / 0.72); font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: #efe6d2; white-space: nowrap; line-height: 1.6; }
+  .silk b { font-weight: 500; color: var(--gold-hi); margin-right: 10px; }
+  .silk small { display: block; font-size: 10px; color: rgb(239 230 210 / 0.6); }
+  .silk.big { font-size: 12px; }
+  .end { background: radial-gradient(120% 90% at 40% 45%, #f6cd8a 0%, #e5ab64 45%, #b9783e 100%); color: #1a0a2a; }
+  .end::before { content: ''; position: absolute; inset: 0; border: clamp(18px, 4.5vh, 44px) solid #120820; }
+  .end .bar { position: absolute; top: 0; bottom: 0; left: 86%; width: clamp(10px, 1.6vh, 16px); background: #120820; }
+  .gold .chrome { color: #1a0a2a; }
+  .gold .chrome .tl, .gold .chrome .tr { top: calc(var(--gutter) + 4.5vh); }
+  .gold .chrome .tl { left: calc(var(--gutter) + 4.5vh); }
+  .gold .chrome .tr { right: 15vw; }
+  .gold .chrome .tr span:last-child { color: rgb(26 10 42 / 0.55); }
+  .end .talk { position: absolute; margin: 0; font: 800 clamp(80px, 13.5vw, 220px)/0.84 Barlow; text-transform: uppercase; letter-spacing: -0.04em; white-space: nowrap; color: #1a0a2a; }
+  .end .talk i { display: inline-block; width: 0.42em; height: 0.78em; margin-left: 0.06em; background: #1a0a2a; vertical-align: -0.02em; }
+  .end .eyebrow { position: absolute; color: rgb(26 10 42 / 0.7); }
+  .end .eyebrow i { background: #1a0a2a; }
+  .end .links { position: absolute; margin: 0; display: flex; gap: 34px; font: 600 20px Barlow; }
+  .end .links span { border-bottom: 1.5px solid rgb(26 10 42 / 0.55); padding-bottom: 4px; }
+  .end .where { position: absolute; margin: 0; color: rgb(26 10 42 / 0.7); }
+  .phone .hero .lead { font-size: 34px; }
+  .phone .hero .est { display: none; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="grain">
+<canvas class="layer" id="gl" aria-hidden="true"></canvas>
+
+<div class="over hero">
+  <h1 class="eyebrow"><i></i><b>Bob Chung</b> · Software engineer<span class="est"> · Est. BC—2006</span></h1>
+  <p class="lead"><span class="line">Every city</span><span class="line">runs on a board.</span><span class="line"><em>Here’s mine.</em></span></p>
+  <p class="copy">Software from Rotterdam, born in Aruba, heading for mechatronics.</p>
+</div>
+
+<div class="over board">
+  <div class="col">
+    <p class="eyebrow"><i></i>About me</p>
+    <p class="lead"><span class="line">Born and raised in Aruba.</span><span class="line">Chinese by heritage.</span><span class="line">In <em>Rotterdam</em> since eighteen.</span></p>
+    <p class="copy">I work across databases, game development and web development, and each one sharpens the others. Hardware is next on my route.</p>
+  </div>
+  <p class="silk big"><b>U1</b>Software engineering<small>Makes it think</small></p>
+  <p class="silk big"><b>U2</b>Game &amp; app development<small>Makes it playable</small></p>
+  <p class="silk big"><b>U3</b>Cybersecurity<small>Keeps it safe</small></p>
+  <p class="silk big"><b>U4</b>Mechatronics<small>Makes it move</small></p>
+  <p class="silk pad"><b>TP1</b>Aruba<small>12.52°N 70.03°W</small></p>
+  <p class="silk pad"><b>TP2</b>Rotterdam<small>51.92°N 4.48°E</small></p>
+</div>
+
+<div class="layer end" id="end">
+  <div class="bar"></div>
+  <p class="eyebrow mono"><i></i>One window still lit</p>
+  <h2 class="talk">Let’s talk<i></i></h2>
+  <p class="links"><span>GitHub</span><span>Instagram</span><span>Send a message →</span></p>
+  <p class="where mono">Rotterdam, born in Aruba</p>
+</div>
+
+<div class="chrome">
+  <p class="tl">BC—2006</p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="cue"><span>Scroll down into it</span><i></i></p>
+</div>
+<div class="cur" hidden><div class="ring"><span>OPEN</span></div></div>
+<script type="module" src="city.js"></script>
+</body>
+</html>

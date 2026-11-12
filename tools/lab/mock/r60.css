@@ -1,0 +1,54 @@
+/* LAB ONLY (throwaway). Round 60: the three ideas' shared type and chrome, on the site's purple with the coin's gold. */
+@font-face { font-family: Barlow; font-weight: 300; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-300-normal.woff2') format('woff2'); }
+@font-face { font-family: Barlow; font-weight: 400; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: Barlow; font-weight: 600; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: Barlow; font-weight: 700; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Ma Shan Zheng'; font-display: block; src: url('/node_modules/@fontsource/ma-shan-zheng/files/ma-shan-zheng-latin-400-normal.woff2') format('woff2'); }
+
+:root { --gold: #cf9a62; --gold-hi: #e7b877; --violet: #b47ed4; --paper: #150923; --ink: #f2efe8; --soft: rgb(242 239 232 / 0.64); --faint: rgb(242 239 232 / 0.36); --hair: rgb(242 239 232 / 0.16); }
+html, body { background: var(--paper); color: var(--ink); }
+body { cursor: crosshair; overscroll-behavior: none; }
+body:not([data-on]) { visibility: hidden; }
+.layer { position: fixed; inset: 0; margin: 0; }
+canvas.layer { width: 100vw; height: 100vh; display: block; }
+.mono { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; }
+
+/* Corners: the only chrome. */
+.chrome { position: fixed; inset: 0; pointer-events: none; z-index: 30; color: var(--ink); }
+.chrome > * { position: absolute; margin: 0; }
+.chrome .tl { top: var(--gutter); left: var(--gutter); font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.22em; }
+.chrome .tr { top: var(--gutter); right: var(--gutter); display: flex; gap: 26px; font: 500 15px Barlow; }
+.chrome .tr span:last-child { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--soft); padding-top: 3px; }
+.chrome .cue { right: var(--gutter); bottom: var(--gutter); display: flex; align-items: center; gap: 14px; font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); }
+.chrome .cue i { display: block; width: 1px; height: 46px; background: linear-gradient(var(--ink), transparent); }
+.phone .chrome .tr span:not(:last-child) { display: none; }
+.phone .chrome .tr::before { content: 'Menu'; }
+
+.eyebrow { margin: 0; font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); }
+.eyebrow i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin-right: 10px; transform: translateY(-1px); }
+.eyebrow b { font-weight: 500; color: var(--ink); }
+.lead { margin: 0; font: 700 clamp(30px, 3.5vw, 54px)/0.98 Barlow; letter-spacing: -0.03em; }
+.lead em { font-style: normal; color: var(--gold); }
+.lead .line { display: block; }
+.copy { margin: 0; font: 400 17px/1.5 Barlow; color: var(--soft); max-width: 34ch; }
+.hand { font-family: 'Ma Shan Zheng', cursive; font-weight: 400; color: var(--violet); letter-spacing: 0; text-transform: none; }
+
+/* The works: title bottom left, a round button bottom right. */
+.wk { position: fixed; inset: 0; pointer-events: none; z-index: 25; }
+.wk .wt { position: absolute; left: var(--gutter); bottom: var(--gutter); margin: 0; }
+.wk .wt .k { display: block; margin-bottom: 10px; font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.2em; color: var(--gold); }
+.wk .wt .n { display: block; font: 600 clamp(26px, 2.6vw, 40px)/1 Barlow; letter-spacing: -0.02em; }
+.wk .wt .m { display: block; margin-top: 10px; font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); }
+.wk .wb { position: absolute; right: var(--gutter); bottom: var(--gutter); margin: 0; display: flex; align-items: center; gap: 14px; flex-direction: row-reverse; }
+.wk .wb .c { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 50%; border: 1px solid rgb(207 154 98 / 0.75); color: var(--gold-hi); font: 400 22px Barlow; }
+.wk .wb .l { color: var(--soft); }
+
+/* A cursor drawn into the stills, where the pointer rests. */
+.cur { position: fixed; z-index: 40; pointer-events: none; left: 0; top: 0; }
+.cur .ring { position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%; border: 1px solid rgb(231 184 119 / 0.85); display: grid; place-items: center; background: rgb(21 9 35 / 0.18); backdrop-filter: blur(2px); }
+.cur .ring span { font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: 0.22em; color: var(--ink); }
+
+.grain::after {
+  content: ''; position: fixed; inset: -50%; z-index: 50; pointer-events: none; opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}

@@ -27,6 +27,18 @@
 <p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
 
 <section>
+  <h2 class="display">Round 60 · Three whole-site ideas</h2>
+  <p class="idea">Bob on 12 Nov: the site should have one identity, not many random objects. Take from lorenzolottici.it (2D and 3D together, one object you know the site by) and noddal.xyz (seamless transitions: each scene flies into the middle of the last). The order is intro, about me and studies, selected works, ending. So each idea has one thread, one direction and one move between scenes. There is no coin, string or robot in any of them. Scroll each page live, or click a still.</p>
+  <p class="idea"><b>1 · See · Think · Make.</b> Your eye, brain and printer as one machine you are always inside of. The O in BOB is a gold lens that watches the cursor. You go through its pupil into the brain, where one part lights up for each study. The four parts feed one line into a print head that prints the works. The last sheet comes out blank except for one gold dot, and that dot becomes the full stop of “Let’s talk”: the lens again. The thread is one gold dot. <a href="idea-stm.html">Open it live</a>.</p>
+  <div class="grid" id="r60stm"></div>
+  <p class="idea"><b>2 · One Line.</b> One unbroken gold line draws the whole site. It writes “Chung” after BOB and runs down the page. It passes Aruba, arcs to Rotterdam and bends into a sign for each study. Then the page tips back and the line lifts off into the dark to frame each work. After the last work it comes at you, and it ends as a loose end under “Let’s talk”. The thread is the line itself: the camera rides it, so nothing cuts. <a href="idea-line.html">Open it live</a>.</p>
+  <div class="grid" id="r60line"></div>
+  <p class="idea"><b>3 · Board City.</b> The cyberpunk one. A purple city at night in the rain, with your name on the tallest tower. The camera rises and tips down until the streets are traces and four lit districts are four chips, one per study. Aruba and Rotterdam are two pads on one trace. The camera then drops into the main street, where the works are screens over the wet road. It stops at the chip at the end of the street, where one window is still lit: Let’s talk. The thread is gold window light on purple, from far to near. <a href="idea-city.html">Open it live</a>.</p>
+  <div class="grid" id="r60city"></div>
+  <p class="idea">The three first views on a phone.</p>
+  <div class="grid" id="r60phone"></div>
+</section>
+<section>
   <h2 class="display">Round 59 · Prints you can peel; the printer prints from below</h2>
   <p class="idea">Bob on round 58: the printer should print from below and be more simplified; and the selected works still need work, the hover was not creative at all. The works are now prints: matte paper with a white border, on the ring in the purple space, reflected in the floor. Hover peels a print: the corner nearest your pointer curls up toward you, further the nearer you go to that corner, and shows the back of the print (the coin stamped in gold, its number); the one in front rests with a corner just lifted, as a hint. The printer is one soft purple block with a face of two eyes and a coin slit. You pull back out through the coin: the works were a print hanging from its underside. The coin slots edge-first into its front and it wakes; it prints the studies downward, each new line under it, the page dropping as it prints; then the way in, just under it, whose ink spreads into the brain's shaft. <a href="robot17.html">Open it live</a> (peel a print, then scroll all the way).</p>
   <div class="grid" id="robot59"></div>
@@ -219,13 +231,45 @@
 </section>
 <script type="module">
 const frames = {
+  r60stm: [
+    ['idea-stm', '1 · See', 'The O in BOB is a gold lens; through its pupil, the brain.', '60-1-1440x810', '?f=1'],
+    ['idea-stm', '2 · Through the pupil', 'The iris opens; the name flies past the edges.', '60-2-1440x810', '?f=2'],
+    ['idea-stm', '3 · Think', 'About me; one part of the brain lights for each study.', '60-3-1440x810', '?f=3'],
+    ['idea-stm', '4 · Then it makes', 'The four parts feed one line into the print head; a work comes out of ink dots.', '60-4-1440x810', '?f=4'],
+    ['idea-stm', '5 · Make', 'The works as same-size prints on one band, one in focus.', '60-5-1440x810', '?f=5'],
+    ['idea-stm', '6 · One dot', 'The last sheet comes out blank but for one gold dot.', '60-6-1440x810', '?f=6'],
+    ['idea-stm', '7 · Let’s talk', 'The full stop is the lens again, watching you.', '60-7-1440x810', '?f=7'],
+  ],
+  r60line: [
+    ['idea-line', '1 · The name', 'BOB set solid; the line writes “Chung” in one stroke.', '60-1-1440x810', '?f=1'],
+    ['idea-line', '2 · Follow it', 'The tail of the g runs on and the page follows it down.', '60-2-1440x810', '?f=2'],
+    ['idea-line', '3 · About me', 'Aruba to Rotterdam in one arc, then a sign per study; it has drawn two.', '60-3-1440x810', '?f=3'],
+    ['idea-line', '4 · It lifts', 'The page tips back; past the gear the line lifts off as a wire.', '60-4-1440x810', '?f=4'],
+    ['idea-line', '5 · The works', 'The line frames each work; your pointer bends it.', '60-5-1440x810', '?f=5'],
+    ['idea-line', '6 · At you', 'After the last work it turns and comes at the camera.', '60-6-1440x810', '?f=6'],
+    ['idea-line', '7 · The loose end', 'Flat again under “Let’s talk”. This end is yours.', '60-7-1440x810', '?f=7'],
+  ],
+  r60city: [
+    ['idea-city', '1 · The skyline', 'Night, rain, your name on the tallest tower.', '60-1-1440x810', '?f=1'],
+    ['idea-city', '2 · Tipping down', 'The camera rises; the works already hang over the avenue.', '60-2-1440x810', '?f=2'],
+    ['idea-city', '3 · It was a board', 'Streets are traces; four districts are four chips, the studies.', '60-3-1440x810', '?f=3'],
+    ['idea-city', '4 · Into the street', 'A trace widens into the main street.', '60-4-1440x810', '?f=4'],
+    ['idea-city', '5 · The works', 'Same-size screens over the wet road, one at a time.', '60-5-1440x810', '?f=5'],
+    ['idea-city', '6 · The chip', 'At the end of the street, the chip, one window lit.', '60-6-1440x810', '?f=6'],
+    ['idea-city', '7 · The window', 'It fills the screen: Let’s talk.', '60-7-1440x810', '?f=7'],
+  ],
+  r60phone: [
+    ['idea-stm', 'See · Think · Make', 'Phone, first view.', '60-1-390x844', '?f=1'],
+    ['idea-line', 'One Line', 'Phone, first view.', '60-1-390x844', '?f=1'],
+    ['idea-city', 'Board City', 'Phone, first view.', '60-1-390x844', '?f=1'],
+  ],
   robot59: [
     ['robot17', 'The works are prints', 'Matte paper, a white border; the one in front has a corner lifted.', '59-1-1440x810'],
     ['robot17', 'Peel one', 'The corner you go to curls up; the coin is stamped on its back.', '59-2-1440x810'],
     ['robot17', 'The coin goes in', 'Edge first, into the slit in its front.', '59-3-1440x810'],
     ['robot17', 'It prints from below', 'Each study under it; the page drops as it prints.', '59-4-1440x810'],
     ['robot17', 'The way in', 'The last thing it prints, just under it.', '59-5-1440x810'],
-    ['robot17', 'The ink spreads', 'Into the brain's shaft.', '59-6-1440x810'],
+    ['robot17', 'The ink spreads', 'Into the brain’s shaft.', '59-6-1440x810'],
   ],
   robot58: [
     ['robot16', 'The works were a print', 'Out through the coin; the sheet is in the printer.', '58-1-1440x810'],
@@ -247,7 +291,7 @@ const frames = {
     ['robots57-lens', 'B · It opens', 'The aperture to an octagon; the barrel becomes the shaft.', '3', 'img'],
   ],
   robots57oct: [
-    ['robots57-oct', 'C · The octagon', 'Its face frame is the shaft's first ring.', '1', 'img'],
+    ['robots57-oct', 'C · The octagon', 'Its face frame is the shaft’s first ring.', '1', 'img'],
     ['robots57-oct', 'C · A study', 'Two of its eight lights for each.', '2', 'img'],
     ['robots57-oct', 'C · Inside its head', 'The rings light up, one after another.', '3', 'img'],
   ],
@@ -258,7 +302,7 @@ const frames = {
   ],
   robot56a: [
     ['robot15', 'A · The iris closes', 'Brass blades over the reels.', '56-a1-1440x810', '?idea=a'],
-    ['robot15', 'A · It opens', 'Onto the brain's gold shaft.', '56-a2-1440x810', '?idea=a'],
+    ['robot15', 'A · It opens', 'Onto the brain’s gold shaft.', '56-a2-1440x810', '?idea=a'],
     ['robot15', 'A · Through', 'Into the brain, as it is now.', '56-a3-1440x810', '?idea=a'],
   ],
   robot56b: [

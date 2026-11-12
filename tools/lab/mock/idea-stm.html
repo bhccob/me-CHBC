@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>See · Think · Make</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<link rel="stylesheet" href="r60.css" />
+<style>
+  /* Layers, bottom to top: the inside (brain, prints), the first page (with a hole where the O is), the last page,
+     the lens, then the type of the middle acts and the corners. */
+  #deep { z-index: 0; }
+  #page { z-index: 1; transform-origin: 0 0; will-change: transform; }
+  #end { z-index: 2; opacity: 0; }
+  #lens { z-index: 3; pointer-events: none; }
+  #think, #nums { z-index: 4; pointer-events: none; opacity: 0; }
+
+  .name { position: absolute; left: 0; right: 0; margin: 0; display: flex; align-items: baseline; justify-content: center; white-space: nowrap; line-height: 1; }
+  .name .row { display: flex; align-items: baseline; }
+  .name .r1 { font-weight: 800; text-transform: uppercase; letter-spacing: -0.025em; color: var(--gold); }
+  .name .slot { display: inline-block; visibility: hidden; }
+  .name .gap { width: 0.2em; }
+  .name .r2 { font-size: 1.16em; transform: rotate(-3.5deg) translateY(0.03em); transform-origin: left bottom; }
+  .phone .name { flex-direction: column; align-items: flex-start; padding-left: var(--gutter); }
+  .phone .name .gap { display: none; }
+
+  .page .eyebrow { position: absolute; }
+  .intro { position: absolute; margin: 0; }
+  .intro .lead { font-size: clamp(30px, 3.7vw, 58px); }
+  .side { position: absolute; margin: 0; }
+  .phone .intro .lead { font-size: 30px; }
+
+  .acts { position: absolute; top: var(--gutter); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; color: var(--faint); }
+  .acts i { display: block; width: 26px; height: 1px; background: var(--hair); }
+  .acts span.on { color: var(--gold-hi); }
+  .phone .acts { display: none; }
+
+  .think .col { position: absolute; left: calc(var(--gutter) * 2); top: 50%; transform: translateY(-50%); width: min(40vw, 560px); }
+  .think .lead { font-size: clamp(30px, 3.2vw, 50px); margin-top: 18px; }
+  .think .copy { margin-top: 20px; }
+  .studies { list-style: none; padding: 0; margin: 34px 0 0; border-top: 1px solid var(--hair); }
+  .studies li { display: grid; grid-template-columns: 46px 1fr auto; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--hair); }
+  .studies b { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; color: var(--gold); }
+  .studies span { font: 600 19px Barlow; letter-spacing: -0.01em; }
+  .studies small { font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); }
+  .num { position: absolute; margin: 0; font: 500 12px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; color: var(--ink); transform: translate(-50%, -50%); }
+
+  .end .talk { position: absolute; margin: 0; font: 800 clamp(84px, 15.5vw, 250px)/0.84 Barlow; text-transform: uppercase; letter-spacing: -0.04em; white-space: nowrap; }
+  .end .talk .stop { display: inline-block; width: 0.24em; height: 0.24em; margin-left: 0.09em; }
+  .end .eyebrow, .end .links, .end .where { position: absolute; margin: 0; }
+  .end .links { display: flex; gap: 34px; font: 500 20px Barlow; }
+  .end .links span { border-bottom: 1px solid rgb(231 184 119 / 0.6); padding-bottom: 4px; }
+  .end .links span:last-child { color: var(--gold-hi); }
+  .end .where { color: var(--soft); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/", "postprocessing": "/node_modules/postprocessing/build/index.js" } }</script>
+</head>
+<body class="grain">
+<canvas class="layer" id="deep" aria-hidden="true"></canvas>
+
+<div class="layer page" id="page">
+  <p class="eyebrow"><i></i>Software engineer <b>·</b> Est. BC—2006</p>
+  <h1 class="name" aria-label="Bob Chung"><span class="row r1">B<span class="slot"></span>B</span><span class="gap"></span><span class="row r2 hand">Chung</span></h1>
+  <div class="intro">
+    <p class="lead"><span class="line">What I <em>see</em>,</span><span class="line">I <em>think</em> through,</span><span class="line">and then I <em>make</em>.</span></p>
+  </div>
+  <p class="side copy">Born in Aruba, building in Rotterdam. I study software and I’m heading for mechatronics.</p>
+</div>
+
+<div class="layer end" id="end">
+  <p class="eyebrow"><i></i>Still missing: 1 <b>·</b> yours</p>
+  <h2 class="talk">Let’s talk<span class="stop"></span></h2>
+  <p class="links"><span>GitHub</span><span>Instagram</span><span>Send a message →</span></p>
+  <p class="where mono">Rotterdam, born in Aruba</p>
+</div>
+
+<canvas class="layer" id="lens" aria-hidden="true"></canvas>
+
+<div class="layer think" id="think">
+  <div class="col">
+    <p class="eyebrow"><i></i>About me</p>
+    <p class="lead"><span class="line">Born and raised in Aruba.</span><span class="line">Chinese by heritage.</span><span class="line">In <em>Rotterdam</em> since eighteen.</span></p>
+    <p class="copy">I work across databases, game development and web development, and each one sharpens the others. Hardware is next on my route.</p>
+    <ol class="studies">
+      <li><b>01</b><span>Software engineering</span><small>Makes it think</small></li>
+      <li><b>02</b><span>Game &amp; app development</span><small>Makes it playable</small></li>
+      <li><b>03</b><span>Cybersecurity</span><small>Keeps it safe</small></li>
+      <li><b>04</b><span>Mechatronics</span><small>Makes it move</small></li>
+    </ol>
+  </div>
+</div>
+<div class="layer" id="nums"><p class="num">01</p><p class="num">02</p><p class="num">03</p><p class="num">04</p></div>
+
+<div class="chrome">
+  <p class="tl">BC—2006</p>
+  <p class="acts mono"><span>See</span><i></i><span>Think</span><i></i><span>Make</span></p>
+  <p class="tr"><span>Work</span><span>About</span><span>Contact</span><span>EN</span></p>
+  <p class="cue"><span>Scroll in</span><i></i></p>
+</div>
+<div class="cur" hidden><div class="ring"><span>OPEN</span></div></div>
+<script type="module" src="stm.js"></script>
+</body>
+</html>
