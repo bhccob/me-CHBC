@@ -79,7 +79,7 @@ P = lambda x, y, z: (x, -z, y)
 
 # ---- the head: housing, bezel, visor, ears, antenna
 head = box('head', (22.0, 14.0, 17.5), P(0, 0.4, -7.0), BODY, bevel=2.2, segs=8)
-cut(head, 'visor_hole', (16.3, 3.0, 13.2), P(0, 0, 0))
+cut(head, 'visor_hole', (16.3, 10.0, 13.2), P(0, 0, 0))   # deep: a chamber behind the screen, where its brain is
 bpy.ops.mesh.primitive_grid_add(x_subdivisions=8, y_subdivisions=8, size=1)
 vis = bpy.context.active_object; vis.name = 'visor'
 for v in vis.data.vertices:
