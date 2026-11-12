@@ -27,6 +27,11 @@
 <p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
 
 <section>
+  <h2 class="display">Round 50 · A coin machine, all on scroll</h2>
+  <p class="idea">Bob: the coin transition is clean; the robot area and the coins going in did not feel right. His answers: the study coins should fall in by scroll like the first one, and the robot should be a machine where putting a coin in makes sense, without the glass look. The robot is now a coin machine (machine.py): a purple painted cabinet with brass trim, a screen for a head (the works, then its eyes), round speaker ears and an antenna, a shelf under the screen with one slot and an INSERT COIN plate, and a window in its body. Behind the window: brass rails, rail to rail, down to a row of four bays and the CPU socket in the middle, where the brain sits. The first coin drops in, rolls the rails and seats in the CPU socket round the brain; the screen switches off and its eyes come on. Keep scrolling: each study coin falls in from above, rolls the same rails into its own bay, and the screen reads it. Then you go in through the window, into the coin's square hole, to the brain. No pressing. <a href="robot9.html">Open it live</a> (scroll all the way).</p>
+  <div class="grid" id="robot50"></div>
+</section>
+<section>
   <h2 class="display">Round 49 · It was watching, and the coin drops in</h2>
   <p class="idea">Bob: a squared face; for the transition, the coin falling and going into the robot, no break-up, seamless; "it was watching" sounded good; a mix of both, the coin still part of it. One continuous move: from the works you pull straight back; first the edges of the coin's square hole come in round the picture (you came in through it, you leave through it), then the coin, hanging in the dark, and behind it the works are playing on a big squared visor: it was watching. Then the coin drops, drifting back as it falls, edge first into the slot in its jaw; the head takes the knock; the works on the visor shut off like an old screen (squeezed to a line, the line to nothing) and its eyes come on. New Blender head (head5.py): a boxy dome with rounded corners, a flat squared visor with a gold rim, a jaw ledge with the slot, squared ear pods, a halo; drawn as light. Then the study coins by press into the same slot, and the last is your ride down it to the brain. <a href="robot8.html">Open it live</a> (scroll through the works, then press).</p>
   <div class="grid" id="robot49"></div>
@@ -158,6 +163,14 @@
 </section>
 <script type="module">
 const frames = {
+  robot50: [
+    ['robot9', 'It was watching', 'The coin, and the works on its screen.', '50-1-1440x810'],
+    ['robot9', 'Rail to rail', 'The first coin rolls down to the CPU.', '50-2-1440x810'],
+    ['robot9', 'Powered on', 'The coin round the brain; its eyes on.', '50-3-1440x810'],
+    ['robot9', 'A study coin', 'Falls in, rolls the rails.', '50-4-1440x810'],
+    ['robot9', 'Into its bay', 'The screen reads it.', '50-5-1440x810'],
+    ['robot9', 'In to the brain', 'Through the window, into the coin’s hole.', '50-6-1440x810'],
+  ],
   robot49: [
     ['robot8', 'Out through the hole', 'The way you came in.', '49-1-1440x810'],
     ['robot8', 'It was watching', 'The coin, and behind it the works on its visor.', '49-2-1440x810'],
