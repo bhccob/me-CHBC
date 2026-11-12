@@ -92,7 +92,7 @@ function dialTexture() {
   });
 }
 
-export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent = document.body }) {
+export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent = document.body, calm = false }) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#020103');
   const camera = new THREE.PerspectiveCamera(30, W / H, 0.02, 600);
@@ -182,12 +182,12 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
     varying vec2 vUv; varying vec3 vWP;
     void main(){
       vUv = uv;
-      float grow = 1.0 + uHover * 0.05;
+      float grow = 1.0 + uHover * ${calm ? '0.03' : '0.05'};
       float th = uAng + position.x * ${PW.toFixed(3)} * grow / ${RC.toFixed(1)};
-      // One sheet: a wave travels along the ring while it turns, and a breath of it stays when it rests.
+      // One sheet: a wave travels along the ring while it turns, and a breath of it stays when it rests (not when calm).
       float ph = th * 2.3 + uTime * 1.5;
-      float r = ${RC.toFixed(1)} - uVel * 0.75 * cos(ph) - uHover * 0.45;
-      float y = uY + position.y * ${PH.toFixed(3)} * grow + uVel * (0.42 * sin(ph) + 0.18 * sin(th * 4.7 - uTime * 1.1)) + 0.035 * sin(th * 1.9 + uTime * 0.45);
+      float r = ${RC.toFixed(1)} - ${calm ? '0.0' : 'uVel * 0.75 * cos(ph)'} - uHover * ${calm ? '0.38' : '0.45'};
+      float y = uY + position.y * ${PH.toFixed(3)} * grow + ${calm ? 'uHover * 0.05' : 'uVel * (0.42 * sin(ph) + 0.18 * sin(th * 4.7 - uTime * 1.1)) + 0.035 * sin(th * 1.9 + uTime * 0.45)'};
       vec3 p = uHome + vec3(sin(th) * r, y, -cos(th) * r);
       vWP = p;
       gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
@@ -204,6 +204,13 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
       // Hover, unfolding while you stay: a ripple runs out from where you came in and settles; the picture leans toward
       // the pointer and pushes in slowly the longer you look; a soft light follows the pointer across it.
       vec2 asp = vec2(${(PW / PH).toFixed(4)}, 1.0);
+      ${calm ? `float zoom = 1.0 + uHover * (0.025 + 0.045 * (1.0 - exp(-uHoverT * 0.5)));
+      vec2 uv = (vUv - 0.5) / zoom + 0.5 - (uMouse - 0.5) * 0.016 * uHover;
+      vec3 c = texture2D(uMap, clamp(uv, 0.002, 0.998)).rgb;
+      vec2 dm0 = (vUv - uMouse) * asp;
+      c += vec3(1.0, 0.95, 0.9) * exp(-dot(dm0, dm0) * 3.5) * 0.06 * uHover;
+      c += vec3(1.0, 0.86, 0.62) * (1.0 - smoothstep(0.0, 0.03, -d)) * 0.55 * uHover;
+      if (false) {` : ''}
       float zoom = 1.0 + uHover * (0.04 + 0.08 * (1.0 - exp(-uHoverT * 0.3)));
       vec2 uv = (vUv - 0.5) / zoom + 0.5 - (uMouse - 0.5) * 0.024 * uHover;
       vec2 dv = (vUv - uEntry) * asp;
@@ -213,6 +220,7 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
       vec3 c = vec3(texture2D(uMap, clamp(uv - off * 1.5, 0.002, 0.998)).r, texture2D(uMap, clamp(uv - off, 0.002, 0.998)).g, texture2D(uMap, clamp(uv - off * 0.5, 0.002, 0.998)).b);
       vec2 dm = (vUv - uMouse) * asp;
       c += vec3(1.0, 0.95, 0.9) * exp(-dot(dm, dm) * 5.0) * 0.1 * uHover;
+      ${calm ? '}' : ''}
       c = mix(c, vec3(dot(c, vec3(0.3, 0.59, 0.11))), uLocked * 0.6);
       // The sheet darkens where it turns from you, and toward the edges of the view.
       vec3 N = normalize(cross(dFdx(vWP), dFdy(vWP)));
@@ -261,9 +269,9 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
   const proj = (v) => { tmp.copy(v).project(camera); return [(tmp.x * 0.5 + 0.5) * W, (-tmp.y * 0.5 + 0.5) * H, tmp.z]; };
   // Where a point of a picture is, the same sum as the shader's.
   const at = (ang, lx, ly, v, time, hover) => {
-    const grow = 1 + hover * 0.05, th = ang + (lx * PW * grow) / RC, ph = th * 2.3 + time * 1.5;
-    const r = RC - v * 0.75 * Math.cos(ph) - hover * 0.45;
-    const y = home.y + bandY + ly * PH * grow + v * (0.42 * Math.sin(ph) + 0.18 * Math.sin(th * 4.7 - time * 1.1)) + 0.035 * Math.sin(th * 1.9 + time * 0.45);
+    const grow = 1 + hover * (calm ? 0.03 : 0.05), th = ang + (lx * PW * grow) / RC, ph = th * 2.3 + time * 1.5;
+    const r = RC - (calm ? 0 : v * 0.75 * Math.cos(ph)) - hover * (calm ? 0.38 : 0.45);
+    const y = home.y + bandY + ly * PH * grow + (calm ? hover * 0.05 : v * (0.42 * Math.sin(ph) + 0.18 * Math.sin(th * 4.7 - time * 1.1)) + 0.035 * Math.sin(th * 1.9 + time * 0.45));
     return new THREE.Vector3(home.x + Math.sin(th) * r, y, home.z - Math.cos(th) * r);
   };
 
@@ -320,7 +328,7 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
         c.was = on;
         c.hoverT += dt;
         if (on) c.mouse.lerp(hitUV, 0.12);
-        c.hover += ((on ? 1 : 0) - c.hover) * 0.08;
+        c.hover += ((on ? 1 : 0) - c.hover) * (calm ? 1 - Math.exp(-dt * 6) : 0.08);
         c.u.uHover.value = c.hover;
         c.u.uHoverT.value = Math.min(c.hoverT, 60);
         c.u.uMouse.value.copy(c.mouse);
