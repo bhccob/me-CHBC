@@ -27,6 +27,16 @@
 <p class="lede">Browser mock-ups made before any build: the coin from Bob's brief (11 Nov 2026), and two more ideas in the same spirit. Click a frame to open it live; the first view reacts to the cursor, and its O turns when you hover or drag it. Stills come from <span class="mono">tools/lab/mock/shoot.mjs</span>.</p>
 
 <section>
+  <h2 class="display">Round 57 · Three robots with the way in built in</h2>
+  <p class="idea">Bob on round 56: maybe another robot design makes the way into the brain more seamless. The brain section opens on the site's gold octagon shaft with a glowing orb in the middle, so each of these heads already holds that shaft: going in is just going into its face, with no portal or effect. Concept stills rendered in Blender (<span class="mono">tools/lab/blender/robots57.py</span>), in the site's purple and gold; pick one and it gets built as a live mock-up with the works, the one coin and the studies.</p>
+  <p class="idea"><b>A · The coin-op TV.</b> A coin-operated TV on legs, rabbit ears, a channel dial. The works were on its screen; your coin switches it on; its studies are channels 02 to 05 (the dial turns, each one comes on). Then it switches off the old way: the picture collapses to one bright dot, and that dot is the orb at the end of the brain's shaft. You go into the dot, and its tube is the gold rings.</p>
+  <div class="grid" id="robots57tv"></div>
+  <p class="idea"><b>B · The lens.</b> One camera-lens eye with an eight-blade aperture (it was watching: the works were what it saw). Each study comes into focus in its aperture. Then the aperture opens to an octagon and the barrel's rings carry on as the shaft.</p>
+  <div class="grid" id="robots57lens"></div>
+  <p class="idea"><b>C · The octagon.</b> A head shaped like the shaft's own octagon; its brass face frame is the shaft's first ring, and two of its eight lights come on for each study. Its face goes dark and the rings inside its head light up one after another.</p>
+  <div class="grid" id="robots57oct"></div>
+</section>
+<section>
   <h2 class="display">Round 56 · One coin; three ways into the brain</h2>
   <p class="idea">Bob on round 55: the study coins aren't needed, since the slot machine already shows the studies; come up with a way into the brain that is seamless without a coin. Now only the coin you came out through goes in: it switches the machine on and the reels land on three coins ("It was watching"). Then it plays each study by itself: its lever-arm pulls, the reels land on the study three times and the name comes up on its face. With all four in ("Now it thinks"), three ways in, one to pick:</p>
   <div class="grid" id="robot56"></div>
@@ -199,6 +209,22 @@
 </section>
 <script type="module">
 const frames = {
+  robots57tv: [
+    ['robots57-tv', 'A · The coin-op TV', 'Its screen is its face; a channel dial; the coin slot in its jaw.', '1', 'img'],
+    ['robots57-tv', 'A · A study is a channel', 'CH 03, Game & app development.', '2', 'img'],
+    ['robots57-tv', 'A · It switches off', 'The picture collapses to one bright dot.', '3', 'img'],
+    ['robots57-tv', 'A · Into the dot', 'The dot is the orb; its tube is the gold shaft.', '4', 'img'],
+  ],
+  robots57lens: [
+    ['robots57-lens', 'B · The lens', 'One camera eye; it was watching.', '1', 'img'],
+    ['robots57-lens', 'B · A study in focus', 'In its aperture.', '2', 'img'],
+    ['robots57-lens', 'B · It opens', 'The aperture to an octagon; the barrel becomes the shaft.', '3', 'img'],
+  ],
+  robots57oct: [
+    ['robots57-oct', 'C · The octagon', 'Its face frame is the shaft's first ring.', '1', 'img'],
+    ['robots57-oct', 'C · A study', 'Two of its eight lights for each.', '2', 'img'],
+    ['robots57-oct', 'C · Inside its head', 'The rings light up, one after another.', '3', 'img'],
+  ],
   robot56: [
     ['robot15', 'One coin', 'The one you came out through starts it.', '56-s1-1440x810'],
     ['robot15', 'It plays a study', 'Its lever pulls; the reels land on it; its name comes up.', '56-s2-1440x810'],
@@ -462,7 +488,7 @@ for (const [id, list] of Object.entries(frames)) {
   for (const [page, title, text, size = '1440x810', query = ''] of list) {
     const a = document.createElement('a');
     a.className = `frame${size.endsWith('390x844') ? ' tall' : ''}`;
-    a.href = `${page}.html${query}`;
+    a.href = query === 'img' ? `/proof-out/lab/mock/${page}-${size}.jpg` : `${page}.html${query}`;
     a.innerHTML = `<img src="/proof-out/lab/mock/${page}-${size}.jpg" alt="${title}" loading="lazy" /><p><span class="mono">${title}</span>${text}</p>`;
     grid.append(a);
   }
