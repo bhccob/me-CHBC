@@ -92,7 +92,13 @@ function dialTexture() {
   });
 }
 
-export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent = document.body, calm = false }) {
+// signal (round 54): the works are shown on an LED display. Toward the edges of the view the pictures are LED dots;
+// in the middle, and round the pointer, and on the work you hover, they are clear. The dots sit on a grid fixed to the
+// screen (dotPx, CSS px, lined up with the robot's screen), so the picture slides under them as the ring turns. The
+// pictures are reflected, softly, in the floor. dotPx is the LED pitch; LED centres sit at whole pitches from the
+// middle of the screen, so a screen with twice the pitch, centred the same, lands on every other one.
+export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent = document.body, calm = false, signal = false, dotPx = 19 }) {
+  if (signal) calm = true;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#020103');
   const camera = new THREE.PerspectiveCamera(30, W / H, 0.02, 600);
@@ -145,7 +151,7 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
         vec2 q = abs(fract(p / 5.0 - 0.5) - 0.5) * 5.0;
         float cross = step(max(q.x, q.y), 0.22) * (1.0 - smoothstep(fwidth(p.x) * 1.5, fwidth(p.x) * 2.5, min(q.x, q.y)));
         vec3 col = vec3(0.006, 0.005, 0.009) + vec3(0.74, 0.7, 0.9) * (minor * 0.1 + major * 0.16 + cross * 0.4) * fade;
-        for (int i = 0; i < 5; i++) { vec2 d = vWP.xz - uLP[i].xz; col += uLC[i] * exp(-dot(d, d) * 0.2) * 0.045; }
+        for (int i = 0; i < 5; i++) { vec2 d = vWP.xz - uLP[i].xz; col += uLC[i] * exp(-dot(d, d) * 0.2) * ${signal ? '0.07' : '0.045'}; }
         gl_FragColor = vec4(col, 1.0);
       }`,
   }));
@@ -178,7 +184,7 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
   // ---------------------------------------------------------------- the works: plain rectangles on the ring, one sheet that waves when it moves
   const works = await loadWorks();
   const cardVert = `
-    uniform vec3 uHome; uniform float uAng, uVel, uTime, uHover, uY;
+    uniform vec3 uHome; uniform float uAng, uVel, uTime, uHover, uY, uMirror;
     varying vec2 vUv; varying vec3 vWP;
     void main(){
       vUv = uv;
@@ -189,11 +195,12 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
       float r = ${RC.toFixed(1)} - ${calm ? '0.0' : 'uVel * 0.75 * cos(ph)'} - uHover * ${calm ? '0.38' : '0.45'};
       float y = uY + position.y * ${PH.toFixed(3)} * grow + ${calm ? 'uHover * 0.05' : 'uVel * (0.42 * sin(ph) + 0.18 * sin(th * 4.7 - uTime * 1.1)) + 0.035 * sin(th * 1.9 + uTime * 0.45)'};
       vec3 p = uHome + vec3(sin(th) * r, y, -cos(th) * r);
+      if (uMirror > 0.5) p.y = 2.0 * ${floorY.toFixed(4)} - p.y;
       vWP = p;
       gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
     }`;
   const cardFrag = `
-    uniform sampler2D uMap; uniform float uHover, uLocked, uDim, uHoverT; uniform vec2 uMouse, uEntry;
+    uniform sampler2D uMap; uniform float uHover, uLocked, uDim, uHoverT, uCell, uLens, uPtrOn; uniform vec2 uMouse, uEntry, uRes, uPtr;
     varying vec2 vUv; varying vec3 vWP;
     float rbox(vec2 p, vec2 b, float r){ vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
     void main(){
@@ -204,9 +211,23 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
       // Hover, unfolding while you stay: a ripple runs out from where you came in and settles; the picture leans toward
       // the pointer and pushes in slowly the longer you look; a soft light follows the pointer across it.
       vec2 asp = vec2(${(PW / PH).toFixed(4)}, 1.0);
+      ${signal ? `// The LED grid, fixed to the screen; how much each LED has formed: by how far out it is, less round the pointer
+      // and on the hovered work. As one forms, its sample slides to its centre and the gap round it goes dark.
+      vec2 g = (gl_FragCoord.xy - uRes * 0.5) / uCell + 0.5;
+      vec2 cc = floor(g), f = fract(g) - 0.5; // LED centres sit at whole pitches from the middle of the screen
+      float amt = smoothstep(uLens, uLens + 0.1, abs(cc.x * uCell) / (uRes.x * 0.5));
+      float pd = length(cc * uCell + uRes * 0.5 - uPtr) / uRes.y;
+      amt *= 1.0 - uPtrOn * (1.0 - smoothstep(0.12, 0.22, pd));
+      amt *= 1.0 - uHover;
+      vec2 dpx = -f * uCell * amt;
+      vec2 base = vUv + dFdx(vUv) * dpx.x + dFdy(vUv) * dpx.y;
+      // a halftone: each LED shrinks from covering its cell (the picture, clear) to a round dot
+      float rad = mix(0.8, 0.38, amt);
+      float led = smoothstep(rad + 0.05, rad - 0.05, length(f));` : 'vec2 base = vUv; float amt = 0.0, led = 1.0;'}
       ${calm ? `float zoom = 1.0 + uHover * (0.025 + 0.045 * (1.0 - exp(-uHoverT * 0.5)));
-      vec2 uv = (vUv - 0.5) / zoom + 0.5 - (uMouse - 0.5) * 0.016 * uHover;
+      vec2 uv = (base - 0.5) / zoom + 0.5 - (uMouse - 0.5) * 0.016 * uHover;
       vec3 c = texture2D(uMap, clamp(uv, 0.002, 0.998)).rgb;
+      c *= led * (1.0 + 0.12 * amt) + 0.04 * amt;
       vec2 dm0 = (vUv - uMouse) * asp;
       c += vec3(1.0, 0.95, 0.9) * exp(-dot(dm0, dm0) * 3.5) * 0.06 * uHover;
       c += vec3(1.0, 0.86, 0.62) * (1.0 - smoothstep(0.0, 0.03, -d)) * 0.55 * uHover;
@@ -228,6 +249,21 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
       c *= mix(0.42, 1.0, pow(facing, 2.0)) * uDim;
       gl_FragColor = vec4(c, a);
     }`;
+  // The reflection: the same sheet, mirrored in the floor, blurred, fading with depth.
+  const mirrorFrag = `
+    uniform sampler2D uMap; uniform float uDim, uLocked;
+    varying vec2 vUv; varying vec3 vWP;
+    float rbox(vec2 p, vec2 b, float r){ vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
+    void main(){
+      vec2 p = (vUv - 0.5) * vec2(${PW}, ${PH});
+      float a = 1.0 - smoothstep(-0.06, 0.06, rbox(p, vec2(${PW / 2}, ${PH / 2}), ${CORNER}));
+      vec3 c = texture2D(uMap, vUv, 3.5).rgb;
+      c = mix(c, vec3(dot(c, vec3(0.3, 0.59, 0.11))), uLocked * 0.6);
+      float below = ${floorY.toFixed(4)} - vWP.y;
+      gl_FragColor = vec4(c * a * exp(-below * 0.75) * 0.2 * uDim, 1.0);
+    }`;
+  // Shared by every card: the LED grid and the lenses.
+  const sigU = { uRes: { value: new THREE.Vector2(W * dpr, H * dpr) }, uCell: { value: dotPx * dpr }, uLens: { value: 0.56 }, uPtr: { value: new THREE.Vector2(-9999, -9999) }, uPtrOn: { value: 0 } };
   const cards = [];
   const hud = document.createElement('div');
   hud.className = 'bh';
@@ -238,10 +274,17 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
   hudParent.append(hud);
   const cardsEl = hud.querySelector('.bh-cards'), thetaEl = hud.querySelector('.bh-bl b'), speedEl = hud.querySelector('.bh-br i'), countEl = hud.querySelector('.bh-br b');
   for (let i = 0; i < POOL; i++) {
-    const u = { uMap: { value: works[0].tex }, uHome: { value: home.clone() }, uAng: { value: 0 }, uVel: { value: 0 }, uTime: { value: 0 }, uHover: { value: 0 }, uY: { value: bandY }, uLocked: { value: 0 }, uDim: { value: 1 }, uHoverT: { value: 0 }, uMouse: { value: new THREE.Vector2(0.5, 0.5) }, uEntry: { value: new THREE.Vector2(0.5, 0.5) } };
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 64, 24), new THREE.ShaderMaterial({ uniforms: u, vertexShader: cardVert, fragmentShader: cardFrag, transparent: true, side: THREE.DoubleSide }));
+    const u = { uMap: { value: works[0].tex }, uHome: { value: home.clone() }, uAng: { value: 0 }, uVel: { value: 0 }, uTime: { value: 0 }, uHover: { value: 0 }, uY: { value: bandY }, uLocked: { value: 0 }, uDim: { value: 1 }, uHoverT: { value: 0 }, uMouse: { value: new THREE.Vector2(0.5, 0.5) }, uEntry: { value: new THREE.Vector2(0.5, 0.5) }, uMirror: { value: 0 }, ...sigU };
+    const geo = new THREE.PlaneGeometry(1, 1, 64, 24);
+    const m = new THREE.Mesh(geo, new THREE.ShaderMaterial({ uniforms: u, vertexShader: cardVert, fragmentShader: cardFrag, transparent: true, side: THREE.DoubleSide }));
     m.frustumCulled = false;
     scene.add(m);
+    if (signal) {
+      const mm = new THREE.Mesh(geo, new THREE.ShaderMaterial({ uniforms: { ...u, uMirror: { value: 1 } }, vertexShader: cardVert, fragmentShader: mirrorFrag, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+      mm.frustumCulled = false;
+      mm.renderOrder = -1;
+      scene.add(mm);
+    }
     const t = document.createElement('p'); t.className = 'bh-t'; t.innerHTML = '<span class="k"></span><span class="n"></span>';
     const b = document.createElement('i'); b.className = 'bh-b';
     cardsEl.append(t, b);
@@ -263,7 +306,8 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
   fsScene.add(fs);
 
   const mouse = new THREE.Vector2(9, 9), ray = new THREE.Raycaster(), tmp = new THREE.Vector3();
-  addEventListener('pointermove', (e) => mouse.set((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1));
+  let ptrSeen = false;
+  addEventListener('pointermove', (e) => { mouse.set((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1); sigU.uPtr.value.set(e.clientX * dpr, (H - e.clientY) * dpr); ptrSeen = true; });
   let lastA = null, vel = 0, hoverSlot = null, focus = 0;
   const hitUV = new THREE.Vector2();
   const proj = (v) => { tmp.copy(v).project(camera); return [(tmp.x * 0.5 + 0.5) * W, (-tmp.y * 0.5 + 0.5) * H, tmp.z]; };
@@ -312,6 +356,11 @@ export async function createBench(renderer, { W, H, dpr, home, bandY, hudParent 
       // The pool takes the slots in view: a slot k stands at k·STEP − angle.
       const k0 = Math.round(angle / STEP), lights = [];
       focus += ((hoverSlot !== null ? 1 : 0) - focus) * 0.08;
+      if (signal) {
+        const k = 1 - Math.exp(-dt * 5);
+        sigU.uLens.value += (0.56 - 0.22 * Math.min(1, Math.abs(v)) - sigU.uLens.value) * k;
+        sigU.uPtrOn.value += ((ptrSeen && arrive > 0.9 && !dragging ? 1 : 0) - sigU.uPtrOn.value) * k;
+      }
       let front = 0;
       cards.forEach((c, i) => {
         const k = k0 + i - Math.floor(POOL / 2);
