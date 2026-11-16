@@ -86,7 +86,7 @@ export const ME_SLIPS: [string, string][] = [
   ["NAME", "Chun Ho Bob Chung. Online I use bhccob, which is Bob around my Chinese initials in reverse, or the short form CHBC."],
   ["AGE", "Born in 2006. Twenty years old."],
   ["STUDENT", "Software engineering graduate, continuing into mechatronics."],
-  ["PERSONALITY", "ISTP. Practical and observant. I learn by doing, stay calm under pressure and prefer solving a problem to discussing it."],
+  ["PERSONALITY", "INTP-T. Curious and analytical. I take ideas apart to see how they work, think in systems and keep testing a plan until it holds up."],
   ["HOBBIES", "Lifting weights and running for balance. Former national champion in my category in both powerlifting and table tennis, which I also played abroad. Swimming diplomas A to F."],
   ["FUN FACT", "I speak more than four languages."],
 ];
