@@ -1,0 +1,3 @@
+# The git hooks are shell scripts: they keep Unix line endings on every checkout, Windows included (core.autocrlf),
+# or sh cannot run them.
+.githooks/* text eol=lf

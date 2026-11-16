@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.vercel/
+
+# local secrets
+.env
+.env.*
+!.env.example
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# AI coding tools: their skills, agents, hooks and working files live on the developer's machine, not in the repository
+.agents/
+.codex/
+.impeccable/
+.playwright-mcp/
+.claude/*
+!.claude/launch.json
+.github/agents/
+.github/skills/
+.github/hooks/
+skills-lock.json

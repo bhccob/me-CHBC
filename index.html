@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" class="nogl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="author" content="{{name}}">
+<meta name="theme-color" content="#0a0912">
+<link rel="canonical" href="{{url}}/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{name}}">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{url}}/">
+<meta property="og:image" content="{{url}}/share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The six pieces of a Lu Ban lock laid flat as a wall, with the name Bob Chung">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
+<meta name="twitter:image" content="{{url}}/share.png">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/ibm-plex-mono-500.woff2" as="font" type="font/woff2" crossorigin>
+<!-- with no JavaScript the page stays a plain readable page (class "nogl"); this one line switches the 3D version on -->
+<script src="/boot.js"></script>
+<link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+<div id="loader">
+  <div class="lwrap">
+    <div class="eyebrow">{{loader.cn}}<span>{{loader.eyebrow}}</span></div>
+    <div class="lpct" role="status" aria-live="polite"><span id="lpct">0</span><small>%</small></div>
+    <div class="lbar"><i id="lline"></i></div>
+    <div class="lstatus" id="lstatus">Loading the 3D engine</div>
+    <div class="enter lenter" id="enter"><button type="button" id="withSound">{{loader.withSound}}</button><button type="button" id="noSound">{{loader.noSound}}</button></div>
+    <div class="lnote">{{loader.note}}</div>
+  </div>
+</div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div class="grid" id="grid"></div>
+<div class="bar" id="bar"></div>
+<div class="pop" id="pop" hidden role="dialog" aria-modal="true" aria-labelledby="popT"><div class="pbar"><button type="button" id="popX">← Back to work</button><span id="popN"></span><button type="button" id="popNext">Next project →</button></div><div id="popBody"></div></div>
+<header class="hud"><span class="brand"><a class="home" id="home" href="#" aria-label="{{handle}}, back to the top">{{handle}}</a><button type="button" id="snd" aria-pressed="false">Sound off</button></span>
+  <nav class="nav" aria-label="Sections"><button type="button" data-go="about">About</button><button type="button" data-go="work">Work</button><button type="button" data-go="contact">Contact</button><span id="chap">The Lock</span></nav></header>
+
+<main id="main">
+<div class="stage" id="stage">
+  <div class="scrim" id="scrim"></div>
+  <div class="callout" id="callout" aria-hidden="true">Piece 01 · 6 × 2 × 2</div>
+
+  <section class="panel hero" data-k="hero" aria-labelledby="h-hero">
+    <div class="eyebrow">{{hero.cn}}<span>{{hero.eyebrow}}</span></div>
+    <h1 class="t1" id="h-hero">{{hero.heading}}</h1>
+    <p class="lead">{{hero.lead}}</p>
+  </section>
+  {{panels}}
+
+  <form class="msg" id="msgForm" novalidate aria-label="Send a message">
+    <label for="mName">Your name</label><input id="mName" name="name" autocomplete="name" maxlength="80" tabindex="-1">
+    <label for="mMail">Your email</label><input id="mMail" name="email" type="email" autocomplete="email" maxlength="120" tabindex="-1">
+    <label for="mText">Your message</label><textarea id="mText" name="message" maxlength="2000" tabindex="-1"></textarea>
+    <label for="mWhy">Why you are writing</label><select id="mWhy" name="reason" tabindex="-1"><option value="">Choose one</option>{{form.reasons}}</select>
+    <!-- a trap for spam robots: people never see or reach this field -->
+    <div class="hp" aria-hidden="true"><label for="mSite">Leave this empty</label><input id="mSite" name="website" autocomplete="off" tabindex="-1"></div>
+    <button type="submit" id="mSend" tabindex="-1">Send</button>
+    <p class="sr" id="mStatus" role="status" aria-live="polite"></p>
+  </form>
+  <button type="button" class="mback" id="mClose" hidden>{{form.back}}</button>
+  <div class="hint" id="hint" aria-hidden="true">Scroll</div>
+</div>
+
+<div id="track"></div>
+
+<section class="work" id="work" aria-labelledby="h-work">
+  <div class="work-intro">
+    <div class="eyebrow">{{work.cn}}<span>{{work.eyebrow}} · <span id="count">{{work.count}}</span> projects</span></div>
+    <h2 class="t1" id="h-work">{{work.heading}}</h2>
+    <p class="lead">{{work.lead}}</p>
+  </div>
+  <ol class="rows" id="rows">{{rows}}</ol>
+  <p class="more">{{work.more}}</p>
+</section>
+
+<section class="end" id="end" aria-labelledby="bigBack"><div class="end-pin">
+  <h2 class="big v-c" id="bigBack" aria-label="{{end.label}}">{{end.big}}</h2>
+  <div class="end-foot" id="endText">
+    <div class="eyebrow">{{end.cn}}<span>{{end.eyebrow}}</span></div>
+    <div class="end-mid"><p class="lead">{{end.lead}}</p><button type="button" class="kopen" id="mOpen">{{form.open}}<span aria-hidden="true"> →</span></button></div>
+    <span class="tag links">{{links}}</span>
+  </div>
+</div></section>
+</main>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

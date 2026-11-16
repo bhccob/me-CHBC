@@ -1,0 +1,7 @@
+# Found a security problem on bhccob.com? Thank you for reporting it.
+# Please use the message form at the end of the page. Describe what you found and how to reproduce it,
+# and leave an email address; I will reply as soon as I can.
+Contact: https://bhccob.com/#end
+Expires: 2027-10-01T00:00:00.000Z
+Preferred-Languages: nl, en
+Canonical: https://bhccob.com/.well-known/security.txt

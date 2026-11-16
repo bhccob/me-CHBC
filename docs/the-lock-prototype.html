@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en" class="loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Lock (Design 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+SC:wght@900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: one fixed 3D stage, one fixed 2D text layer bottom-left, a tall scroll track drives both */
+  --ink:#0a0912;
+  --ink-2:#14121f;
+  --bone:#efe8d6;
+  --dim:#8d88a3;
+  --gold:#e0b85a;
+  --line:rgba(239,232,214,.14);
+  --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --cn:"Noto Serif SC","Songti SC","SimSun",serif;
+  --gut:clamp(18px,4.5vw,72px);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--ink);color:var(--bone);font-family:var(--display)}
+body{overflow-x:hidden}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:2;pointer-events:none}
+.grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 40%,#000 0%,transparent 72%);
+          mask-image:radial-gradient(ellipse at 50% 40%,#000 0%,transparent 72%)}
+.bar{position:fixed;left:0;top:0;height:2px;width:100%;background:var(--gold);transform-origin:0 50%;transform:scaleX(0);z-index:5}
+.hud{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;gap:16px;
+  padding:clamp(14px,2.4vh,26px) var(--gut);font:500 12px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;z-index:4}
+.nav{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:4px 6px}
+.nav button{margin:0!important;border-color:transparent!important;background:none!important;padding:7px 9px}
+.nav button:hover{border-color:var(--bone)!important}
+#chap{flex-basis:100%;text-align:right;color:var(--dim);margin-top:4px}
+.stage{position:fixed;inset:0;pointer-events:none;z-index:3}
+.scrim{position:absolute;inset:0;opacity:0;pointer-events:none;background:linear-gradient(to top,rgba(10,9,18,.9) 0%,rgba(10,9,18,.7) 30%,rgba(10,9,18,0) 58%)}
+.panel{position:absolute;left:var(--gut);right:var(--gut);bottom:clamp(26px,7vh,84px);opacity:0;visibility:hidden;will-change:opacity,transform}
+.panel.hero{opacity:1;visibility:visible;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.panel.hero .eyebrow{justify-content:center}
+.panel.hero .lead{max-width:30ch}
+/* loader: six bars, one per piece */
+#loader{position:fixed;inset:0;z-index:20;background:var(--ink);display:grid;place-items:center;overflow:hidden;transition:opacity .9s ease .15s}
+#loader::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 70%);opacity:.5}
+/* leaving: the number rushes towards you and you pass through it, as the dark clears onto the first view */
+#loader.done{opacity:0;pointer-events:none}
+#loader.done .lwrap{transform:scale(7);filter:blur(6px)}
+.lwrap{transition:transform 1.05s cubic-bezier(.6,0,.9,.4),filter 1.05s ease;position:relative;display:flex;flex-direction:column;align-items:center;gap:clamp(14px,2.8vh,28px);padding:var(--gut);text-align:center}
+.lwrap .eyebrow{margin:0;justify-content:center}
+.lpct{font:800 clamp(5rem,17vw,12.5rem)/.8 var(--display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.lpct small{font-size:.22em;letter-spacing:0;color:var(--dim);margin-left:.15em}
+.lbar{width:min(62vw,420px);height:2px;background:var(--line);position:relative}
+.lbar i{position:absolute;inset:0;background:var(--gold);transform-origin:0 50%;transform:scaleX(0);transition:transform .3s}
+.lstatus{font:400 11px/1.4 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);min-height:50px;display:grid;place-items:center}
+.lenter{display:none;margin:0}
+#loader.ready .lenter{display:flex}
+#loader.ready .lstatus{display:none}
+.lnote{font:400 11px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);visibility:hidden}
+#loader.ready .lnote{visibility:visible}
+.loading,.loading body{overflow:hidden}
+@media (prefers-reduced-motion:reduce){#loader,.lwrap{transition:none}#loader.done .lwrap{transform:none;filter:none}}
+.eyebrow{display:flex;align-items:baseline;gap:14px;font:500 13px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:clamp(8px,1.4vh,16px)}
+.eyebrow b{font:900 clamp(26px,3.4vw,46px)/1 var(--cn);letter-spacing:0;color:var(--c,var(--gold))}
+h1,h2{font-weight:800;letter-spacing:-.035em;line-height:.9;text-wrap:balance}
+h1{font-size:clamp(3.2rem,11vw,10rem)}
+h2{font-size:clamp(2.5rem,7.6vw,7rem)}
+.lead{margin-top:clamp(10px,1.8vh,22px);font-weight:500;font-size:clamp(1.05rem,1.7vw,1.6rem);line-height:1.3;max-width:34ch;color:var(--bone)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,30ch));gap:8px clamp(18px,3vw,44px);margin-top:clamp(12px,2.2vh,24px)}
+.facts h4{font:500 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--c);margin-bottom:7px}
+.facts p{font-weight:500;font-size:clamp(.92rem,1.1vw,1.08rem);line-height:1.4;color:var(--bone)}
+@media (max-width:640px){.facts{grid-template-columns:1fr}}
+.lead small{display:block;margin-top:8px;font:400 12px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:clamp(12px,2vh,22px)}
+.chips i{font:500 12px/1 var(--mono);font-style:normal;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;border:1px solid var(--c);color:var(--c);border-radius:2px}
+.callout{position:absolute;left:50%;top:clamp(58px,11vh,120px);transform:translateX(-50%);font:400 11px/1.2 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:12px;white-space:nowrap;opacity:0}
+.callout::before,.callout::after{content:"";width:clamp(30px,9vw,140px);height:1px;background:var(--line)}
+.hint{position:absolute;right:var(--gut);bottom:clamp(26px,7vh,84px);font:400 11px/1.2 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.hint::after{content:"";display:block;width:1px;height:44px;margin:10px 0 0 auto;background:linear-gradient(var(--bone),transparent);animation:drop 1.8s ease-in-out infinite}
+@keyframes drop{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+#track{height:1500vh}
+/* selected work: a normal 2D page that scrolls, so it can grow */
+.work{position:relative;z-index:1;padding:0 var(--gut)}
+.work-intro{padding:22vh 0 clamp(28px,6vh,64px)}
+.rows{list-style:none;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;grid-template-areas:"n n n" "h t m";gap:clamp(10px,1.6vw,18px) clamp(18px,3.5vw,56px);align-items:center;
+  width:100%;text-align:left;font:inherit;background:none;border:0;border-radius:0;
+  padding:clamp(26px,6vh,64px) 0;border-top:1px solid var(--line);transition:padding-left .45s cubic-bezier(.2,.7,.2,1),opacity .35s}
+.row:hover{padding-left:clamp(8px,1.6vw,28px)}
+.row .n{grid-area:n;font:500 13px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.row h3{grid-area:h}
+.rtext{grid-area:t}
+.rtext .chips{margin-top:14px}
+.more-b{grid-area:m;font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--bone);padding:13px 16px;border-radius:2px;white-space:nowrap;transition:background .25s}
+.row:hover .more-b{background:#a488ff}
+/* the project page: a full-screen case study in the site's own ink, bone and gold */
+.pop{--b:#f2cf7a;position:fixed;inset:0;z-index:30;background:var(--ink);opacity:0;transform:translateY(28px);transition:opacity .4s ease,transform .5s cubic-bezier(.2,.7,.2,1);overflow-y:auto;overscroll-behavior:contain}
+.pop[hidden]{display:none}
+.pop.on{opacity:1;transform:none}
+.pbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px var(--gut);background:linear-gradient(rgba(10,9,18,.8),rgba(10,9,18,0));font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.pbar button{font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;border-radius:2px;padding:12px 16px;border:1px solid var(--bone);background:none;color:var(--bone)}
+#popX{background:var(--bone);color:var(--ink)}
+.pbar button:hover{border-color:var(--gold)}
+.pbar button:focus-visible,.plink:focus-visible,.pnext:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.phero{position:relative;height:min(64vh,680px);margin-top:-58px;display:grid;place-items:center;overflow:hidden;background:radial-gradient(70% 90% at 50% 30%,color-mix(in srgb,var(--b) 34%,transparent),transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse 62% 78% at 50% 36%,#000 38%,transparent 100%);mask-image:radial-gradient(ellipse 62% 78% at 50% 36%,#000 38%,transparent 100%)}
+.phero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.phero span,.pvideo span{font:500 11px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+.pwrap{position:relative;width:min(100%,1320px);margin:clamp(-120px,-12vh,-60px) auto 0;padding:0 var(--gut) clamp(40px,8vh,96px)}
+.pmain{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:clamp(20px,5vw,90px);align-items:start}
+.pop h2{font-size:clamp(2.6rem,5.4vw,5rem);line-height:.95;letter-spacing:-.035em;margin:0}
+.pright .lead{max-width:30ch;font-size:clamp(1.3rem,2.2vw,2rem);line-height:1.25;margin:.15em 0 0}
+.pop h4{font:500 11px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+.pmeta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(18px,3vh,30px) clamp(18px,3vw,44px);margin-top:clamp(28px,6vh,64px)}
+.pmeta p,.ptext{font-weight:500;font-size:clamp(1rem,1.2vw,1.15rem);line-height:1.35;color:var(--bone)}
+.ptext{text-underline-offset:.3em}.ptext:hover{color:var(--gold)}
+.pmeta .soon{color:var(--dim)}
+.pmeta .chips{margin:0}
+.pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(18px,3vw,44px);margin-top:clamp(40px,9vh,110px)}
+.pgrid h5{font-weight:800;font-size:clamp(1.3rem,1.9vw,1.7rem);letter-spacing:-.02em;margin:0 0 12px}
+.pgrid p{font-weight:500;line-height:1.45;color:rgba(239,232,214,.8);max-width:32ch}
+.pvideo{position:relative;margin:clamp(48px,10vh,120px) auto 0;width:min(100%,1040px);aspect-ratio:16/9;border:1px dashed rgba(239,232,214,.3);background:rgba(239,232,214,.04);display:grid;place-items:center;overflow:hidden}
+.pvideo video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pend{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px;margin-top:clamp(40px,8vh,96px);padding-top:clamp(24px,5vh,52px);border-top:1px solid var(--line)}
+.plink{font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--bone);padding:16px 22px;border-radius:2px;text-decoration:none}
+.pnext{margin-left:auto;text-align:right;background:none;border:0;color:var(--bone);cursor:pointer;padding:0;font:inherit}
+.pnext small{display:block;font:500 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.pnext span{font-weight:800;font-size:clamp(2rem,6vw,4.6rem);letter-spacing:-.035em;line-height:.95;transition:color .25s}
+.pnext:hover span{color:var(--gold)}
+@media (max-width:760px){.pmain{grid-template-columns:1fr}.pgrid{grid-template-columns:1fr}.phero{height:44vh}#popN{display:none}}
+.popopen,.popopen body{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.pop{transition:none}}
+.row h3{font-weight:800;font-size:clamp(2.1rem,5.6vw,5rem);letter-spacing:-.035em;line-height:.92;overflow-wrap:anywhere}
+.row p{font-weight:500;font-size:clamp(1rem,1.3vw,1.2rem);line-height:1.4;color:var(--bone);max-width:40ch}
+.more{padding:clamp(22px,4vh,40px) 0 16vh;font:400 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.end{position:relative;z-index:1;height:220vh}
+.end-pin{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 var(--gut) clamp(26px,7vh,84px)}
+/* both words centred, one above the other, as large as the screen allows. the lock sits in front of them in the middle */
+.big span{display:block}
+/* the closing words are at full strength and fade out only in a soft circle where the lock sits */
+.big.v-c{-webkit-mask-image:radial-gradient(circle min(36vh,27vw) at 50% 52%,transparent 50%,#000 100%);mask-image:radial-gradient(circle min(36vh,27vw) at 50% 52%,transparent 50%,#000 100%)}
+.big{position:absolute;left:0;right:0;top:45%;margin:0;text-align:center;white-space:nowrap;font-weight:800;font-size:min(28vw,43vh);line-height:.8;letter-spacing:-.05em;
+  transform:translateY(-50%);opacity:0;will-change:transform,opacity;pointer-events:none}
+/* the copy in front of the lock: the chosen letters solid, every other letter as a gold outline traced across the lock */
+@media (max-width:760px) and (orientation:portrait){.big.v-c{-webkit-mask-image:none;mask-image:none;font-size:33vw}.big.v-c .r{margin-top:64vw}}
+.big.front{color:transparent;-webkit-text-stroke:1.5px var(--gold)}
+.big.front .f{color:rgba(239,232,214,.45);-webkit-text-stroke:0}   /* see-through, so the lock shows through the two letters in front of it */
+.end-foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:clamp(14px,3vw,48px);opacity:0}
+.end-foot .eyebrow{margin:0}
+.end-foot .lead{margin:0;text-align:center;font-size:clamp(.95rem,1.25vw,1.2rem);max-width:38ch}
+.links{display:flex;gap:18px}.links a{color:var(--bone);text-underline-offset:.3em}.links a:hover{color:var(--gold)}
+.end-foot .tag{justify-self:end;font:500 13px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+@media (max-width:760px){.end-foot{grid-template-columns:1fr;justify-items:center;text-align:center}.end-foot .tag{justify-self:center}}
+/* the real inputs are kept out of sight and only catch the typing. everything you see is drawn on the faces of the pieces in 3D */
+.msg{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}
+.msg[hidden]{display:block}
+.msg input,.msg textarea{font-size:16px}                 /* under 16px, phones zoom the whole page when a field is focused */
+.formopen,.formopen body{overflow:hidden;overscroll-behavior:none}
+.mback{position:absolute;left:var(--gut);top:clamp(58px,10vh,96px);pointer-events:auto;font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--bone);border:0;border-radius:2px;padding:15px 20px;cursor:pointer;opacity:0}
+.mback:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.mback[hidden]{display:none}
+.nogl .mback{display:none}
+.nogl .msg{display:none}
+.enter{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:clamp(18px,3.5vh,36px);pointer-events:auto}
+.enter button,.hud button{font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--bone);background:rgba(10,9,18,.55);border:1px solid var(--bone);border-radius:2px;cursor:pointer}
+.enter button{padding:16px 22px}
+.enter button:first-child{background:var(--bone);color:var(--ink)}
+.enter button:hover{border-color:var(--gold)}
+.enter button:focus-visible,.hud button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.hud button{padding:7px 10px;margin-left:14px;border-color:var(--line)}
+.row svg.door{width:clamp(70px,7vw,104px);height:auto;display:block;overflow:visible;flex:none}
+.row svg rect{transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.row:hover svg rect.l{transform:translateX(-5px)}
+.row:hover svg rect.r{transform:translateX(5px)}
+.row{color:inherit;text-decoration:none;cursor:pointer}
+.row:focus-visible{outline:2px solid var(--bone);outline-offset:4px}
+@media (max-width:760px){.row{grid-template-columns:1fr;grid-template-areas:"n" "h" "t" "m"}.more-b{justify-self:start}}
+/* fallback when WebGL is unavailable: plain readable page */
+.nogl .end{height:auto}.nogl .end-pin{position:static;height:auto;padding-top:60px}.nogl #endText,.nogl #bigBack{opacity:1!important}.nogl #bigBack{position:static;transform:none!important;white-space:normal;margin:40px 0}.nogl #bigFront{display:none}
+.nogl .enter,.nogl .nav button{display:none}
+.nogl .scrim,.nogl #gl,.nogl .grid,.nogl #track,.nogl .callout,.nogl .hint{display:none}
+.nogl .work-intro{padding:40px 0}
+.nogl .stage{position:static;padding:90px 0 60px}
+.nogl .panel{position:static;opacity:1!important;visibility:visible!important;transform:none!important;margin:0 var(--gut) 72px}
+@media (prefers-reduced-motion:reduce){.hint::after{animation:none}}
+</style>
+</head>
+<body>
+<div id="loader">
+  <div class="lwrap">
+    <div class="eyebrow"><b>鲁班锁</b><span>bhccob · Bob Chung</span></div>
+    <div class="lpct" role="status" aria-live="polite"><span id="lpct">0</span><small>%</small></div>
+    <div class="lbar"><i id="lline"></i></div>
+    <div class="lstatus" id="lstatus">Loading the 3D engine</div>
+    <div class="enter lenter" id="enter"><button type="button" id="withSound">Enter with sound</button><button type="button" id="noSound">Enter without sound</button></div>
+    <div class="lnote">Best with headphones</div>
+  </div>
+</div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div class="grid" id="grid"></div>
+<div class="bar" id="bar"></div>
+<div class="pop" id="pop" hidden role="dialog" aria-modal="true" aria-labelledby="popT"><div class="pbar"><button type="button" id="popX">← Back to work</button><span id="popN"></span><button type="button" id="popNext">Next project →</button></div><div id="popBody"></div></div>
+<header class="hud"><span>bhccob<button type="button" id="snd">Sound off</button><button type="button" id="sset" title="Switch sound set">Sound 2</button></span>
+  <nav class="nav" aria-label="Sections"><button type="button" data-go="about">About</button><button type="button" data-go="work">Work</button><button type="button" data-go="contact">Contact</button><span id="chap">The Lock</span></nav></header>
+
+<main class="stage" id="stage">
+  <div class="scrim" id="scrim"></div>
+  <div class="callout" id="callout">Piece 01 · 6 × 2 × 2</div>
+
+  <section class="panel hero" data-k="hero">
+    <div class="eyebrow"><b>鲁班锁</b><span>Six pieces. Not yet a lock.</span></div>
+    <h1>Bob Chung</h1>
+    <p class="lead">Six pieces of a lock that has never been closed. Scroll and they scatter. Go and find them.</p>
+  </section>
+
+  <section class="panel" data-k="p0" style="--c:#e0b85a">
+    <div class="eyebrow"><b>软件</b><span>02 / 06 · The foundation</span></div>
+    <h2>Software engineering</h2>
+    <p class="lead">Everything I build starts here.</p>
+    <div class="facts"><div><h4>What it is</h4><p>Designing, writing and testing software, from the first idea to a working product. My degree.</p></div><div><h4>Why I chose it</h4><p>I wanted to be able to build an idea myself, start to finish, without waiting on anyone.</p></div></div>
+  </section>
+  <section class="panel" data-k="p1" style="--c:#a488ff">
+    <div class="eyebrow"><b>游戏</b><span>03 / 06 · Part of software engineering</span></div>
+    <h2>Game development</h2>
+    <p class="lead">Worlds with rules, and players who test every one of them.</p>
+    <div class="facts"><div><h4>What it is</h4><p>A part of my software engineering study. Building games: the mechanics, the levels, the feel and the code underneath them.</p></div><div><h4>Why I chose it</h4><p>Games are where I started. A game shows you straight away whether what you built works.</p></div></div>
+  </section>
+  <section class="panel" data-k="p2" style="--c:#5fd6ab">
+    <div class="eyebrow"><b>应用</b><span>04 / 06 · Part of software engineering</span></div>
+    <h2>App development</h2>
+    <p class="lead">Software people carry in a pocket and open every day.</p>
+    <div class="facts"><div><h4>What it is</h4><p>A part of my software engineering study. Designing and building mobile apps, with the interface as the main feature.</p></div><div><h4>Why I chose it</h4><p>I want to make things people use every day, and that feel good to use.</p></div></div>
+  </section>
+  <section class="panel" data-k="p3" style="--c:#ff6a55">
+    <div class="eyebrow"><b>安全</b><span>05 / 06 · Internship</span></div>
+    <h2>Cybersecurity</h2>
+    <p class="lead">The piece that will hold the lock shut. I learned how locks get opened.</p>
+    <div class="facts"><div><h4>What it is</h4><p>An internship in security: how systems are attacked, and how to keep them closed.</p></div><div><h4>Why I chose it</h4><p>Attacks are more common and easier to automate than ever. People still want a person, not only AI, guarding what matters to them.</p></div></div>
+  </section>
+  <section class="panel" data-k="p4" style="--c:#6cc4ff">
+    <div class="eyebrow"><b>机电</b><span>06 / 06 · Next</span></div>
+    <h2>Mechatronics</h2>
+    <p class="lead">Code that moves metal. The study I am heading into.</p>
+    <div class="facts"><div><h4>What it is</h4><p>Software, electronics and mechanics combined into machines and robots.</p></div><div><h4>Why I chose it</h4><p>With software it is one of the strongest combinations in tech. It makes me an all-rounder who can keep adapting and progressing.</p></div></div>
+  </section>
+  <section class="panel" data-k="p5" style="--c:#efe8d6">
+    <div class="eyebrow"><b>我</b><span>01 / 06 · The piece that holds the rest · <span id="meNum">Line 1 of 6</span></span></div>
+    <h2>About me</h2>
+    <p class="lead" id="meLine">Chun Ho Bob Chung. Online I use bhccob, which is Bob around my Chinese initials in reverse, or the short form CHBC.</p>
+  </section>
+
+  <form class="msg" id="msgForm" novalidate aria-label="Send a message">
+    <label for="mName">Your name</label><input id="mName" name="name" autocomplete="name" tabindex="-1">
+    <label for="mMail">Your email</label><input id="mMail" name="email" type="email" autocomplete="email" tabindex="-1">
+    <label for="mText">Your message</label><textarea id="mText" name="message" tabindex="-1"></textarea>
+    <button type="submit" tabindex="-1">Send</button>
+  </form>
+  <button type="button" class="mback" id="mClose" hidden>← Back to the lock</button>
+  <div class="hint" id="hint">Scroll</div>
+</main>
+
+<div id="track"></div>
+
+<section class="work" id="work">
+  <div class="work-intro">
+    <div class="eyebrow"><b>作品</b><span>Six pieces found · <span id="count">3</span> projects</span></div>
+    <h1>Selected work</h1>
+    <p class="lead">Every project is the lock built again, from only the pieces it needed.</p>
+  </div>
+  <ol class="rows" id="rows"></ol>
+  <p class="more">More coming. This list keeps growing.</p>
+</section>
+
+<section class="end" id="end"><div class="end-pin">
+  <h1 class="big v-c" id="bigBack" aria-label="Let's talk"><span>LET'S</span><span class="r">TALK</span></h1>
+  <div class="end-foot" id="endText">
+    <div class="eyebrow"><b>合</b><span>Assembled</span></div>
+    <p class="lead">Now it is a lock. Drag it to turn it. Press it to send me a message.</p>
+    <span class="tag links"><a href="#end" data-todo="1">GitHub</a><a href="#end" data-todo="1">Instagram</a><a href="#end" data-todo="1">Email</a></span>
+  </div>
+</div></section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+var root=document.documentElement;
+var loaderEl=document.getElementById("loader"),lpct=document.getElementById("lpct"),lline=document.getElementById("lline"),lstatus=document.getElementById("lstatus"),loaderGone=false,loaderReady=false,fontsIn=false,frameCounted=false;
+/* a real loader. it counts the things this page actually has to get ready: the 3D engine, three fonts, six pieces,
+   the slips and glow, the space around them, and the first drawn frame. the number is the share of those that are done,
+   and the line under it says which one just finished */
+var loadTotal=13,loadDone=0,fontsLeft=3;
+function loadTask(label){loadDone=Math.min(loadTotal,loadDone+1);if(label&&!loaderReady)lstatus.textContent=label;}
+var shownPct=0,loadTick=setInterval(function(){
+  var want=Math.round(loadDone/loadTotal*100);
+  if(shownPct<want){shownPct=Math.min(want,shownPct+Math.max(1,Math.round((want-shownPct)*0.25)));lpct.textContent=shownPct;lline.style.transform="scaleX("+(shownPct/100)+")";}
+  if((loadDone>=loadTotal&&shownPct>=100)||loaderGone){clearInterval(loadTick);setTimeout(loaderIsReady,250);}
+},40);
+function loaderIsReady(){if(loaderReady||loaderGone)return;loaderReady=true;lpct.textContent="100";lline.style.transform="scaleX(1)";loaderEl.classList.add("ready");try{document.getElementById("withSound").focus();}catch(e){}}
+function loaderDone(){if(loaderGone)return;loaderGone=true;root.classList.remove("loading");loaderEl.classList.add("done");setTimeout(function(){loaderEl.style.display="none";},1200);}
+setTimeout(loaderIsReady,9000);                    /* never leave the page stuck on loading */
+[['800 1em "Bricolage Grotesque"',"A","Display font loaded"],['500 1em "IBM Plex Mono"',"A","Label font loaded"],['900 1em "Noto Serif SC"',"软件游戏应用安全机电我鲁班锁作品合","Chinese font loaded"]].forEach(function(f){
+  var done=false;function fin(){if(done)return;done=true;loadTask(f[2]);if(--fontsLeft<=0)fontsIn=true;}
+  if(document.fonts&&document.fonts.load){try{document.fonts.load(f[0],f[1]).then(fin,fin);}catch(e){fin();}setTimeout(fin,4000);}else fin();
+});
+function fail(){root.classList.add("nogl");loaderDone();}
+
+/* ---------- sound: everything is synthesised, nothing is downloaded. it only starts if the visitor asks for it ---------- */
+var AC=null,master=null,whoosh=null,noiseBuf=null,soundOn=false,sndBtn=document.getElementById("snd");
+var NOTES=[146.8,164.8,196,220,246.9,293.7];   /* a low five-note scale, one note per piece */
+var bus=null;
+/* sound sets. 1 is the original, kept exactly as it was. 2 and 3 are alternatives to compare against it */
+var SET=2,SETS=3,dset=[],ssetBtn=document.getElementById("sset");
+function setSet(n){
+  SET=n;ssetBtn.textContent="Sound "+n;
+  if(AC)for(var k=0;k<dset.length;k++)dset[k].gain.setTargetAtTime(k===n-1?1:0,AC.currentTime,0.4);
+}
+ssetBtn.addEventListener("click",function(){try{if(!AC)initSound();setSound(true);setSet(SET%SETS+1);arrive();}catch(e){}});
+function later(fn,ms){setTimeout(function(){if(soundOn)try{fn();}catch(e){}},ms);}
+function nz(ftype,f0,f1,Q,vol,att,dur){ /* one burst of filtered noise */
+  var t=AC.currentTime,src=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();
+  src.buffer=noiseBuf;src.loop=true;f.type=ftype;f.Q.value=Q;f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  src.connect(f);f.connect(g);g.connect(bus);src.start(t);src.stop(t+dur+0.05);
+}
+/* SOUND 2, stone: dry and close. short knocks of stone on stone, almost no tail, no sliding tones */
+function arrive2(){nz("lowpass",900,120,1,1.2,0.003,0.18);tone("sine",95,38,1.3,0.003,0.5);later(function(){nz("bandpass",240,160,6,0.9,0.002,0.12);tone("triangle",130,60,0.7,0.002,0.2);},90);}
+function tock2(){nz("bandpass",210,150,7,1.4,0.002,0.1);tone("sine",98,52,1.1,0.002,0.28);}
+function clack2(vol){nz("lowpass",1100,100,1,vol,0.002,0.22);tone("sine",105,34,vol*1.3,0.003,0.8);nz("bandpass",320,200,8,vol*0.6,0.002,0.12);}
+function seal2(){tone("sine",80,30,1.5,0.004,1.2);nz("lowpass",700,90,1,1.2,0.003,0.25);nz("bandpass",260,170,7,0.7,0.002,0.12);}   /* lands the instant the wall is whole, no lead-in */
+function finale2(){clack2(1.4);later(function(){clack2(0.8);},120);tone("sine",52,24,1.3,0.01,3);rumble(0.6,3.5,260);}
+/* SOUND 3, machine: something powered. warped metallic drops, a growl under them, a charge before the big hits */
+function arrive3(){warp(220,30,53,900,0.9,0.004,0.6);tone("sine",120,24,1.3,0.004,1.4);tone("sawtooth",70,35,0.5,0.005,0.5,700);}
+function tock3(){warp(310,90,211,700,0.6,0.002,0.16);tone("sine",105,30,1.2,0.003,0.5);}
+function clack3(vol){warp(260,28,83,1100,vol*0.8,0.003,1.1);tone("sine",115,25,vol*1.3,0.004,1.8);tone("sawtooth",58,30,vol*0.45,0.01,1.2,600);}
+function seal3(){warp(40,150,31,300,0.7,0.5,0.9);later(function(){tone("sine",90,22,1.5,0.004,2.4);warp(180,26,47,800,0.6,0.004,1.2);},850);}
+function finale3(){clack3(1.3);tone("sine",46,20,1.4,0.02,5);warp(90,18,19,400,0.7,0.05,5);rumble(0.5,5,300);}
+function setSound(on){
+  soundOn=on&&!!AC;
+  if(AC){if(on&&AC.state==="suspended")AC.resume();master.gain.setTargetAtTime(soundOn?1.45:0,AC.currentTime,0.25);}
+  sndBtn.textContent=soundOn?"Sound on":"Sound off";
+}
+function initSound(){
+  if(AC)return;
+  try{var C=window.AudioContext||window.webkitAudioContext;if(!C)return;AC=new C();}catch(e){AC=null;return;}
+  var sr=AC.sampleRate,i,ch;
+  /* everything runs into one bus, then a long dark hall and a limiter, so hits are big without clipping */
+  var comp=AC.createDynamicsCompressor();comp.threshold.value=-20;comp.ratio.value=10;comp.attack.value=0.004;comp.release.value=0.3;comp.connect(AC.destination);
+  master=AC.createGain();master.gain.value=0;master.connect(comp);
+  bus=AC.createGain();bus.connect(master);
+  var hall=AC.createConvolver(),ir=AC.createBuffer(2,Math.floor(sr*4.2),sr);
+  for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch),lp=0;for(i=0;i<d.length;i++){var e=Math.pow(1-i/d.length,2.6);lp+=((Math.random()*2-1)-lp)*0.22;d[i]=lp*e*2.2;}}
+  hall.buffer=ir;var wet=AC.createGain();wet.gain.value=0.5;bus.connect(hall);hall.connect(wet);wet.connect(master);
+  /* drone: a sub you feel, a slow dark saw above it, and a fifth */
+  /* everything that plays all the time goes through its own quiet channel and fades in slowly, so it sits far behind the events */
+  var dbus=AC.createGain();dbus.gain.setValueAtTime(0.0001,AC.currentTime);dbus.gain.linearRampToValueAtTime(0.22,AC.currentTime+6);dbus.connect(bus);
+  for(i=0;i<SETS;i++){var dg=AC.createGain();dg.gain.value=i===SET-1?1:0;dg.connect(dbus);dset.push(dg);}   /* each set has its own background, only one is open */
+  /* only smooth tones here: nothing with a rough edge that can buzz, and no two tones close enough to throb */
+  [[36.7,0.34],[55,0.07],[73.4,0.04]].forEach(function(v){var o=AC.createOscillator(),g=AC.createGain();o.type="sine";o.frequency.value=v[0];g.gain.value=v[1];o.connect(g);g.connect(dset[0]);o.start();});
+  (function(){ /* one thin high tone, far away, drifting slowly in pitch and loudness */
+    var o=AC.createOscillator(),g=AC.createGain(),pl=AC.createOscillator(),pg=AC.createGain(),al=AC.createOscillator(),ag=AC.createGain();
+    o.frequency.value=1340;pl.frequency.value=0.09;pg.gain.value=70;pl.connect(pg);pg.connect(o.frequency);
+    g.gain.value=0.008;al.frequency.value=0.13;ag.gain.value=0.006;al.connect(ag);ag.connect(g.gain);o.connect(g);g.connect(dset[0]);o.start();pl.start();al.start();})();
+  noiseBuf=AC.createBuffer(1,sr*2,sr);var nd=noiseBuf.getChannelData(0);for(i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+  /* wind that follows scroll speed: low and wide */
+  var src=AC.createBufferSource(),bp=AC.createBiquadFilter();src.buffer=noiseBuf;src.loop=true;bp.type="bandpass";bp.frequency.value=300;bp.Q.value=3.2;
+  var wl=AC.createOscillator(),wg=AC.createGain();wl.frequency.value=0.23;wg.gain.value=190;wl.connect(wg);wg.connect(bp.frequency);wl.start();   /* the wind's pitch drifts up and down by itself */
+  whoosh=AC.createGain();whoosh.gain.value=0;src.connect(bp);bp.connect(whoosh);whoosh.connect(bus);src.start();
+  /* a bed of very low air under everything */
+  var bed=AC.createBufferSource(),bl=AC.createBiquadFilter(),bg=AC.createGain();bed.buffer=noiseBuf;bed.loop=true;bl.type="lowpass";bl.frequency.value=160;bg.gain.value=0.5;bed.connect(bl);bl.connect(bg);bg.connect(dset[0]);bed.start();
+  /* sound 2 background: only very low air, no tone at all */
+  (function(){var b=AC.createBufferSource(),l=AC.createBiquadFilter(),g=AC.createGain();b.buffer=noiseBuf;b.loop=true;l.type="lowpass";l.frequency.value=110;g.gain.value=0.7;b.connect(l);l.connect(g);g.connect(dset[1]);b.start();})();
+  /* sound 3 background: one deep tone that slowly swells and sinks, like something idling */
+  (function(){var o=AC.createOscillator(),g=AC.createGain(),l=AC.createOscillator(),lg=AC.createGain();o.frequency.value=32.7;g.gain.value=0.22;l.frequency.value=0.07;lg.gain.value=0.14;l.connect(lg);lg.connect(g.gain);o.connect(g);g.connect(dset[2]);o.start();l.start();
+    var o2=AC.createOscillator(),g2=AC.createGain();o2.frequency.value=49;g2.gain.value=0.04;o2.connect(g2);g2.connect(dset[2]);o2.start();})();
+}
+function tone(type,f0,f1,vol,attack,dur,cutoff){
+  var t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain(),out=g;o.type=type;o.frequency.setValueAtTime(f0,t);
+  if(f1!==f0)o.frequency.exponentialRampToValueAtTime(f1,t+dur*0.45);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+attack);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  if(cutoff){var f=AC.createBiquadFilter();f.type="lowpass";f.frequency.setValueAtTime(cutoff,t);f.frequency.exponentialRampToValueAtTime(Math.max(80,cutoff*0.25),t+dur);g.connect(f);out=f;}
+  o.connect(g);out.connect(bus);o.start(t);o.stop(t+dur+0.1);
+}
+function bell(freq,vol,dur){ /* a struck bronze bell: low, slightly out of tune with itself, long tail in the hall */
+  if(!soundOn)return;
+  tone("sine",freq,freq,vol,0.01,dur);tone("sine",freq*2.02,freq*2.02,vol*0.4,0.01,dur*0.7);tone("sine",freq*2.76,freq*2.76,vol*0.22,0.01,dur*0.45);tone("sine",freq*0.5,freq*0.5,vol*0.7,0.03,dur*1.1);
+}
+function clack(vol){ /* something very heavy landing: a sub drop, a body thump, a crack on top and a metal ring */
+  if(!soundOn)return;if(SET===2)return clack2(vol);if(SET===3)return clack3(vol);var t=AC.currentTime;
+  tone("sine",110,27,vol*1.3,0.004,1.9);
+  tone("triangle",180,55,vol*0.7,0.003,0.5);
+  tone("sawtooth",62,60,vol*0.35,0.01,1.4,900);
+  warp(96,28,137,340,vol*0.28,0.004,1.3);   /* a warped tail on every hit */
+  var src=AC.createBufferSource(),lp=AC.createBiquadFilter(),g=AC.createGain();src.buffer=noiseBuf;lp.type="lowpass";lp.frequency.setValueAtTime(600,t);lp.frequency.exponentialRampToValueAtTime(90,t+0.5);
+  g.gain.setValueAtTime(vol*0.9,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.6);src.connect(lp);lp.connect(g);g.connect(bus);src.start(t);src.stop(t+0.7);
+  [187,243,331,402].forEach(function(f,i){tone("triangle",f,f*0.93,vol*0.05,0.003,0.35-i*0.05);});   /* a short dull clank, detuned on purpose so it does not read as a note */
+}
+function warp(f0,f1,modF,depth,vol,attack,dur){ /* a sliding tone, shaken by a second tone: metallic, unstable, not a note */
+  if(!soundOn)return;var t=AC.currentTime,car=AC.createOscillator(),mod=AC.createOscillator(),mg=AC.createGain(),g=AC.createGain();
+  car.frequency.setValueAtTime(f0,t);car.frequency.exponentialRampToValueAtTime(f1,t+dur*0.8);mod.frequency.setValueAtTime(modF,t);mod.frequency.linearRampToValueAtTime(modF*0.6,t+dur);
+  mg.gain.setValueAtTime(depth,t);mg.gain.exponentialRampToValueAtTime(Math.max(1,depth*0.1),t+dur);mod.connect(mg);mg.connect(car.frequency);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+attack);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  car.connect(g);g.connect(bus);car.start(t);mod.start(t);car.stop(t+dur+0.1);mod.stop(t+dur+0.1);
+}
+function sweep(vol,dur,a,b,c){ /* a narrow band of air that slides through three pitches, like something scanning */
+  if(!soundOn)return;var t=AC.currentTime,src=AC.createBufferSource(),bp=AC.createBiquadFilter(),g=AC.createGain();
+  src.buffer=noiseBuf;src.loop=true;bp.type="bandpass";bp.Q.value=11;bp.frequency.setValueAtTime(a,t);bp.frequency.exponentialRampToValueAtTime(b,t+dur*0.45);bp.frequency.exponentialRampToValueAtTime(c,t+dur);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+dur*0.3);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  src.connect(bp);bp.connect(g);g.connect(bus);src.start(t);src.stop(t+dur+0.1);
+}
+function arrive(){ /* fast, simple and heavy: one hard burst of noise slamming down in pitch, on top of a deep sub hit. no tail of extra sounds, only the hall */
+  if(!soundOn)return;if(SET===2)return arrive2();if(SET===3)return arrive3();var t=AC.currentTime,src=AC.createBufferSource(),lp=AC.createBiquadFilter(),g=AC.createGain();
+  src.buffer=noiseBuf;lp.type="lowpass";lp.Q.value=2;lp.frequency.setValueAtTime(520,t);lp.frequency.exponentialRampToValueAtTime(80,t+0.4);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(1.3,t+0.006);g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+  src.connect(lp);lp.connect(g);g.connect(bus);src.start(t);src.stop(t+0.55);
+  tone("sine",135,26,1.3,0.004,1.3);          /* the weight */
+  tone("triangle",180,48,0.6,0.003,0.4);       /* the punch */
+  tone("sine",52,24,0.7,0.02,2.2);             /* what is left shaking afterwards */
+}
+function tock(){ /* one heavy slab slamming against another: a hard crack on top, a solid knock, and real weight under it. short, but it lands */
+  if(!soundOn)return;if(SET===2)return tock2();if(SET===3)return tock3();var t=AC.currentTime,src=AC.createBufferSource(),bp=AC.createBiquadFilter(),g=AC.createGain();
+  src.buffer=noiseBuf;bp.type="lowpass";bp.frequency.setValueAtTime(420,t);bp.frequency.exponentialRampToValueAtTime(110,t+0.12);bp.Q.value=0.7;
+  g.gain.setValueAtTime(1.5,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);src.connect(bp);bp.connect(g);g.connect(bus);src.start(t);src.stop(t+0.16);
+  tone("triangle",200,62,1.0,0.002,0.22);     /* the knock */
+  tone("sine",112,31,1.25,0.003,0.7);         /* the weight */
+}
+function seal(){ /* the wall is whole: one very deep push that you feel shut. no hiss */
+  if(!soundOn)return;if(SET===2)return seal2();if(SET===3)return seal3();
+  tone("sine",86,25,1.4,0.008,2.2);tone("triangle",150,44,0.6,0.004,0.5);tone("sine",44,22,0.8,0.05,2.6);
+}
+function rumble(vol,dur,cut){ /* filtered noise: air and weight, no pitch */
+  if(!soundOn)return;var t=AC.currentTime,src=AC.createBufferSource(),lp=AC.createBiquadFilter(),g=AC.createGain();
+  src.buffer=noiseBuf;src.loop=true;lp.type="lowpass";lp.frequency.setValueAtTime(cut,t);lp.frequency.exponentialRampToValueAtTime(60,t+dur);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+dur*0.12);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  src.connect(lp);lp.connect(g);g.connect(bus);src.start(t);src.stop(t+dur+0.1);
+}
+function finale(){ /* the lock closes: the biggest hit, a long falling sub, and a rumble that rolls away. no chord, no bells */
+  if(!soundOn)return;if(SET===3)return finale3();
+  var keep=SET;SET=1;   /* sound 2 borrows sound 1's big close for the finished lock */
+  clack(1.3);tone("sine",58,22,1.4,0.01,4.5);tone("sine",31,26,1,0.4,6);rumble(0.8,6,420);warp(160,24,71,620,0.45,0.02,5.5);sweep(0.7,5,3200,400,90);
+  SET=keep;
+}
+(function(){
+  function enter(withSound){
+    loaderDone();                                   /* the page opens whatever happens next */
+    if(withSound){try{initSound();setSound(true);}catch(e){}}
+  }
+  document.getElementById("withSound").addEventListener("click",function(){enter(true);});
+  document.getElementById("noSound").addEventListener("click",function(){enter(false);});
+  /* a second way in, so nobody can be stuck on the loader: once it is ready, trying to scroll opens the page without sound */
+  function nudge(){if(loaderReady&&!loaderGone)enter(false);}
+  loaderEl.addEventListener("wheel",nudge,{passive:true});loaderEl.addEventListener("touchmove",nudge,{passive:true});
+  window.addEventListener("keydown",function(e){if(e.key==="ArrowDown"||e.key==="PageDown"||e.key===" ")nudge();});
+  sndBtn.addEventListener("click",function(){try{if(!AC)initSound();setSound(!soundOn);}catch(e){}});
+})();
+
+/* ---------- helpers ---------- */
+function clamp(x,a,b){return x<a?a:(x>b?b:x);}
+function ss(a,b,x){var t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);}
+function lerp(a,b,t){return a+(b-a)*t;}
+function rnd(i){var x=Math.sin(i*127.1+11.7)*43758.5453;return x-Math.floor(x);}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
+
+/* ---------- data ---------- */
+var COLORS=["#e0b85a","#a488ff","#5fd6ab","#ff6a55","#6cc4ff","#efe8d6"];
+var NAMES=["Software engineering","Game development","App development","Cybersecurity","Mechatronics","Me"];
+/* assembled poses: [position, long axis, face normal] */
+var POSES=[
+  [[0,0,1],[1,0,0],[0,0,1]],
+  [[1,0,0],[0,1,0],[1,0,0]],
+  [[0,1,0],[0,0,1],[0,1,0]],
+  [[0,0,-1],[1,0,0],[0,0,-1]],
+  [[-1,0,0],[0,1,0],[-1,0,0]],
+  [[0,-1,0],[0,0,1],[0,-1,0]]
+];
+var ORDER=[5,0,1,2,3,4];   /* chapter order: Me first, then the five studies */
+/* selected work: add a project by adding a line. uses = piece numbers 0..5 */
+var SHORT=["Software","Game","App","Security","Mechatronics","Me"];
+var WORKS=[   /* newest first. each row opens a full page about the project. shots = [path of one picture], url = optional link */
+  {name:"Jontai Energy",kind:"Website",brand:"#3fbf7f",uses:[0,5],url:"https://jontaienergy.com",link:"the website",shots:[],role:"Direction, design and build",
+   desc:"A full website redesign for a solar energy company in Aruba.",
+   overview:"Jontai Energy is a mainly solar company in Aruba. Alongside solar installations it sells solar cameras, solar generators, furniture, LED and other clean-energy products.",
+   problem:"The company offers far more than solar panels, and its website needed to show that full range at the quality level of the products themselves.",
+   approach:"A complete redesign: mainly green, premium in feel, and interactive, with 3D used so visitors can explore the products instead of only reading about them.",
+   points:[["One clear range","Solar, cameras, generators, furniture and LED brought into one structure."],["Premium look","A mainly green identity that matches a clean-energy brand."],["Interactive","Motion and 3D that respond to the visitor."]]},
+  {name:"Locked",kind:"Mobile app",brand:"#8a5cf6",uses:[0,2],url:"",link:"the app",shots:[],role:"Concept, name, design and build",
+   desc:"A gym tracker that logs a lift in seconds and suggests the weight for the next one.",
+   overview:"Locked is a gym tracker built around speed. The name covers both ends of a lift: locked in for focus, lockout for the finish.",
+   problem:"Popular trackers are cluttered, put features behind paywalls and are too slow for entering numbers in the middle of a workout.",
+   approach:"Logging comes first, so a set is entered in seconds. The app then uses your own numbers and recovery to suggest what to lift next.",
+   points:[["Weight suggestions","Based on your real numbers and recovery, including deload weeks."],["Progress you can see","A calendar of gym days and a dedicated progress screen."],["Motivation","Badges, and reminders to update bodyweight."],["Design","Minimal, glass-like and interactive, with a premium feel."]]},
+  {name:"Lumo",kind:"Mobile app",brand:"#8fd96a",uses:[0,2],url:"",link:"the app",shots:[],role:"Concept, name, design and build",
+   desc:"A grocery list that guides you through the shop.",
+   overview:"Lumo turns your own recipes into one shopping list and puts that list in the order you walk through the store.",
+   problem:"A list written at home is in the wrong order in the shop, and every supermarket is laid out differently.",
+   approach:"Recipes hold their ingredients. Buying for a recipe adds them to one master list, and switching supermarket reorders the list to that store's aisles.",
+   points:[["Your own recipes","Amounts are optional, and each item shows which recipe it is for."],["One list, any store","The same list works across every supermarket you use."],["While shopping","Open a recipe to see which of its ingredients are already ticked."],["Design","Light green, minimal and responsive. The interface is the feature."]]}
+];
+function doorIcon(w){
+  var svg='<svg class="door" viewBox="0 0 132 66" aria-hidden="true">';
+  for(var i=0;i<6;i++){var slot=ORDER.indexOf(i),on=w.uses.indexOf(i)>=0,x=slot<3?0:68,y=(slot%3)*23;
+    svg+='<rect class="'+(slot<3?"l":"r")+'" x="'+(x+1)+'" y="'+(y+1)+'" width="62" height="18" fill="'+(on?COLORS[i]:"none")+'" stroke="'+(on?COLORS[i]:"rgba(239,232,214,.25)")+'" stroke-width="1.5"/>';}
+  return svg+"</svg>";
+}
+function chipsOf(w){return w.uses.map(function(i){return '<i style="--c:'+COLORS[i]+'">'+SHORT[i]+"</i>";}).join("");}
+(function(){
+  var rows=document.getElementById("rows"),h="";
+  WORKS.forEach(function(w,n){
+    h+='<li><button type="button" class="row" data-p="'+n+'" style="--b:'+w.brand+'" aria-haspopup="dialog">'
+      +'<span class="n">'+String(n+1).padStart(2,"0")+" · "+w.kind+"</span><h3>"+w.name+'</h3><div class="rtext"><p>'+w.desc+'</p><div class="chips">'+chipsOf(w)+"</div></div>"
+      +'<span class="more-b">Open<span aria-hidden="true"> →</span></span></button></li>';
+  });
+  rows.innerHTML=h;document.getElementById("count").textContent=WORKS.length;
+  /* the pop-up: one screen about the project that was pressed */
+  var pop=document.getElementById("pop"),body=document.getElementById("popBody"),closeB=document.getElementById("popX"),opener=null;
+  var cur=0,popN=document.getElementById("popN");
+  function openPop(n,keep){
+    var w=WORKS[n],nx=WORKS[(n+1)%WORKS.length];cur=n;if(!keep)opener=document.activeElement;
+    /* a wide picture that fades into the page, the name on the left, everything else in one column on the right, then a preview video.
+       per project: shots = [path of one wide picture], video = path of a short preview video, url = link */
+    body.innerHTML='<div class="phero" style="--b:'+w.brand+'">'+((w.shots||[])[0]?'<img src="'+w.shots[0]+'" alt="Picture of '+w.name+'">':"<span>Picture</span>")+"</div>"
+      +'<div class="pwrap"><div class="pmain"><h2 id="popT">'+w.name+'</h2><div class="pright"><p class="lead">'+w.desc+"</p>"
+      +'<div class="pmeta"><div><h4>Type</h4><p>'+w.kind+"</p></div><div><h4>Role</h4><p>"+w.role+'</p></div><div><h4>Built from</h4><div class="chips">'+chipsOf(w)+'</div></div><div><h4>Link</h4>'
+      +(w.url?'<a class="ptext" href="'+w.url+'" target="_blank" rel="noopener">'+w.url.replace(/^https?:\/\//,"")+" ↗</a>":'<p class="soon">Coming soon</p>')+"</div></div>"
+      +'<div class="pgrid">'+w.points.slice(0,2).map(function(pt){return "<div><h5>"+pt[0]+"</h5><p>"+pt[1]+"</p></div>";}).join("")+"</div></div></div>"
+      +'<div class="pvideo">'+(w.video?'<video src="'+w.video+'" controls muted loop playsinline></video>':"<span>Preview video</span>")+"</div>"
+      +'<footer class="pend">'+(w.url?'<a class="plink" href="'+w.url+'" target="_blank" rel="noopener">Visit '+w.link+" →</a>":"")
+      +(WORKS.length>1?'<button type="button" class="pnext" id="popNext2"><small>Next project</small><span>'+nx.name+" →</span></button>":"")+"</footer></div>";
+    popN.textContent=String(n+1).padStart(2,"0")+" / "+String(WORKS.length).padStart(2,"0");
+    pop.hidden=false;pop.scrollTop=0;root.classList.add("popopen");
+    requestAnimationFrame(function(){pop.classList.add("on");});closeB.focus();
+  }
+  function nextPop(){openPop((cur+1)%WORKS.length,true);}
+  document.getElementById("popNext").addEventListener("click",nextPop);
+  body.addEventListener("click",function(e){if(e.target.closest&&e.target.closest("#popNext2"))nextPop();});
+  function closePop(){if(pop.hidden)return;pop.classList.remove("on");root.classList.remove("popopen");setTimeout(function(){pop.hidden=true;},350);if(opener&&opener.focus)opener.focus();}
+  rows.addEventListener("click",function(e){var b=e.target.closest?e.target.closest("button[data-p]"):null;if(b)openPop(parseInt(b.getAttribute("data-p"),10));});
+  closeB.addEventListener("click",closePop);
+  pop.addEventListener("click",function(e){if(e.target===pop)closePop();});
+  window.addEventListener("keydown",function(e){if(e.key==="Escape")closePop();});
+  document.getElementById("end").addEventListener("click",function(e){var a=e.target.closest?e.target.closest("a[data-todo]"):null;if(a)e.preventDefault();});   /* contact links with no address yet do nothing */
+})();
+var HOLD=0.4;                                       /* extra screens of scroll with the finished wall standing still */
+/* the menu: three jumps, so nobody has to scroll the whole way to find the work or the contact page */
+document.querySelector(".nav").addEventListener("click",function(e){
+  var b=e.target.closest?e.target.closest("button[data-go]"):null;if(!b)return;
+  var go=b.getAttribute("data-go"),vh=window.innerHeight,work=document.getElementById("work"),top=0;
+  if(go==="about")top=(START[0]+DUR[0]*(ME_A+ME_L/12))*Math.max(1,work.offsetTop-(2+HOLD)*vh);
+  else if(go==="work")top=work.offsetTop;
+  else top=document.documentElement.scrollHeight-vh;
+  try{window.scrollTo({top:top,behavior:"smooth"});}catch(err){window.scrollTo(0,top);}
+});
+var ME_A=0.36, ME_L=0.46;   /* where in the Me chapter the six lines start, and how much of it they take */
+var HERO_END=0.09, UNIT=0.91/7.8, START=[], DUR=[];
+var CH=[];
+(function(){var a=HERO_END;for(var c=0;c<6;c++){DUR[c]=UNIT*(c===0?2.8:1);START[c]=a;a+=DUR[c];CH[ORDER[c]]=c+1;}})();
+/* the last piece opens into six slips, one line each: [on the slip, full sentence] */
+var ME=[
+  ["NAME","Chun Ho Bob Chung. Online I use bhccob, which is Bob around my Chinese initials in reverse, or the short form CHBC."],
+  ["AGE","Born in 2006. Twenty years old."],
+  ["STUDENT","Software engineering graduate, continuing into mechatronics."],
+  ["PERSONALITY","ISTP. Practical and observant. I learn by doing, stay calm under pressure and prefer solving a problem to discussing it."],
+  ["HOBBIES","The gym and running. I grew up across many sports, including table tennis competitions abroad and swimming to diploma F."],
+  ["FUN FACT","National champion in both table tennis and powerlifting within my category. I also speak more than four languages."]
+];
+
+/* ---------- 2D faces drawn on each piece ---------- */
+var FW=1200, FH=400, meName=1, lastName=1;   /* meName: 0 = BOB, 1 = bhccob */
+function faceBase(c,col){
+  c.fillStyle="#0c0b15";c.fillRect(0,0,FW,FH);
+  c.strokeStyle=col;c.globalAlpha=.55;c.lineWidth=3;c.strokeRect(14,14,FW-28,FH-28);c.globalAlpha=1;
+}
+var DRAW=[
+  function(c,t,col){ /* software: real code, typed out one character at a time */
+    faceBase(c,col);
+    var CODE=["function build(idea) {","  const plan = design(idea);","  const app  = code(plan);","  test(app);","  return ship(app);","}"];
+    var total=0,i;for(i=0;i<CODE.length;i++)total+=CODE[i].length;
+    var n=Math.floor((t*13)%(total+34)),cur=false;
+    c.font="500 36px monospace";c.textBaseline="middle";c.textAlign="left";
+    var cw=c.measureText("M").width;
+    for(i=0;i<CODE.length;i++){
+      var y=112+i*48,line=CODE[i],shown=clamp(n,0,line.length),re=/[A-Za-z_]+|[^A-Za-z_]+/g,m,at=0;
+      c.fillStyle="#8d88a3";c.fillText(String(i+1),40,y);
+      while((m=re.exec(line))){
+        var tok=m[0],vis=Math.min(tok.length,shown-at);if(vis<=0)break;
+        c.fillStyle=/^(function|const|return)$/.test(tok)?col:(line.charAt(at+tok.length)==="("?"#6cc4ff":"#efe8d6");
+        c.fillText(tok.slice(0,vis),100+at*cw,y);at+=tok.length;
+      }
+      if(!cur&&n<line.length){cur=true;if(Math.sin(t*9)>0){c.fillStyle=col;c.fillRect(100+shown*cw,y-20,14,40);}}
+      n-=line.length;
+    }
+    if(!cur&&Math.sin(t*9)>0){c.fillStyle=col;c.fillRect(100+cw,112+5*48-20,14,40);}
+  },
+  function(c,t,col){ /* game: a player running a level, jumping for coins towards a flag */
+    faceBase(c,col);
+    var gy=330,pl=[[170,250,200],[480,190,200],[790,250,200]],i;
+    c.fillStyle="#efe8d6";c.fillRect(30,gy,FW-60,6);
+    for(i=0;i<pl.length;i++){
+      c.fillStyle=col;c.fillRect(pl[i][0],pl[i][1],pl[i][2],20);
+      c.globalAlpha=.22;c.fillRect(pl[i][0],pl[i][1]+20,pl[i][2],gy-pl[i][1]-20);c.globalAlpha=1;
+      var bob=Math.sin(t*4+i)*6,taken=((t*0.22)%1)*1000+60>pl[i][0]+pl[i][2]/2;
+      if(!taken){c.fillStyle="#f2cf7a";c.beginPath();c.arc(pl[i][0]+pl[i][2]/2,pl[i][1]-46+bob,17,0,6.283);c.fill();c.fillStyle="#0c0b15";c.fillRect(pl[i][0]+pl[i][2]/2-3,pl[i][1]-56+bob,6,20);}
+    }
+    c.fillStyle="#efe8d6";c.fillRect(1090,150,8,180);c.fillStyle=col;c.beginPath();c.moveTo(1098,150);c.lineTo(1160,178);c.lineTo(1098,206);c.closePath();c.fill();
+    var u=(t*0.22)%1,px=60+u*1000,py=gy-64-Math.abs(Math.sin(u*Math.PI*4))*190;
+    c.fillStyle="#efe8d6";c.fillRect(px,py,64,64);c.fillStyle="#0c0b15";c.fillRect(px+38,py+14,10,14);c.fillRect(px+50,py+14,10,14);
+    c.fillStyle=col;c.font="800 34px monospace";c.textBaseline="middle";c.textAlign="left";c.fillText("SCORE "+String(Math.floor(u*3.99)*100).padStart(4,"0"),44,60);
+    for(i=0;i<3;i++){c.fillStyle="#ff6a55";c.fillRect(330+i*38,46,26,26);}
+  },
+  function(c,t,col){ /* app: three phone screens with a real list, a tab bar and a finger tapping through them */
+    faceBase(c,col);
+    var act=Math.floor(t*0.6)%3,tap=(t*0.6)%1,i,k;
+    for(i=0;i<3;i++){
+      var x=120+i*300,y=96,w=190,h=284,on=i===act;
+      c.globalAlpha=on?1:.5;
+      c.lineWidth=6;c.strokeStyle=on?col:"#efe8d6";rr(c,x,y,w,h,24);c.stroke();
+      c.fillStyle=on?col:"#efe8d6";rr(c,x+14,y+16,w-28,40,10);c.fill();
+      for(k=0;k<3;k++){
+        var ry=y+72+k*56,hot=on&&k===Math.floor(tap*3);
+        if(hot){c.globalAlpha=.3;c.fillStyle=col;rr(c,x+10,ry-6,w-20,50,10);c.fill();c.globalAlpha=1;}
+        c.fillStyle=on?col:"#efe8d6";c.beginPath();c.arc(x+36,ry+19,15,0,6.283);c.fill();
+        c.fillStyle="#efe8d6";c.fillRect(x+62,ry+6,96,9);c.globalAlpha*=.55;c.fillRect(x+62,ry+24,64,8);c.globalAlpha=on?1:.5;
+        if(hot){c.strokeStyle="#efe8d6";c.lineWidth=4;c.beginPath();c.arc(x+w-34,ry+19,10+((tap*3)%1)*14,0,6.283);c.stroke();}
+      }
+      for(k=0;k<3;k++){c.fillStyle=k===i?(on?col:"#efe8d6"):"#8d88a3";c.beginPath();c.arc(x+w/2+(k-1)*40,y+h-26,9,0,6.283);c.fill();}
+    }
+    c.globalAlpha=1;
+  },
+  function(c,t,col){ /* security: a password being cracked, and a padlock that opens when it is */
+    faceBase(c,col);
+    var cyc=(t*0.32)%1.5,k=Math.min(8,Math.floor(cyc*8)),open=k>=8,PASS="R7#kQ2!x",i;
+    /* padlock */
+    var lx=205,ly=240,lift=open?-38:0;
+    c.strokeStyle="#efe8d6";c.lineWidth=24;c.lineCap="round";c.beginPath();
+    c.moveTo(lx-58,ly-60+lift);c.lineTo(lx-58,ly-110+lift);c.arc(lx,ly-110+lift,58,Math.PI,0);c.lineTo(lx+58,open?ly-110+lift:ly-60);c.stroke();c.lineCap="butt";
+    c.fillStyle=open?"#5fd6ab":col;rr(c,lx-100,ly-64,200,150,18);c.fill();
+    c.fillStyle="#0c0b15";c.beginPath();c.arc(lx,ly,20,0,6.283);c.fill();c.fillRect(lx-8,ly,16,44);
+    /* password cells */
+    c.textBaseline="middle";c.textAlign="center";
+    for(i=0;i<8;i++){
+      var x=410+i*90,got=i<k;
+      c.lineWidth=4;c.strokeStyle=got?"#efe8d6":col;c.strokeRect(x,150,74,90);
+      c.font="800 52px monospace";c.fillStyle=got?"#efe8d6":col;c.globalAlpha=got?1:.75;
+      c.fillText(got?PASS.charAt(i):String.fromCharCode(33+Math.floor(rnd(i*7+Math.floor(t*14))*90)),x+37,197);c.globalAlpha=1;
+    }
+    c.fillStyle="#8d88a3";c.fillRect(410,266,704,10);c.fillStyle=open?"#5fd6ab":col;c.fillRect(410,266,704*k/8,10);
+    c.textAlign="left";c.font="800 40px monospace";c.fillStyle=open?"#5fd6ab":col;c.fillText(open?"ACCESS GRANTED":"ACCESS DENIED",410,322);
+  },
+  function(c,t,col){ /* mechatronics: gears turning and a robot arm carrying a block back and forth */
+    faceBase(c,col);
+    function gear(cx,cy,r,teeth,a){
+      c.save();c.translate(cx,cy);c.rotate(a);c.strokeStyle=col;c.lineWidth=8;c.beginPath();
+      for(var i=0;i<teeth*2;i++){var rad=i%2?r:r-24,a0=i/(teeth*2)*6.283,a1=(i+1)/(teeth*2)*6.283;c.lineTo(Math.cos(a0)*rad,Math.sin(a0)*rad);c.lineTo(Math.cos(a1)*rad,Math.sin(a1)*rad);}
+      c.closePath();c.stroke();c.fillStyle=col;c.beginPath();c.arc(0,0,r*.22,0,6.283);c.fill();c.restore();
+    }
+    gear(175,225,130,12,t*.8);gear(372,225,82,8,-t*.8*12/8+.39);
+    /* arm: shoulder fixed, the tip sweeps between two stands */
+    var bx=700,by=340,L1=190,L2=170,s=(Math.sin(t*1.1)+1)/2,tx=lerp(560,1020,s),ty=lerp(300,300,s)-Math.sin(s*Math.PI)*120;
+    var dx=tx-bx,dy=ty-by,d=Math.min(Math.hypot(dx,dy),L1+L2-2),a=Math.atan2(dy,dx),q=Math.acos((L1*L1+d*d-L2*L2)/(2*L1*d)),a1=a-q;
+    var jx=bx+Math.cos(a1)*L1,jy=by+Math.sin(a1)*L1,ex=bx+Math.cos(a)*d,ey=by+Math.sin(a)*d;
+    c.fillStyle="#8d88a3";c.fillRect(520,330,90,12);c.fillRect(980,330,90,12);c.fillRect(640,340,120,22);
+    c.strokeStyle="#efe8d6";c.lineWidth=28;c.lineCap="round";c.beginPath();c.moveTo(bx,by);c.lineTo(jx,jy);c.lineTo(ex,ey);c.stroke();c.lineCap="butt";
+    c.fillStyle=col;[[bx,by],[jx,jy]].forEach(function(p){c.beginPath();c.arc(p[0],p[1],20,0,6.283);c.fill();});
+    c.fillStyle="#f2cf7a";c.fillRect(ex-24,ey-4,48,40);c.strokeStyle=col;c.lineWidth=8;c.strokeRect(ex-32,ey-12,64,16);
+    c.fillStyle=col;c.font="800 30px monospace";c.textBaseline="middle";c.textAlign="left";c.fillText("θ1 "+(a1*57.3).toFixed(0)+"°",440,360);
+  },
+  function(c,t,col){ /* me: BOB opens; CHUNG CHUN HO shrinks to C C H; they cross over and land backwards as H C C */
+    faceBase(c,col);
+    var u=meName,GOLD="#e0b85a",BIG="800 170px 'Bricolage Grotesque',Arial,sans-serif",L=["B","H","C","C","O","B"],WORDS=["CHUNG","CHUN","HO"];
+    var w=[],fx=[],i,k,tot=0,gap=10,cx=470,base=212;
+    c.textBaseline="alphabetic";c.textAlign="left";c.font=BIG;
+    for(i=0;i<6;i++){w[i]=c.measureText(L[i]).width;tot+=w[i];}
+    tot+=gap*5;var x=cx-tot/2;
+    for(i=0;i<6;i++){fx[i]=x;x+=w[i]+gap;}
+    /* BOB splits to make room */
+    var wb=w[0]+w[4]+w[5]+gap*2,bx=cx-wb/2,split=ss(0.08,0.3,u);
+    var x0=lerp(bx,fx[0],split),x4=lerp(bx+w[0]+gap,fx[4],split),x5=lerp(bx+w[0]+w[4]+gap*2,fx[5],split);
+    c.fillStyle=col;c.fillText("B",x0,base);c.fillText("O",x4,base);c.fillText("B",x5,base);
+    /* the Chinese name in its own order, family name first */
+    var SM=46,wx=[],ww=[],wt=0,wgap=34,rowY=70;
+    c.font="800 "+SM+"px 'Bricolage Grotesque',Arial,sans-serif";
+    for(k=0;k<3;k++){ww[k]=c.measureText(WORDS[k]).width;wt+=ww[k];}
+    wt+=wgap*2;x=cx-wt/2;for(k=0;k<3;k++){wx[k]=x;x+=ww[k]+wgap;}
+    var appear=ss(0.22,0.38,u),tail=1-ss(0.42,0.56,u);
+    for(k=0;k<3;k++){
+      var m=ss(0.58+k*0.06,0.82+k*0.06,u),slot=3-k,size=lerp(SM,170,m),lx=lerp(wx[k],fx[slot],m),ly=lerp(rowY,base,m);
+      c.fillStyle=GOLD;
+      if(tail>0&&appear>0){c.globalAlpha=appear*tail;c.font="800 "+SM+"px 'Bricolage Grotesque',Arial,sans-serif";c.fillText(WORDS[k].slice(1),wx[k]+c.measureText(WORDS[k].charAt(0)).width,rowY);}
+      c.globalAlpha=appear;c.font="800 "+size.toFixed(1)+"px 'Bricolage Grotesque',Arial,sans-serif";c.fillText(WORDS[k].charAt(0),lx,ly);
+    }
+    /* once they have landed: an arrow under H C C pointing back the way it reads, and one bracket that still says BOB */
+    var land=ss(0.9,1,u);
+    if(land>0){
+      c.globalAlpha=land*0.9;c.strokeStyle=GOLD;c.fillStyle=GOLD;c.lineWidth=3;var ay=base+30,a0=fx[3]+w[3],a1=fx[1];
+      c.beginPath();c.moveTo(a0,ay);c.lineTo(a1,ay);c.stroke();c.beginPath();c.moveTo(a1-2,ay);c.lineTo(a1+16,ay-9);c.lineTo(a1+16,ay+9);c.closePath();c.fill();
+      c.font="500 22px monospace";c.textAlign="center";
+      for(k=0;k<3;k++)c.fillText(WORDS[k],fx[3-k]+w[3-k]/2,base+62);
+      c.textAlign="left";
+    }
+    c.globalAlpha=0.7;c.strokeStyle=col;c.lineWidth=3;c.beginPath();
+    c.moveTo(x0,base+76);c.lineTo(x0,base+92);c.lineTo(x5+w[5],base+92);c.lineTo(x5+w[5],base+76);c.stroke();
+    c.fillStyle=col;c.font="500 22px monospace";c.textAlign="center";c.fillText("BOB",(x0+x5+w[5])/2,base+124);c.textAlign="left";
+    c.globalAlpha=1;
+    var rcx=1010,rcy=200,R=110;
+    c.strokeStyle=col;c.lineWidth=4;c.globalAlpha=.6;c.beginPath();c.arc(rcx,rcy,R,0,6.283);c.stroke();
+    for(i=0;i<6;i++){var a=t*.5+i/6*6.283,in3=i>=1&&i<=3;c.globalAlpha=in3?ss(0.58,0.9,u):1;c.fillStyle=in3?GOLD:col;c.beginPath();c.arc(rcx+Math.cos(a)*R,rcy+Math.sin(a)*R,15,0,6.283);c.fill();}
+    c.globalAlpha=1;
+  }
+];
+var CN=["软件","游戏","应用","安全","机电","我"], BIGNAME=["SOFTWARE ENGINEERING","GAME DEVELOPMENT","APP DEVELOPMENT","CYBERSECURITY","MECHATRONICS","BOB CHUNG"];
+var CNFONT="'Noto Serif SC','Songti SC','SimSun',serif", DFONT="'Bricolage Grotesque',Arial,sans-serif";
+function fitFont(c,str,weight,size,family,maxW){c.font=weight+" "+size+"px "+family;var w=c.measureText(str).width;if(w>maxW){size=Math.floor(size*maxW/w);c.font=weight+" "+size+"px "+family;}return size;}
+/* long sides: Chinese name and the study in big capitals */
+function drawBand(cv,i,col){
+  var c=cv.getContext("2d");c.fillStyle="#0c0b15";c.fillRect(0,0,1200,400);
+  c.strokeStyle=col;c.globalAlpha=.5;c.lineWidth=3;c.strokeRect(14,14,1172,372);
+  c.globalAlpha=1;c.fillStyle=col;c.textBaseline="middle";c.textAlign="left";
+  c.font="900 190px "+CNFONT;var cw=c.measureText(CN[i]).width;c.fillText(CN[i],48,205);
+  var x0=48+cw+44;c.globalAlpha=.6;c.fillRect(x0-22,70,4,260);c.globalAlpha=1;
+  var words=BIGNAME[i].split(" "),maxW=1200-x0-48;
+  if(words.length>1){fitFont(c,words[0],800,128,DFONT,maxW);c.fillText(words[0],x0,140);fitFont(c,words[1],800,128,DFONT,maxW);c.fillText(words[1],x0,268);}
+  else{fitFont(c,words[0],800,150,DFONT,maxW);c.fillText(words[0],x0,205);}
+}
+/* end caps: just the Chinese name, as large as it fits */
+function drawCap(cv,i,col){
+  var c=cv.getContext("2d");c.fillStyle="#0c0b15";c.fillRect(0,0,400,400);
+  c.strokeStyle=col;c.globalAlpha=.5;c.lineWidth=4;c.strokeRect(18,18,364,364);
+  c.globalAlpha=1;c.fillStyle=col;c.textBaseline="middle";c.textAlign="center";fitFont(c,CN[i],900,250,CNFONT,300);c.fillText(CN[i],200,208);
+}
+/* and a name plate in the corner of the drawn face */
+function faceTag(c,i,col){
+  c.save();c.globalAlpha=1;c.textBaseline="middle";c.textAlign="right";
+  c.font="800 34px "+DFONT;var w1=c.measureText(BIGNAME[i]).width;c.font="900 40px "+CNFONT;var w2=c.measureText(CN[i]).width,W=w1+w2+58;
+  c.fillStyle="#0c0b15";c.fillRect(FW-28-W,26,W,60);c.strokeStyle=col;c.lineWidth=2;c.strokeRect(FW-28-W,26,W,60);
+  c.fillStyle=col;c.font="800 34px "+DFONT;c.fillText(BIGNAME[i],FW-44,57);c.font="900 40px "+CNFONT;c.fillText(CN[i],FW-44-w1-18,57);
+  c.restore();
+}
+DRAW=DRAW.map(function(f,i){return function(c,t,col){f(c,t,col);faceTag(c,i,i===5?"#f2cf7a":col);};});
+function patternTex(col){
+  var cv=document.createElement("canvas");cv.width=cv.height=512;var c=cv.getContext("2d");
+  c.fillStyle="#0c0b15";c.fillRect(0,0,512,512);c.strokeStyle=col;c.lineWidth=5;c.globalAlpha=.75;
+  for(var gx=0;gx<4;gx++)for(var gy=0;gy<4;gy++){ /* leiwen: square thunder spirals */
+    var x=gx*128+18,y=gy*128+18,s=92,flip=(gx+gy)%2;
+    c.save();c.translate(x+s/2,y+s/2);if(flip)c.scale(-1,1);c.translate(-s/2,-s/2);
+    c.beginPath();c.moveTo(0,s);c.lineTo(0,0);c.lineTo(s,0);c.lineTo(s,s*.78);c.lineTo(s*.24,s*.78);c.lineTo(s*.24,s*.26);c.lineTo(s*.74,s*.26);c.lineTo(s*.74,s*.54);c.lineTo(s*.48,s*.54);c.stroke();c.restore();
+  }
+  var tx=new THREE.CanvasTexture(cv);tx.encoding=THREE.sRGBEncoding;return tx;
+}
+
+if(!window.THREE){fail();return;}
+loadTask("3D engine loaded");
+/* ---------- scene ---------- */
+var canvas=document.getElementById("gl"), renderer;
+try{renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});}catch(e){fail();return;}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.setClearColor(0x000000,0);
+var scene=new THREE.Scene();scene.fog=new THREE.Fog(0x0a0912,22,48);
+var CAM_Z=18, TAN=Math.tan(20*Math.PI/180);
+var camera=new THREE.PerspectiveCamera(40,1,0.1,200);camera.position.set(0,0,CAM_Z);
+scene.add(new THREE.AmbientLight(0x8a86b0,0.9));
+var key=new THREE.DirectionalLight(0xfff1d6,1.0);key.position.set(6,9,12);scene.add(key);
+var l1=new THREE.PointLight(0x8a6cff,1.5,60);l1.position.set(-12,4,8);scene.add(l1);
+var l2=new THREE.PointLight(0x5fd6ab,0.9,60);l2.position.set(10,-8,6);scene.add(l2);
+
+var geo=new THREE.BoxGeometry(6,2,2), edgeGeo=new THREE.EdgesGeometry(geo);
+var pieces=[];
+POSES.forEach(function(P,i){
+  var col=COLORS[i], isMe=i===5, ecol=isMe?"#f2cf7a":col, pat=patternTex(ecol);
+  var side=new THREE.MeshStandardMaterial({color:isMe?0x4a4052:0x17151f,metalness:isMe?.55:.3,roughness:isMe?.45:.7,emissive:0xffffff,emissiveMap:pat,emissiveIntensity:.5});
+  var bcv=document.createElement("canvas");bcv.width=1200;bcv.height=400;var ccv=document.createElement("canvas");ccv.width=ccv.height=400;
+  var btex=new THREE.CanvasTexture(bcv),ctex=new THREE.CanvasTexture(ccv);btex.encoding=ctex.encoding=THREE.sRGBEncoding;btex.anisotropy=ctex.anisotropy=8;
+  var band=side.clone();band.emissiveMap=btex;band.emissiveIntensity=.75;var cap=side.clone();cap.emissiveMap=ctex;cap.emissiveIntensity=.75;
+  var cv=document.createElement("canvas");cv.width=FW;cv.height=FH;var ctx=cv.getContext("2d");
+  var ftex=new THREE.CanvasTexture(cv);ftex.encoding=THREE.sRGBEncoding;ftex.anisotropy=8;
+  var face=new THREE.MeshStandardMaterial({color:0x0c0b15,metalness:0,roughness:.9,emissive:0xffffff,emissiveMap:ftex,emissiveIntensity:.5});
+  var mesh=new THREE.Mesh(geo,[cap,cap,band,band,face,band]);
+  var edges=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:new THREE.Color(ecol),transparent:true,opacity:.85}));
+  mesh.add(edges);scene.add(mesh);
+  if(isMe){var e2=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:new THREE.Color(ecol),transparent:true,opacity:.45}));e2.scale.setScalar(1.035);mesh.add(e2);}
+  var X=new THREE.Vector3(P[1][0],P[1][1],P[1][2]), Z=new THREE.Vector3(P[2][0],P[2][1],P[2][2]), Y=new THREE.Vector3().crossVectors(Z,X);
+  var q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X,Y,Z));
+  DRAW[i](ctx,1.5,col);ftex.needsUpdate=true;
+  loadTask("Piece "+(i+1)+" of 6 built");
+  pieces.push({plain:side,band:band,cap:cap,bcv:bcv,ccv:ccv,btex:btex,ctex:ctex,ecol:ecol,invQ:q.clone().conjugate(),mesh:mesh,face:face,ctx:ctx,tex:ftex,col:col,aPos:new THREE.Vector3(P[0][0],P[0][1],P[0][2]),axis:X,aQuat:q});
+});
+
+/* the Me piece, cut into six slips that can spread apart */
+var slatGroup=new THREE.Group(),slats=[];slatGroup.visible=false;scene.add(slatGroup);
+(function(){
+  var me=pieces[5],side=me.plain;
+  for(var k=0;k<6;k++){
+    var g=new THREE.BoxGeometry(6,1/3,2),uv=g.attributes.uv;
+    for(var v=16;v<20;v++)uv.setY(v,(k+uv.getY(v))/6);   /* each slip keeps its strip of the piece's face */
+    var m=new THREE.Mesh(g,[side,side,side,side,me.face,side]);
+    var cvs=document.createElement("canvas");cvs.width=1440;cvs.height=80;
+    var tex=new THREE.CanvasTexture(cvs);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=8;
+    var lm=new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0});
+    var lab=new THREE.Mesh(new THREE.PlaneGeometry(6,1/3),lm);lab.position.z=1.004;m.add(lab);
+    var em=new THREE.LineBasicMaterial({color:0xf2cf7a,transparent:true,opacity:0});
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),em));
+    slatGroup.add(m);slats.push({mesh:m,lm:lm,em:em,cvs:cvs,tex:tex,line:5-k,y:(k-2.5)/3});
+  }
+})();
+var meCard=(function(){
+  var cvs=document.createElement("canvas");cvs.width=1800;cvs.height=300;
+  var tex=new THREE.CanvasTexture(cvs);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=8;
+  var mat=new THREE.MeshBasicMaterial({map:tex}),side=pieces[5].plain;
+  var geo=new THREE.BoxGeometry(6,1.05,2),mesh=new THREE.Mesh(geo,[side,side,side,side,mat,side]);
+  var em=new THREE.LineBasicMaterial({color:0xf2cf7a,transparent:true,opacity:0});
+  mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),em));
+  slatGroup.add(mesh);
+  return {mesh:mesh,mat:mat,em:em,cvs:cvs,tex:tex,shown:-1};
+})();
+function wrapMe(c,txt,maxW){var out=[],words=txt.split(" "),line="";words.forEach(function(w){var t=line?line+" "+w:w;if(c.measureText(t).width>maxW&&line){out.push(line);line=w;}else line=t;});out.push(line);return out;}
+function drawMeCard(k){
+  var c=meCard.cvs.getContext("2d"),W=1800,H=300,lab=ME[k][0],fs=82;
+  c.fillStyle="#0c0b15";c.fillRect(0,0,W,H);
+  c.textBaseline="middle";c.textAlign="left";
+  c.fillStyle="#f2cf7a";c.font="500 24px monospace";c.fillText("0"+(k+1)+" / 06",44,62);
+  c.font="800 "+fs+"px 'Bricolage Grotesque',Arial,sans-serif";while(fs>40&&c.measureText(lab).width>470){fs-=4;c.font="800 "+fs+"px 'Bricolage Grotesque',Arial,sans-serif";}
+  c.fillStyle="#efe8d6";c.fillText(lab,44,168);
+  c.fillStyle="rgba(242,207,122,.6)";c.fillRect(548,48,3,H-96);
+  var ts=46,lines;do{c.font="500 "+ts+"px 'Bricolage Grotesque',Arial,sans-serif";lines=wrapMe(c,ME[k][1],1170);ts-=3;}while(lines.length*(ts+13)>H-50&&ts>26);
+  var lh=ts+15,y0=H/2-(lines.length-1)*lh/2;c.fillStyle="#efe8d6";lines.forEach(function(l,n){c.fillText(l,588,y0+n*lh);});
+  meCard.tex.needsUpdate=true;meCard.shown=k;
+}
+function drawSlats(){
+  slats.forEach(function(sl){
+    var c=sl.cvs.getContext("2d");c.fillStyle="#0c0b15";c.fillRect(0,0,1440,80);
+    c.textBaseline="middle";c.textAlign="left";c.fillStyle="#efe8d6";c.font="800 50px 'Bricolage Grotesque',Arial,sans-serif";c.fillText(ME[sl.line][0],28,42);
+    c.textAlign="right";c.fillStyle="#8d88a3";c.font="500 22px monospace";c.fillText("0"+(sl.line+1)+" / 06",1412,42);
+    sl.tex.needsUpdate=true;
+  });
+}
+function drawNames(){pieces.forEach(function(pc,i){drawBand(pc.bcv,i,pc.ecol);drawCap(pc.ccv,i,pc.ecol);pc.btex.needsUpdate=pc.ctex.needsUpdate=true;if(i<5){DRAW[i](pc.ctx,1.5,pc.col);pc.tex.needsUpdate=true;}});}
+drawNames();drawSlats();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){drawNames();drawSlats();meCard.shown=-1;lastName=-1;});   /* redraw the text faces once the font is in */
+pieces.forEach(function(pc){
+  pc.beams=[0,1].map(function(){
+    var b=new THREE.Mesh(new THREE.BoxGeometry(1,0.5,0.5),new THREE.MeshBasicMaterial({color:new THREE.Color(pc.ecol),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    b.visible=false;pc.mesh.add(b);return b;});
+});
+var aura=new THREE.Group(),auraLight,sparks=[],shells=[];scene.add(aura);
+(function(){
+  var cv=document.createElement("canvas");cv.width=cv.height=256;var c=cv.getContext("2d"),g=c.createRadialGradient(128,128,0,128,128,128);
+  g.addColorStop(0,"rgba(242,207,122,.6)");g.addColorStop(0.22,"rgba(242,207,122,.26)");g.addColorStop(0.55,"rgba(242,207,122,.07)");g.addColorStop(1,"rgba(242,207,122,0)");c.fillStyle=g;c.fillRect(0,0,256,256);
+  /* a glow made only of soft light: seven round blurs strung along the length of the piece. each one always
+     faces you and fades to nothing at its rim, so there is no edge to see, but together they follow the
+     piece as it turns and foreshorten with it */
+  var gtex=new THREE.CanvasTexture(cv);
+  for(var n=0;n<7;n++){
+    var sp0=new THREE.Sprite(new THREE.SpriteMaterial({map:gtex,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
+    sp0.position.x=(n-3)*0.95;sp0.scale.set(5.2,5.2,1);aura.add(sp0);shells.push(sp0);
+  }
+  auraLight=new THREE.PointLight(0xf2cf7a,0,30);auraLight.position.z=2.5;aura.add(auraLight);
+  var sm=new THREE.MeshBasicMaterial({color:0xf2cf7a});
+  for(var k=0;k<3;k++){var sp=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.16,0.16),sm);aura.add(sp);sparks.push(sp);}
+})();
+var meLine=document.getElementById("meLine"),meNum=document.getElementById("meNum"),meIdx=0;
+
+/* dust */
+(function(){
+  var n=700,arr=new Float32Array(n*3);
+  for(var i=0;i<n;i++){arr[i*3]=(rnd(i)-.5)*60;arr[i*3+1]=(rnd(i+1000)-.5)*36;arr[i*3+2]=(rnd(i+2000)-.5)*40-6;}
+  var g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(arr,3));
+  var pts=new THREE.Points(g,new THREE.PointsMaterial({color:0xefe8d6,size:.07,transparent:true,opacity:.55}));
+  pts.name="dust";scene.add(pts);
+})();
+var dust=scene.getObjectByName("dust");
+
+/* ---------- the space around the lock ---------- */
+loadTask("Slips and glow built");
+var env=new THREE.Group();scene.add(env);
+var floor=new THREE.GridHelper(250,100,0xe0b85a,0x6a6590);floor.position.y=-7.5;floor.material.transparent=true;floor.material.depthWrite=false;env.add(floor);
+var beams=[],frags=[];
+(function(){
+  /* light falling through haze from one opening high on the left: every shaft has the same warm colour and the same angle,
+     soft edges, bright at the top and fading out before it reaches the floor. only width, depth and strength differ */
+  var i,sc=document.createElement("canvas");sc.width=64;sc.height=256;var sx=sc.getContext("2d"),sd=sx.createImageData(64,256);
+  for(var py=0;py<256;py++)for(var px=0;px<64;px++){
+    var u=(px-31.5)/31.5,v=py/255,a=Math.exp(-u*u*4.2)*Math.pow(1-v,1.6)*Math.min(1,v*14),k=(py*64+px)*4;
+    sd.data[k]=sd.data[k+1]=sd.data[k+2]=255;sd.data[k+3]=Math.round(255*a);}
+  sx.putImageData(sd,0,0);var stex=new THREE.CanvasTexture(sc);
+  for(i=0;i<7;i++){
+    var o=0.10+rnd(i+70)*0.12,r=-0.42+(rnd(i+80)-0.5)*0.05;
+    var bm=new THREE.Mesh(new THREE.PlaneGeometry(3+rnd(i+90)*6,70),new THREE.MeshBasicMaterial({map:stex,color:0xffe6bd,transparent:true,opacity:o,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+    bm.position.set((i-3)*8+(rnd(i+60)-0.5)*5+4,8,-12-rnd(i+50)*24);bm.rotation.z=r;bm.visible=false;env.add(bm);beams.push({mesh:bm,o:o,r:r});   /* switched off: this is a place in space, with no light falling into it */
+  }
+  var fgeo=new THREE.BoxGeometry(1,1,1),fmat=new THREE.MeshStandardMaterial({color:0x1d1a29,metalness:.5,roughness:.5,emissive:0x2c2244,emissiveIntensity:.7});
+  for(i=0;i<48;i++){
+    var ang=rnd(i+300)*6.283,rad=9+rnd(i+400)*14,fm=new THREE.Mesh(fgeo,fmat);
+    env.add(fm);frags.push({mesh:fm,x:Math.cos(ang)*rad,y:Math.sin(ang)*rad*0.7,z:rnd(i+500)*90,s:0.25+rnd(i+600)*0.7,rx:rnd(i+700)*6,ry:rnd(i+800)*6,sp:0.5+rnd(i+900)});
+  }
+})();
+
+loadTask("Space built");
+/* ---------- layout ---------- */
+var aspect=1, wide=true, halfW=10, halfH=6;
+function resize(){
+  var w=window.innerWidth,h=window.innerHeight;
+  renderer.setSize(w,h,false);aspect=w/h;camera.aspect=aspect;camera.updateProjectionMatrix();
+  halfH=TAN*CAM_Z;halfW=halfH*aspect;wide=aspect>1.05;
+}
+window.addEventListener("resize",resize);resize();
+
+var mx=0,my=0,smx=0,smy=0;
+window.addEventListener("pointermove",function(e){mx=e.clientX/window.innerWidth*2-1;my=e.clientY/window.innerHeight*2-1;});
+
+/* ---------- text layer ---------- */
+var panels={};
+Array.prototype.forEach.call(document.querySelectorAll(".panel"),function(el){panels[el.getAttribute("data-k")]=el;});
+function show(k,v){
+  var el=panels[k];if(!el)return;
+  if(v<0.004){if(el.style.visibility!=="hidden"){el.style.visibility="hidden";el.style.opacity="0";}return;}
+  el.style.visibility="visible";el.style.opacity=v.toFixed(3);el.style.transform="translateY("+((1-v)*26).toFixed(1)+"px)";
+}
+var scrim=document.getElementById("scrim"),grid=document.getElementById("grid"),bar=document.getElementById("bar"),chap=document.getElementById("chap"),callout=document.getElementById("callout"),hint=document.getElementById("hint"),chapText="";
+function setChap(s){if(s!==chapText){chapText=s;chap.textContent=s;}}
+
+/* ---------- loop ---------- */
+var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var p=0,target=0;
+var workEl=document.getElementById("work"),endEl=document.getElementById("end"),endPos=new THREE.Vector3(),first=true;
+/* where each piece floats: FIELD where each one ends up after they scatter (field units), HEROPOS around the camera in the first view (world units) */
+var FIELD=[];   /* a trail leading away into the fog: each piece is far beyond the one before, so you only ever see the one you have reached */
+[[0,0,0],[9,3,-26],[0,-3,-52],[-9,2.5,-78],[0,-2.5,-104],[9,3,-130]].forEach(function(a,c){FIELD[ORDER[c]]=new THREE.Vector3(a[0],a[1],a[2]);});
+/* depth follows the chapter order: Me nearest, then software, game, app, security, and mechatronics furthest back (listed by piece: software, game, app, security, mechatronics, me) */
+var HEROPOS=[[5.2,-2.4,6],[-6.5,-3.2,2],[7.5,3.4,-2],[-3,5,-6],[3.2,-5.2,-10],[-5.5,2.2,10]].map(function(a){return new THREE.Vector3(a[0],a[1],a[2]);});
+
+var lockQ=new THREE.Quaternion(),tiltQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(0.52,0,0.18)),spinQ=new THREE.Quaternion(),UP=new THREE.Vector3(0,1,0);
+var presQ=new THREE.Quaternion(),flatQ=new THREE.Quaternion(),eul=new THREE.Euler();
+var lockPos=new THREE.Vector3(),vA=new THREE.Vector3(),vP=new THREE.Vector3(),vK=new THREE.Vector3(),qA=new THREE.Quaternion(),pos=new THREE.Vector3(),quat=new THREE.Quaternion();
+var done=[0,0,0,0,0,0],zoom=[0,0,0,0,0,0],slide=[0,0,0,0,0,0],park=[0,0,0,0,0,0];
+/* the finished lock can be turned by dragging, and pressing it opens the message form */
+var ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),pieceMeshes=pieces.map(function(pc){return pc.mesh;});
+var userYaw=0,userPitch=0,dragging=false,dragMoved=0,lastX=0,lastY=0,formOpen=false,formT=0,endLive=false;
+var msgForm=document.getElementById("msgForm"),mBack=document.getElementById("mClose");
+var fName=document.getElementById("mName"),fMail=document.getElementById("mMail"),fText=document.getElementById("mText");
+var dirty=[1,1,1,1,1,1],formShown=false,formStatus="",openedAt=0,focusSlot=-1,blinkOn=true,formShift=0;
+function markAll(){for(var k=0;k<6;k++)dirty[k]=1;}
+function markSlot(sl){for(var k=0;k<6;k++)if(CH[k]-1===sl)dirty[k]=1;}
+function onLock(e){ndc.set(e.clientX/window.innerWidth*2-1,-(e.clientY/window.innerHeight*2-1));ray.setFromCamera(ndc,camera);var h=ray.intersectObjects(pieceMeshes,false);return h.length?pieceMeshes.indexOf(h[0].object):-1;}
+function setTab(on){[fName,fMail,fText].forEach(function(el){el.tabIndex=on?0:-1;});}
+function openForm(){formOpen=true;openedAt=performance.now();formStatus="";markAll();mBack.hidden=false;setTab(true);root.classList.add("formopen");}
+function closeForm(){formOpen=false;setTab(false);root.classList.remove("formopen");try{document.activeElement&&document.activeElement.blur();}catch(e){}}
+function sendForm(){
+  var n=fName.value.trim(),m=fMail.value.trim(),t=fText.value.trim();
+  if(!n||!t||m.indexOf("@")<1)formStatus="Fill in your name, a valid email and a message.";
+  else formStatus="Not sent: this preview has nowhere to send it yet.";
+  markSlot(0);
+}
+var touchDrag=false;
+window.addEventListener("pointerdown",function(e){if(!endLive||formOpen||onLock(e)<0)return;dragging=true;touchDrag=e.pointerType==="touch";dragMoved=0;lastX=e.clientX;lastY=e.clientY;});
+window.addEventListener("pointercancel",function(){dragging=false;});
+window.addEventListener("pointermove",function(e){
+  if(dragging){var dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;dragMoved+=Math.abs(dx)+Math.abs(dy);if(!touchDrag){userYaw+=dx*0.008;userPitch=clamp(userPitch+dy*0.008,-1.2,1.2);}}
+  else document.body.style.cursor=(endLive&&onLock(e)>=0)?"pointer":"";
+});
+window.addEventListener("pointerup",function(){if(dragging&&dragMoved<(touchDrag?12:7)&&endLive)openForm();dragging=false;});
+/* while it is the form, pressing a piece does what that piece is for */
+window.addEventListener("click",function(e){
+  if(!formOpen||!endLive||performance.now()-openedAt<450||e.target===mBack)return;
+  var hit=onLock(e);if(hit<0)return;var slot=CH[hit]-1;
+  if(slot===1)fName.focus();else if(slot===2)fMail.focus();else if(slot===3||slot===4)fText.focus();else if(slot===5)sendForm();
+});
+mBack.addEventListener("click",closeForm);
+window.addEventListener("keydown",function(e){if(e.key==="Escape")closeForm();});
+msgForm.addEventListener("submit",function(e){e.preventDefault();sendForm();});
+[fName,fMail,fText].forEach(function(el,k){
+  el.addEventListener("input",function(){if(k===2){markSlot(3);markSlot(4);}else markSlot(k+1);});
+  el.addEventListener("focus",function(){focusSlot=k===0?1:k===1?2:3;markAll();});
+  el.addEventListener("blur",function(){focusSlot=-1;markAll();});
+});
+fName.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();fMail.focus();}});
+fMail.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();fText.focus();}});
+setInterval(function(){if(formOpen&&focusSlot>=0){blinkOn=!blinkOn;markSlot(focusSlot);if(focusSlot===3)markSlot(4);}},520);   /* only the piece being typed on is redrawn for the caret */
+/* what each piece shows while the lock is the form. the piece keeps its colour, its frame and its Chinese name on the left */
+function wrapLines(c,txt,maxW){var out=[],paras=txt.split("\n");paras.forEach(function(pg){var words=pg.split(" "),line="";words.forEach(function(w){var t=line?line+" "+w:w;if(c.measureText(t).width>maxW&&line){out.push(line);line=w;}else line=t;});out.push(line);});return out;}
+function tail(c,txt,maxW){while(txt.length>1&&c.measureText(txt).width>maxW)txt=txt.slice(1);return txt;}
+function drawForm(i){
+  var pc=pieces[i],c=pc.ctx,col=pc.ecol,slot=CH[i]-1,X0=300,MW=850,foc=(slot===focusSlot)||(slot===4&&focusSlot===3),caret=foc&&blinkOn;
+  c.globalAlpha=1;c.textAlign="left";c.textBaseline="middle";
+  if(slot===5){ /* the whole piece is the send button */
+    c.fillStyle=col;c.fillRect(0,0,FW,FH);c.fillStyle="#0c0b15";c.font="900 104px "+CNFONT;c.fillText(CN[i],44,205);
+    c.font="800 200px "+DFONT;c.fillText("SEND",X0+30,212);return;
+  }
+  c.fillStyle="#0c0b15";c.fillRect(0,0,FW,FH);c.strokeStyle=col;c.lineWidth=foc?14:5;c.strokeRect(12,12,FW-24,FH-24);
+  /* once a piece is being written on, its Chinese name steps aside and the writing gets the whole face */
+  var typed=slot===1?fName.value:slot===2?fMail.value:(slot===3||slot===4)?fText.value:"",clear=slot>0&&(foc||typed.length>0);
+  if(clear){X0=70;MW=1070;}
+  else{c.fillStyle=col;c.font="900 104px "+CNFONT;c.fillText(CN[i],44,205);c.globalAlpha=.6;c.fillRect(X0-34,60,4,280);c.globalAlpha=1;}
+  if(slot===0){
+    c.fillStyle="#efe8d6";c.font="800 92px "+DFONT;c.fillText("SEND A",X0,130);c.fillText("MESSAGE",X0,224);
+    c.fillStyle=col;c.font="500 27px monospace";wrapLines(c,formStatus||"Press a piece to write on it.",MW).slice(0,2).forEach(function(l,n){c.fillText(l,X0,306+n*36);});
+  }else if(slot===1||slot===2){
+    var el=slot===1?fName:fMail;c.fillStyle=col;c.font="500 32px monospace";c.fillText(slot===1?"YOUR NAME":"YOUR EMAIL",X0,96);
+    c.fillStyle="#efe8d6";c.font="800 96px "+DFONT;var v=tail(c,el.value,MW-30);c.fillText(v,X0,230);
+    if(caret)c.fillRect(X0+c.measureText(v).width+8,178,8,104);
+    c.globalAlpha=.4;c.fillRect(X0,300,MW,4);c.globalAlpha=1;
+  }else{ /* the message runs across two pieces: three lines on the first, four on the second */
+    c.font="800 66px "+DFONT;var lines=wrapLines(c,fText.value,MW),first=slot===3,from=first?0:3,rows=first?3:4,y0=first?170:72,n;
+    if(lines.length>7)lines=lines.slice(lines.length-7);
+    if(first){c.fillStyle=col;c.font="500 32px monospace";c.fillText("YOUR MESSAGE",X0,80);}
+    c.fillStyle="#efe8d6";c.font="800 66px "+DFONT;
+    for(n=0;n<rows;n++){var ln=lines[from+n];if(ln===undefined)break;c.fillText(ln,X0,y0+n*82);}
+    var last=lines.length-1;
+    if(caret&&focusSlot===3&&last>=from&&last<from+rows)c.fillRect(X0+c.measureText(lines[last]).width+8,y0+(last-from)*82-36,7,72);
+  }
+}
+var formQ=new THREE.Quaternion();
+var wallHit=[0,0,0,0,0,0],first2=true,bigBack=document.getElementById("bigBack"),endText=document.getElementById("endText"),hit=[0,0,0,0,0,0],shakeT=-9,shakeAmp=0,finalT=-9,prevClose=0,prevDc=0;
+/* soft-edged pieces for the moment the lock closes: a floor ripple and a flash (the main effect, the shafts along the bars, is built with the pieces) */
+var waves=[],frontWave,flash;
+(function(){
+  var cv=document.createElement("canvas");cv.width=cv.height=512;var c=cv.getContext("2d"),g=c.createRadialGradient(256,256,0,256,256,256);
+  g.addColorStop(0,"rgba(242,207,122,0)");g.addColorStop(0.6,"rgba(242,207,122,0)");g.addColorStop(0.8,"rgba(242,207,122,.55)");g.addColorStop(0.87,"rgba(255,244,214,1)");g.addColorStop(0.93,"rgba(242,207,122,.4)");g.addColorStop(1,"rgba(242,207,122,0)");
+  c.fillStyle=g;c.fillRect(0,0,512,512);var rtex=new THREE.CanvasTexture(cv);
+  for(var k=0;k<3;k++){var w=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:rtex,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+    w.rotation.x=-Math.PI/2;w.visible=false;scene.add(w);waves.push(w);}
+  frontWave=new THREE.Sprite(new THREE.SpriteMaterial({map:rtex,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));frontWave.visible=false;scene.add(frontWave);
+  var cv2=document.createElement("canvas");cv2.width=cv2.height=256;var c2=cv2.getContext("2d"),g2=c2.createRadialGradient(128,128,0,128,128,128);
+  g2.addColorStop(0,"rgba(255,246,222,1)");g2.addColorStop(0.3,"rgba(242,207,122,.5)");g2.addColorStop(1,"rgba(242,207,122,0)");c2.fillStyle=g2;c2.fillRect(0,0,256,256);
+  flash=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv2),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));flash.visible=false;scene.add(flash);
+})();
+var focusV=new THREE.Vector3(),freeQ=new THREE.Quaternion(),tq=new THREE.Quaternion(),orbQ=new THREE.Quaternion(),vL=new THREE.Vector3(),home=new THREE.Vector3();
+
+function frame(ms){
+  requestAnimationFrame(frame);
+  var time=ms/1000;
+  var vh=window.innerHeight,y=window.scrollY,workTop=workEl.offsetTop,endTop=endEl.offsetTop;
+  target=clamp(y/Math.max(1,workTop-(2+HOLD)*vh),0,1);
+  p=(reduce||first)?target:p+(target-p)*0.085;first=false;
+  if(!frameCounted){frameCounted=true;loadTask("First frame drawn");}
+  var dc=clamp((y-(workTop-(2+HOLD)*vh))/(0.95*vh),0,1);   /* pieces close into a door */
+  var dop=clamp((y-(workTop-vh))/vh,0,1);             /* the wall rides up with the page, flat, like a 2D sheet */
+  var ep=clamp((y+vh-endTop)/vh,0,1);                /* the last page is coming into view */
+  var A=clamp((y-(endTop-0.6*vh))/(1.6*vh),0,1);
+  if(formOpen){A=1;dc=1;dop=1;ep=1;}
+  endLive=(A>0.97&&finalT>0)||formOpen;
+  formT+=((formOpen?1:0)-formT)*(reduce?1:0.1);var ft=ss(0,1,formT);
+  mBack.style.opacity=ft.toFixed(3);if(!formOpen&&formT<0.02&&!mBack.hidden)mBack.hidden=true;
+  var formS=wide?Math.min(halfW*0.135,halfH*0.19):Math.min(halfW*0.29,halfH*0.135);   /* phones get one column of six pieces */
+  var wantShift=(!wide&&focusSlot>=0)?halfH*0.4-(2.5-focusSlot)*2.3*formS:0;formShift+=(wantShift-formShift)*0.15;   /* on a phone the piece you are typing on moves up, clear of the keyboard */
+  /* write the form onto the faces while it is open, and put the study drawings back when it closes */
+  if(ft>0.02){if(!formShown){markAll();formShown=true;}for(var fi=0;fi<6;fi++)if(dirty[fi]){dirty[fi]=0;drawForm(fi);pieces[fi].tex.needsUpdate=true;}}
+  else if(formShown){for(var fj=0;fj<6;fj++){DRAW[fj](pieces[fj].ctx,time,pieces[fj].col);pieces[fj].tex.needsUpdate=true;}formShown=false;lastName=-1;}
+  smx+=(mx-smx)*0.06;smy+=(my-smy)*0.06;
+
+  /* one continuous camera move along the trail: it reaches a piece, pushes in, eases back a
+     little, then travels on through the fog until the next piece appears. you never see the six
+     together until they come back for the wall and, at the very end, the lock */
+  var i,t,active=-1,activeAmt=0,meOpen=0,meTl=0,flyB=0,flyA=0,curT=0.5,curC=0;
+  var hero=p<HERO_END, h=ss(0.006,HERO_END,p);   /* h: 0 = among the pieces, 1 = pulled back, all six in view */
+  for(var c=0;c<6;c++){
+    i=ORDER[c];t=clamp((p-START[c])/DUR[c],0,1);
+    var live=p>=START[c]&&p<START[c]+DUR[c], me=i===5;
+    var up=me?ss(0.03,0.12,t):ss(0.04,0.3,t), down=me?ss(0.91,0.95,t):ss(0.7,0.84,t), go=me?ss(0.95,1,t):ss(0.84,1,t);
+    var zc=lerp(lerp(0.45,1,up),0.45,down);
+    zoom[i]=live?zc:0;
+    slide[i]=(me?ss(0,0.1,t):ss(0,0.25,t))*(1-(me?ss(0.91,0.96,t):ss(0.74,0.9,t)));   /* how far it has turned its face to you */
+    done[i]=me?ss(0.9,0.95,t):ss(0.7,0.9,t);
+    if(me){
+      meName=clamp((t-0.13)/0.16,0,1);
+      meOpen=ss(0.31,0.37,t)*(1-ss(0.84,0.89,t));
+      meTl=clamp((t-ME_A)/ME_L,0,1)*6;                 /* the six lines take over half of the chapter, about three and a half times the scroll each had before */
+      show("p"+i,ss(0.18,0.23,t)*(1-ss(0.86,0.9,t)));
+    }else show("p"+i,ss(0.34,0.44,t)*(1-ss(0.62,0.72,t)));
+    if(live){
+      active=i;activeAmt=zc;curT=t;curC=c;
+      focusV.copy(FIELD[i]);if(c<5)focusV.lerp(FIELD[ORDER[c+1]],go);   /* the point the camera is looking at */
+    }
+  }
+  if(hero){active=ORDER[0];activeAmt=0.45*h;focusV.copy(FIELD[active]);}   /* leaving the first view, the camera is already heading for the first piece */
+  if(active<0&&!hero){active=ORDER[5];activeAmt=0.45;focusV.copy(FIELD[active]);}   /* after the last chapter the camera stays with the sixth piece */
+  var close=ss(0.5,1,activeAmt);   /* 1 when a piece fills the view */
+
+  /* text */
+  show("hero",1-ss(0.008,0.03,p));
+  hint.style.opacity=(1-ss(0.004,0.02,p)).toFixed(3);
+  grid.style.opacity=(close*0.4+ep*0.2).toFixed(3);scrim.style.opacity=(dc>0?0:close).toFixed(3);
+  var maxY=document.documentElement.scrollHeight-vh;
+  bar.style.transform="scaleX("+(maxY>0?clamp(y/maxY,0,1):0).toFixed(4)+")";
+  callout.style.opacity=(active>=0&&dc<=0?ss(0.75,0.98,activeAmt):0).toFixed(3);
+  if(ep>0.5)setChap("Contact");
+  else if(dop>0)setChap("Selected work");
+  else if(dc>0.5)setChap("Six pieces");
+  else if(active>=0&&activeAmt>0.5){callout.textContent="Piece 0"+CH[active]+" · 6 × 2 × 2";setChap("0"+CH[active]+" / 06 · "+NAMES[active]);}
+  else if(p<HERO_END)setChap("The Lock");
+
+  /* the six pieces are loose: each has its own spot in the field and tumbles on its own.
+     lockQ is only used on the last page, where they finally come together */
+  var since=time-finalT, kick=finalT>0?3.2*(1-Math.exp(-since*1.4)):0;   /* the finished lock spins up, then settles */
+  spinQ.setFromAxisAngle(UP,(reduce?0:time*0.12)+p*2+kick);
+  freeQ.copy(tiltQ).multiply(spinQ);lockQ.copy(freeQ);
+  if(A>0.5){eul.set(userPitch,userYaw,0);orbQ.setFromEuler(eul);lockQ.premultiply(orbQ);}   /* the visitor's own turn of the lock */
+  eul.set(0.1+smy*0.14,-0.2+smx*0.24,0);presQ.setFromEuler(eul);
+
+  /* camera push, done by moving and scaling the whole field around the piece being shown */
+  var fullScale=wide?Math.min(1,halfW/9.5):Math.min(1,halfW/4.4), baseScale=fullScale*0.75;
+  /* a piece is never parked square in front of you. it sits off to one side, at an angle, smaller
+     than the screen, and keeps drifting and turning the whole time you are with it, as if you were
+     flying past. the Me piece is held a little straighter and larger so its lines stay readable */
+  var isMeNow=active===5, side=curC%2?-1:1, loose=isMeNow?0.4:1, pass=curT-0.5;
+  var presScale=(wide?Math.min(1.8,halfW*0.155):halfW*0.26)*(isMeNow?1.18+(wide?0.34:0.06)*meOpen:1);   /* the about-me piece gets a good deal bigger while its slips are open */
+  eul.set(0.16*side*loose,side*(-0.44+0.66*curT)*loose,0.08*side*loose);tq.setFromEuler(eul);tq.premultiply(presQ);
+  if(wide)home.set(0,0.4,0);else home.set(0,1.6,0);
+  var lockScale=lerp(baseScale,presScale,activeAmt);
+  lockPos.copy(home);
+  if(active>=0){
+    vL.copy(focusV);
+    vP.copy(vL).multiplyScalar(baseScale).add(home);           /* where it floats when the camera is back */
+    if(wide)vK.set((halfW*0.17*side-pass*2.6*side)*loose,1.3+((curC%3)-1)*0.4*loose+pass*0.6,0);else vK.set(-pass*1.1*side*loose,1.1+pass*0.4,0);
+    vP.lerp(vK,activeAmt);                                      /* where it should be now: off-centre and still moving */
+    lockPos.copy(vP).addScaledVector(vL,-lockScale);
+  }
+  /* end lock rides up with the end section */
+  /* the lock is built large in the middle, then settles on the seam between LET'S and TALK.
+     the words are bright and sit behind it, LET'S to the upper left and TALK to the lower right. nothing is drawn across the lock */
+  var settle=ss(0.82,1,A), endScale=fullScale*lerp(1.25,0.96,settle), reveal=ss(0.8,0.9,A);
+  endPos.set(0,0.10*halfH,0);
+  var bsc=lerp(1.14,1,reveal).toFixed(4);
+  bigBack.style.opacity=(reveal*(1-ft)).toFixed(3);bigBack.style.transform="translate("+(-smx*12).toFixed(1)+"px,calc(-50% + "+(smy*7).toFixed(1)+"px)) scale("+bsc+")";
+  endText.style.opacity=(ss(0.9,1,A)*(1-ft)).toFixed(3);
+  /* wall: two columns of three pieces, big enough to cover the screen.
+     its bottom edge sits exactly on the top edge of the work page and scrolls up with it */
+  var sd=Math.max(halfW/6,halfH/3)*1.06;
+  var wallY=Math.max(-halfH,-(((workTop-y)/vh)*2-1)*halfH)*(CAM_Z-sd)/CAM_Z+3*sd;
+  var kx=wide?1:0.42, tt=reduce?0:time;
+
+  for(i=0;i<6;i++){
+    var pc=pieces[i], face=slide[i], still=1-ss(0.4,0.9,zoom[i]);
+    /* its own spot, drifting a little, tumbling slowly */
+    vA.copy(FIELD[i]);
+    vA.x+=Math.sin(tt*0.3+i*1.7)*0.35*still;vA.y+=Math.cos(tt*0.25+i*2.3)*0.35*still;
+    pos.copy(vA).multiplyScalar(lockScale).add(lockPos);
+    eul.set(tt*0.08+i*1.3,tt*0.06+i*2.1,i*0.7);quat.setFromEuler(eul);
+    var sc=lockScale;
+    if(face>0)quat.slerp(i===active?tq:presQ,face);              /* turns most of the way towards you, never quite square */
+    if(hero){ /* first view: the pieces hang all around the camera. on the first scroll they scatter, each to its place far down the trail */
+      vK.set(HEROPOS[i].x*kx+Math.sin(tt*0.2+i)*0.4,HEROPOS[i].y+Math.cos(tt*0.17+i*2)*0.4,HEROPOS[i].z);
+      pos.lerpVectors(vK,pos,h);sc=lerp(1.3*fullScale,sc,h);
+    }
+    var vis=true, glow=0.5+0.7*ss(0.5,1,zoom[i])+0.3*done[i];   /* a piece you have met stays brighter */
+    var focus=(i===active||dc>0)?1:1-0.65*close;        /* the others fall back while one is shown */
+    glow*=focus;pc.band.emissiveIntensity=pc.cap.emissiveIntensity=0.75*focus;pc.mesh.children[0].material.opacity=0.85*focus;
+    if(dop>=1){
+      /* each piece flies in out of the fog, lines up outside its slot, then is driven home hard.
+         the Me piece comes last, waits a beat, and closes the lock */
+      var k=i===5?5:i, s0=0.06+k*0.1+(k===5?0.02:0), T=s0+0.2+(k===5?0.02:0);
+      if(A<=s0)vis=false;
+      else{
+        var fly=ss(s0,s0+0.14,A), ram=clamp((A-(T-0.06))/0.06,0,1), dirE=k*1.9+0.4;
+        vA.copy(pc.axis).multiplyScalar(5.5*(1-ram*ram*ram)).add(pc.aPos).multiplyScalar(endScale).applyQuaternion(lockQ).add(endPos);
+        qA.copy(lockQ).multiply(pc.aQuat);
+        pos.set(Math.cos(dirE)*30,Math.sin(dirE)*14+3,-38).lerp(vA,1-Math.pow(1-fly,3));
+        pos.y+=Math.sin(Math.PI*fly)*4;quat.slerp(qA,ss(0.2,1,fly));sc=lerp(lockScale,endScale,fly);
+        glow=0.6+0.15*ram;
+        if(ft>0){ /* the lock opens out flat into a panel of six tiles, and the form sits on it */
+          /* the lock comes apart into its six blocks, still solid and still turning with the mouse. they hang in two
+             columns with gaps between them and at slightly different depths, each one showing its part of the form */
+          var fslot=CH[i]-1,fside=fslot<3?-1:1,frow=fslot%3;
+          if(wide){eul.set(0.1+smy*0.1,-0.26+smx*0.16,0);formQ.setFromEuler(eul);
+            vK.set(fside*3.22*formS,(1-frow)*2.34*formS,((fslot+frow)%2?0.55:-0.35)*formS).applyQuaternion(formQ);vK.y+=0.15;}
+          else{eul.set(0.05,-0.12,0);formQ.setFromEuler(eul);
+            vK.set(0,(2.5-fslot)*2.3*formS,(fslot%2?0.3:-0.2)*formS).applyQuaternion(formQ);vK.y+=formShift;}
+          pos.lerp(vK,ft);quat.slerp(formQ,ft);sc=lerp(sc,formS,ft);glow=lerp(glow,fslot===5?1.3+0.22*Math.sin(performance.now()*0.003):0.95,ft);
+          if(fslot===5){pc.band.emissiveIntensity=pc.cap.emissiveIntensity=lerp(0.75,1.5,ft);}
+        }
+      }
+      /* the moment it seats: knock, shake, and for the last one the full flare */
+      if(A>=T&&!hit[k]){
+        hit[k]=1;
+        if(!first2){
+          shakeT=time;shakeAmp=k===5?1.1:0.4;
+          if(k===5){finalT=time;finale();}
+          else clack(0.75);
+        }else if(k===5)finalT=time-20;   /* page loaded already at the end: show it finished, without the show */
+      }else if(A<T-0.02&&hit[k]){hit[k]=0;if(k===5)finalT=-9;}
+    }else if(dc>0){
+      /* each piece flies in from its own direction out of the fog, still tumbling, on a curved
+         path. it slows as it arrives and only turns flat in the last stretch */
+      var slot=CH[i]-1, side=slot<3?-1:1, row=slot%3, d0=clamp((dc-slot*0.07)/0.62,0,1), d=1-Math.pow(1-d0,3);
+      var dir=slot*2.4+0.7, arc=Math.sin(Math.PI*d);
+      if(i!==active){pos.set(Math.cos(dir)*26,Math.sin(dir)*12+4,-34-slot*3);sc=lockScale;}
+      vK.set(side*3*sd,(1-row)*2*sd+wallY,0);
+      pos.lerp(vK,d);
+      pos.x+=arc*Math.cos(dir+1.6)*5;pos.y+=arc*3;pos.z+=arc*4;
+      quat.slerp(flatQ,ss(0.35,1,d0));sc=lerp(sc,sd*1.004,d);glow=lerp(glow,0.9,d);
+      if(d0>=1&&!wallHit[slot]){wallHit[slot]=1;if(!first2)tock();}else if(d0<0.9)wallHit[slot]=0;   /* each slab knocks into place as it lands */
+    }
+    pc.mesh.visible=vis;
+    pc.mesh.position.copy(pos);pc.mesh.quaternion.copy(quat);pc.mesh.scale.setScalar(sc);
+    pc.face.emissiveIntensity=glow*1.15;   /* the drawn face is the brightest side */
+  }
+  /* the Me piece splits into slips; the slip for the current line steps forward */
+  var m5=pieces[5].mesh;
+  /* the aura follows the Me piece. it fades while the piece is part of the flat wall, and flares when the lock closes */
+  var wallAmt=dop<1?ss(0.3,0.9,dc):0, flare=finalT>0&&since<6?Math.exp(-since*1.3):0, pulse=reduce?0:Math.sin(time*1.6);
+  aura.visible=m5.visible;
+  if(aura.visible){
+    aura.position.copy(m5.position);aura.quaternion.copy(m5.quaternion);aura.scale.copy(m5.scale);
+    var ga=(1+0.2*pulse+1.2*flare+0.4*meOpen)*(1-wallAmt)*(1-ft);
+    for(i=0;i<7;i++){shells[i].material.opacity=0.085*ga;shells[i].scale.set(5.2,5.2*(1+0.4*meOpen),1);shells[i].position.y=0.12*meOpen;}   /* the light swells as the slips open */
+    auraLight.intensity=(1.7+0.3*pulse+3.5*flare+1.4*meOpen)*(1-wallAmt);
+    for(i=0;i<3;i++){var sa=tt*0.9+i*2.094;sparks[i].position.set(Math.cos(sa)*4.1,Math.sin(sa)*1.9*(1+0.6*meOpen),Math.sin(sa+1)*1.6);sparks[i].visible=wallAmt<0.5;}
+  }
+  var meOn=meOpen>0.001&&dc<=0&&m5.visible;
+  slatGroup.visible=meOn;
+  if(meOn){
+    m5.visible=false;slatGroup.position.copy(m5.position);slatGroup.quaternion.copy(m5.quaternion);slatGroup.scale.copy(m5.scale);
+    var cardIdx=clamp(Math.floor(meTl),0,5),cfr=meTl-cardIdx,cardOp=wide?meOpen*(cardIdx>0?ss(0,0.14,cfr):1)*(cardIdx<5?1-ss(0.86,1,cfr):1):0;
+    if(cardOp>0.01&&meCard.shown!==cardIdx)drawMeCard(cardIdx);
+    meCard.mesh.visible=cardOp>0.02;meCard.em.opacity=0.7*meOpen;
+    meCard.mesh.position.set(0,((5-cardIdx)-2.5)/3*(1+0.38*meOpen)+0.12*meOpen,meOpen*0.6);meCard.mesh.scale.set(1,lerp(0.32,1,cardOp),1);   /* it starts at the slip's own height and grows from there, standing out exactly as far as the slip did */
+    for(i=0;i<6;i++){
+      var sl=slats[i],ln=sl.line,act=ss(ln-0.15,ln+0.15,meTl)*(ln<5?1-ss(ln+0.85,ln+1.15,meTl):1),wave=reduce?0:Math.sin(time*0.8+ln*0.9);
+      var part=wide?(ln<cardIdx?1:ln>cardIdx?-1:0)*0.36*cardOp:0;   /* the slips above and below move apart to make room for the card */
+      sl.mesh.position.set(0,sl.y*(1+0.38*meOpen)+0.12*meOpen+part,meOpen*(0.6*act+0.16*wave*(1-act)));
+      sl.mesh.rotation.x=meOpen*(1-act)*0.07*wave;sl.mesh.scale.setScalar(1+(wide?0:0.1)*act*meOpen);sl.mesh.visible=!(wide&&ln===cardIdx&&cardOp>0.02);   /* the slip being read steps forward and grows a little */
+      sl.lm.opacity=ss(0.25,0.7,meOpen);sl.lm.color.setScalar(0.36+0.64*act);sl.em.opacity=0.7*meOpen;
+    }
+    var idx=clamp(Math.floor(meTl),0,5);
+    meLine.style.display=wide?"none":"";
+    if(idx!==meIdx){meIdx=idx;meLine.textContent=ME[idx][1];meNum.textContent="Line "+(idx+1)+" of 6";}
+  }
+  if(active>=0&&activeAmt>0.5&&!reduce){var a=pieces[active];DRAW[active](a.ctx,time,a.col);a.tex.needsUpdate=true;lastName=meName;}
+  else if(Math.abs(meName-lastName)>0.002){lastName=meName;DRAW[5](pieces[5].ctx,time,pieces[5].col);pieces[5].tex.needsUpdate=true;}
+
+  /* the space around it: floor, light shafts and fragments that stream past as you scroll.
+     hidden while the work list is on screen, back for the last page */
+  var envAmt=Math.max(1-dc,dop>=1?ss(0.1,0.6,ep):0)*(1-0.5*ft), flow=p*170+(reduce?0:time*0.5);
+  env.visible=envAmt>0.01;
+  if(env.visible){
+    floor.material.opacity=(0.3+0.5*flare)*envAmt;floor.position.z=(flow*0.6)%2.5;
+    for(i=0;i<beams.length;i++){var bm=beams[i];bm.mesh.material.opacity=bm.o*envAmt*(reduce?1:0.78+0.22*Math.sin(time*0.23+i*1.9));bm.mesh.rotation.z=bm.r;   /* the shafts hold still. only their strength drifts, as haze passes through them */}
+    for(i=0;i<frags.length;i++){
+      var fg=frags[i],fz=((fg.z+flow)%90+90)%90-70,fx2=fg.x,fy2=fg.y;
+      /* on the last page the fragments are hidden. when the final piece is rammed home and the lock shakes, they burst
+         out of it in every direction, slow down as if there were no gravity, and stay floating and tumbling around it */
+      var fk2=envAmt,spin=0;
+      if(dop>=1){
+        fk2=0;
+        if(finalT>0&&since>=0){
+          var sa=i*2.399,sel=Math.sin(i*1.31)*1.1,reach=6+(i%6)*2.1,out=1.6+reach*(1-Math.exp(-since*1.6))+Math.min(since,40)*0.12;
+          var wob=since*0.25+i;
+          fx2=endPos.x+Math.cos(sa)*Math.cos(sel)*out*(1+(i%3)*0.7)+Math.sin(wob)*0.35;   /* every third block travels much further sideways, so some reach the edges of the screen */fy2=endPos.y+Math.sin(sel)*out+Math.cos(wob*0.8)*0.35;fz=endPos.z+Math.sin(sa)*Math.cos(sel)*out*0.5;
+          fk2=Math.min(1,since*9)*0.8;spin=3*(1-Math.exp(-since*1.2))+since*0.12*(1+i%3);
+        }
+      }
+      fg.mesh.position.set(fx2,fy2,fz);fg.mesh.rotation.set(fg.rx+flow*0.01*fg.sp+spin,fg.ry+flow*0.013*fg.sp+spin*0.7,0);
+      fg.mesh.scale.set(fg.s*3*fk2,fg.s*fk2,fg.s*fk2);fg.mesh.visible=fk2>0.001;
+    }
+  }
+  var steady=(1-0.7*ft)*(hero?1.6-0.6*h:1)*(dop>0&&dop<1?0:1-dc*(dop<1?1:0));   /* hold the camera on the centre line while it passes through */
+  /* rings of light from the closing lock */
+  /* the discharge when the lock closes, shaped by the lock itself: every bar flashes bright, and the light runs off
+     both ends of each bar, so six shafts leave along the lock's own arms and turn with it. one soft ripple on the
+     floor and a small flash at the centre ground it */
+  var waveOn=false, beamOn=false, surge=finalT>0&&since>=0&&since<3?0.35*Math.exp(-since*2.2):0;
+  frontWave.visible=false;flash.visible=waveOn;waves[0].visible=false;
+  if(waveOn){
+    flash.position.copy(endPos);flash.scale.setScalar(5+since*12);flash.material.opacity=0.8*Math.exp(-since*7);
+  }
+  for(i=0;i<6;i++){
+    var pb=pieces[i];
+    if(surge>0){pb.band.emissiveIntensity=pb.cap.emissiveIntensity=0.75+2.4*surge;pb.face.emissiveIntensity+=1.6*surge;pb.mesh.children[0].material.opacity=Math.min(1,0.85+surge);}
+    for(var e=0;e<2;e++){
+      var bm2=pb.beams[e];bm2.visible=beamOn;
+      if(beamOn){var bl=0.4+since*34,thin=Math.max(0.06,1-since*0.62);bm2.scale.set(bl,thin,thin);bm2.position.x=(e?1:-1)*(3+bl/2);bm2.material.opacity=0.9*Math.exp(-since*2.3);}
+    }
+  }
+  /* sound that follows what is on screen */
+  if(soundOn){
+    whoosh.gain.setTargetAtTime(Math.min(0.9,Math.abs(target-p)*230),AC.currentTime,0.15);
+    if(close>=0.5&&prevClose<0.5&&active>=0&&dc<=0)arrive();
+    if(dc>=1&&prevDc<1)seal();
+  }
+  prevClose=close;prevDc=dc;first2=false;
+  var sh=(reduce||time-shakeT>1.2)?0:shakeAmp*Math.exp(-(time-shakeT)*7);
+  camera.position.set(smx*1.5*steady+Math.sin(time*71)*sh,-smy*1.0*steady+Math.cos(time*83)*sh,CAM_Z);camera.lookAt(0,0,0);
+  if(dust){dust.rotation.y=p*1.2+time*0.01;dust.position.y=p*6;}
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

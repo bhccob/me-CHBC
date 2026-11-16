@@ -1,0 +1,49 @@
+# Checks every pull request and every push to main, before Vercel publishes it:
+# no secret in the files, no package with a known serious vulnerability, and the site type-checks and builds.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: this workflow only reads the code. Each action is pinned to a commit, with its version beside it;
+# Dependabot keeps both up to date.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The token is not left in .git/config, where the build's own scripts could read it.
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # No secret may be committed. Fails on the usual key shapes anywhere in the tracked files (the same list as .githooks/pre-commit).
+      - name: Scan for committed secrets
+        run: |
+          if git grep -nIE 'sk-ant-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|re_[A-Za-z0-9]{8,}_[A-Za-z0-9]{16,}' -- . ':!package-lock.json'; then
+            echo "::error::A secret-shaped value is committed (see above). Rotate it first, then remove it from the history."
+            exit 1
+          fi
+
+      # Packages are installed exactly as locked, and none of them may run its own install script.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Check dependencies for known vulnerabilities
+        run: npm audit --audit-level=high
+
+      - name: Type check and build
+        run: npm run build

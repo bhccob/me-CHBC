@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -2 14 14" width="1024" height="1024">
+<title>bhccob</title>
+<rect x="-4" y="-2" width="14" height="14" rx="3.1" fill="#0c0519"/>
+<g fill="none" stroke-width="0.34" stroke-linecap="butt" stroke-linejoin="miter">
+<path d="M0.5 0.05V5.5H2.2M2.8 5.5H3.5V2.5H0.5" stroke="#efe8d6"/>
+<path d="M5.5 9.95V4.5H3.8M3.2 4.5H2.5V7.5H5.5" stroke="#f2cf7a"/>
+</g>
+</svg>

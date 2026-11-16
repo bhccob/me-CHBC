@@ -1,0 +1,222 @@
+/* fonts: self-hosted, see tools/fonts.mjs */
+@font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:200 800;font-display:swap;src:url(/fonts/bricolage-grotesque.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/ibm-plex-mono-400.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url(/fonts/ibm-plex-mono-500.woff2) format("woff2")}
+@font-face{font-family:"Noto Serif SC";font-style:normal;font-weight:900;font-display:swap;src:url(/fonts/noto-serif-sc-900.woff2?v=8e437981) format("woff2")}
+
+:root{
+  /* layout: one fixed 3D stage, one fixed 2D text layer bottom-left, a tall scroll track drives both */
+  --ink:#0a0912;
+  --ink-2:#14121f;
+  --bone:#efe8d6;
+  --dim:#8d88a3;
+  --gold:#e0b85a;
+  --line:rgba(239,232,214,.14);
+  --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --cn:"Noto Serif SC","Songti SC","SimSun",serif;
+  --gut:clamp(18px,4.5vw,72px);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--ink);color:var(--bone);font-family:var(--display)}
+body{overflow-x:hidden}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:2;pointer-events:none}
+.grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 40%,#000 0%,transparent 72%);
+          mask-image:radial-gradient(ellipse at 50% 40%,#000 0%,transparent 72%)}
+.bar{position:fixed;left:0;top:0;height:2px;width:100%;background:var(--gold);transform-origin:0 50%;transform:scaleX(0);z-index:5}
+.hud{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;gap:16px;
+  padding:clamp(14px,2.4vh,26px) var(--gut);font:500 12px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;z-index:4}
+/* the name, top left: press it to go back to the top */
+.home{color:inherit;text-decoration:none;cursor:pointer;padding:7px 0;transition:color .25s}
+.home:hover{color:var(--gold)}
+.home:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.nav{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:4px 6px}
+.nav button{margin:0!important;border-color:transparent!important;background:none!important;padding:7px 9px}
+.nav button:hover{border-color:var(--bone)!important}
+#chap{flex-basis:100%;text-align:right;color:var(--dim);margin-top:4px}
+.stage{position:fixed;inset:0;pointer-events:none;z-index:3}
+.scrim{position:absolute;inset:0;opacity:0;pointer-events:none;background:linear-gradient(to top,rgba(10,9,18,.9) 0%,rgba(10,9,18,.7) 30%,rgba(10,9,18,0) 58%)}
+.panel{position:absolute;left:var(--gut);right:var(--gut);bottom:clamp(26px,7vh,84px);opacity:0;will-change:opacity,transform}
+.panel.hero{opacity:1;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.panel.hero .eyebrow{justify-content:center}
+.panel.hero .lead{max-width:30ch}
+/* the six about-me lines, all at once: read out by screen readers, and shown on the plain page */
+.me-all{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.me-all dt{font:500 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:16px 0 6px}
+.me-all dd{font-weight:500;line-height:1.4;max-width:60ch}
+
+/* loader */
+#loader{position:fixed;inset:0;z-index:20;background:var(--ink);display:grid;place-items:center;overflow:hidden;transition:opacity .9s ease .15s}
+#loader::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 70%);opacity:.5}
+/* leaving: the number rushes towards you and you pass through it, as the dark clears onto the first view */
+#loader.done{opacity:0;pointer-events:none}
+#loader.done .lwrap{transform:scale(7);filter:blur(6px)}
+.lwrap{transition:transform 1.05s cubic-bezier(.6,0,.9,.4),filter 1.05s ease;position:relative;display:flex;flex-direction:column;align-items:center;gap:clamp(14px,2.8vh,28px);padding:var(--gut);text-align:center}
+.lwrap .eyebrow{margin:0;justify-content:center}
+.lpct{font:800 clamp(5rem,17vw,12.5rem)/.8 var(--display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.lpct small{font-size:.22em;letter-spacing:0;color:var(--dim);margin-left:.15em}
+.lbar{width:min(62vw,420px);height:2px;background:var(--line);position:relative}
+.lbar i{position:absolute;inset:0;background:var(--gold);transform-origin:0 50%;transform:scaleX(0);transition:transform .3s}
+.lstatus{font:400 11px/1.4 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);min-height:50px;display:grid;place-items:center}
+#loader .lenter{display:none;margin:0}          /* the two buttons only appear once everything is ready */
+#loader.ready .lenter{display:flex}
+#loader.ready .lstatus{display:none}
+.lnote{font:400 11px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);visibility:hidden}
+#loader.ready .lnote{visibility:visible}
+.loading,.loading body{overflow:hidden}
+@media (prefers-reduced-motion:reduce){#loader,.lwrap{transition:none}#loader.done .lwrap{transform:none;filter:none}}
+
+.eyebrow{display:flex;align-items:baseline;gap:14px;font:500 13px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:clamp(8px,1.4vh,16px)}
+.eyebrow b{font:900 clamp(26px,3.4vw,46px)/1 var(--cn);letter-spacing:0;color:var(--c,var(--gold))}
+.t1,.t2{font-weight:800;letter-spacing:-.035em;line-height:.9;text-wrap:balance}
+.t1{font-size:clamp(3.2rem,11vw,10rem)}
+.t2{font-size:clamp(2.5rem,7.6vw,7rem)}
+.lead{margin-top:clamp(10px,1.8vh,22px);font-weight:500;font-size:clamp(1.05rem,1.7vw,1.6rem);line-height:1.3;max-width:34ch;color:var(--bone)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,30ch));gap:22px clamp(24px,4vw,60px);margin-top:clamp(24px,4.4vh,48px)}
+.facts h3{font:500 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--c);margin-bottom:18px}
+.facts p{font-weight:500;font-size:clamp(.92rem,1.1vw,1.08rem);line-height:1.8;color:var(--bone)}
+.facts>div:only-child{grid-column:1/-1;max-width:54ch}
+@media (max-width:640px){.facts{grid-template-columns:1fr}}
+.tools{display:flex;flex-wrap:wrap;gap:4px clamp(16px,2.4vw,34px);margin-top:clamp(24px,4.4vh,44px);font:500 11px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.tools b{font-weight:500;color:var(--c);margin-right:.7em}
+@media (max-width:640px){.facts{margin-top:20px}.facts h3{margin-bottom:14px}.tools{margin-top:20px;gap:2px 14px;line-height:1.6}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:clamp(12px,2vh,22px)}
+.chips i{font:500 12px/1 var(--mono);font-style:normal;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;border:1px solid var(--c);color:var(--c);border-radius:2px}
+.callout{position:absolute;left:50%;top:clamp(58px,11vh,120px);transform:translateX(-50%);font:400 11px/1.2 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:12px;white-space:nowrap;opacity:0}
+.callout::before,.callout::after{content:"";width:clamp(30px,9vw,140px);height:1px;background:var(--line)}
+.hint{position:absolute;right:var(--gut);bottom:clamp(26px,7vh,84px);font:400 11px/1.2 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.hint::after{content:"";display:block;width:1px;height:44px;margin:10px 0 0 auto;background:linear-gradient(var(--bone),transparent);animation:drop 1.8s ease-in-out infinite}
+@keyframes drop{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+#track{height:1500vh}
+
+/* selected work: a normal 2D page that scrolls, so it can grow */
+.work{position:relative;z-index:1;padding:0 var(--gut)}
+.work-intro{padding:22vh 0 clamp(28px,6vh,64px)}
+.rows{list-style:none;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;grid-template-areas:"n n n" "h t m";gap:clamp(10px,1.6vw,18px) clamp(18px,3.5vw,56px);align-items:center;
+  width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;border-radius:0;cursor:pointer;
+  padding:clamp(26px,6vh,64px) 0;border-top:1px solid var(--line);transition:padding-left .45s cubic-bezier(.2,.7,.2,1),opacity .35s}
+.row:hover{padding-left:clamp(8px,1.6vw,28px)}
+.row:focus-visible{outline:2px solid var(--bone);outline-offset:4px}
+.row .n{grid-area:n;font:500 13px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.rname{grid-area:h;font-weight:800;font-size:clamp(2.1rem,5.6vw,5rem);letter-spacing:-.035em;line-height:.92;overflow-wrap:anywhere}
+.rtext{grid-area:t;display:block}
+.rdesc{display:block;font-weight:500;font-size:clamp(1rem,1.3vw,1.2rem);line-height:1.4;color:var(--bone);max-width:40ch}
+.rtext .chips{margin-top:14px}
+.more-b{grid-area:m;font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--bone);padding:13px 16px;border-radius:2px;white-space:nowrap;transition:background .25s}
+.row:hover .more-b{background:#a488ff}
+.more{padding:clamp(22px,4vh,40px) 0 16vh;font:400 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+
+/* the project page: a full-screen case study in the site's own ink, bone and gold */
+.pop{--b:#f2cf7a;position:fixed;inset:0;z-index:30;background:var(--ink);opacity:0;transform:translateY(28px);transition:opacity .4s ease,transform .5s cubic-bezier(.2,.7,.2,1);overflow-y:auto;overscroll-behavior:contain}
+.pop[hidden]{display:none}
+.pop.on{opacity:1;transform:none}
+.pbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px var(--gut);background:linear-gradient(rgba(10,9,18,.8),rgba(10,9,18,0));font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.pbar button{font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;border-radius:2px;padding:12px 16px;border:1px solid var(--bone);background:none;color:var(--bone)}
+.pbar button[hidden]{display:none}
+#popX{background:var(--bone);color:var(--ink)}
+.pbar button:hover{border-color:var(--gold)}
+.pbar button:focus-visible,.plink:focus-visible,.pnext:focus-visible,.ptext:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+/* the picture fades into the page at its edges. with no picture: a soft glow in the project's own colour */
+.phero{position:relative;height:min(64vh,680px);margin-top:-58px;display:grid;place-items:center;overflow:hidden;background:radial-gradient(70% 90% at 50% 30%,color-mix(in srgb,var(--b) 34%,transparent),transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse 62% 78% at 50% 36%,#000 38%,transparent 100%);mask-image:radial-gradient(ellipse 62% 78% at 50% 36%,#000 38%,transparent 100%)}
+/* the picture also fades out towards the bottom, and is gone before the project's name and text begin, so a
+   screenshot's own words never sit behind the page's words */
+.phero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(58% - clamp(60px,12vh,120px)),transparent calc(94% - clamp(60px,12vh,120px)));mask-image:linear-gradient(to bottom,#000 calc(58% - clamp(60px,12vh,120px)),transparent calc(94% - clamp(60px,12vh,120px)))}
+.phero span{font:500 11px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+.pwrap{position:relative;width:min(100%,1320px);margin:clamp(-120px,-12vh,-60px) auto 0;padding:0 var(--gut) clamp(40px,8vh,96px)}
+.pmain{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:clamp(20px,5vw,90px);align-items:start}
+.pop h2{font-weight:800;text-wrap:balance;font-size:clamp(2.6rem,5.4vw,5rem);line-height:.95;letter-spacing:-.035em;margin:0}
+.pright .lead{max-width:30ch;font-size:clamp(1.3rem,2.2vw,2rem);line-height:1.25;margin:.15em 0 0}
+.pmeta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(34px,6.5vh,64px) clamp(24px,5vw,72px);margin-top:clamp(32px,7vh,72px)}
+.pmeta dt{font:500 11px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 12px}
+.pmeta dd,.ptext{font-weight:500;font-size:clamp(1rem,1.2vw,1.15rem);line-height:1.35;color:var(--bone)}
+.ptext{text-underline-offset:.3em}.ptext:hover{color:var(--gold)}
+.pmeta .soon{color:var(--dim)}
+.pmeta .chips{margin:0}
+.pvideo{position:relative;margin:clamp(48px,10vh,120px) auto 0;width:min(100%,1040px);aspect-ratio:16/9;background:rgba(239,232,214,.04);overflow:hidden}
+.pvideo video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pend{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px;margin-top:clamp(40px,8vh,96px);padding-top:clamp(24px,5vh,52px);border-top:1px solid var(--line)}
+.plink{font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--bone);padding:16px 22px;border-radius:2px;text-decoration:none}
+.pnext{margin-left:auto;text-align:right;background:none;border:0;color:var(--bone);cursor:pointer;padding:0;font:inherit}
+.pnext small{display:block;font:500 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.pnext span{font-weight:800;font-size:clamp(2rem,6vw,4.6rem);letter-spacing:-.035em;line-height:.95;transition:color .25s}
+.pnext:hover span{color:var(--gold)}
+@media (max-width:760px){.pmain{grid-template-columns:1fr}.phero{height:44vh}#popN{display:none}}
+.popopen,.popopen body{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.pop{transition:none}}
+
+/* the last page */
+.end{position:relative;z-index:1;height:220vh}
+.end-pin{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 var(--gut) clamp(26px,7vh,84px)}
+/* both words centred, one above the other, as large as the screen allows. the lock sits in front of them in the middle */
+.big span{display:block}
+/* the closing words are at full strength and fade out only in a soft circle where the lock sits */
+.big.v-c{-webkit-mask-image:radial-gradient(circle min(36vh,27vw) at 50% 52%,transparent 50%,#000 100%);mask-image:radial-gradient(circle min(36vh,27vw) at 50% 52%,transparent 50%,#000 100%)}
+.big{position:absolute;left:0;right:0;top:45%;margin:0;text-align:center;white-space:nowrap;font-weight:800;font-size:min(28vw,43vh);line-height:.8;letter-spacing:-.05em;
+  transform:translateY(-50%);opacity:0;will-change:transform,opacity;pointer-events:none}
+.big.thanks{font-size:min(24vw,43vh)}          /* THANK YOU, after a message is sent: wider letters, so a little smaller */
+/* portrait phones: LET'S above the lock and TALK below it, with no mask */
+@media (max-width:760px) and (orientation:portrait){.big.v-c{-webkit-mask-image:none;mask-image:none;font-size:33vw}.big.v-c .r{margin-top:64vw}.big.v-c.thanks{font-size:26vw}}
+.end-foot{position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:clamp(14px,3vw,48px);opacity:0}
+.end-foot .eyebrow{margin:0}
+.end-foot .lead{margin:0;text-align:center;font-size:clamp(.95rem,1.25vw,1.2rem);max-width:38ch}
+.links{display:flex;gap:18px}.links a{color:var(--bone);text-decoration:underline;text-underline-offset:.3em}.links a:hover{color:var(--gold)}
+.links a:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.end-foot .tag{justify-self:end;font:500 13px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+@media (max-width:760px){.end-foot{grid-template-columns:1fr;justify-items:center;text-align:center}.end-foot .tag{justify-self:center}}
+/* the plain way in to the form: a solid button under the lock's line, for anyone who does not guess that the lock can be pressed */
+.end-mid{display:flex;flex-direction:column;align-items:center;gap:clamp(10px,1.8vh,16px)}
+.kopen{font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--bone);border:0;border-radius:2px;padding:15px 20px;cursor:pointer;white-space:nowrap;transition:background .25s}
+.kopen:hover{background:var(--gold)}
+.kopen:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+
+/* the real inputs are kept out of sight and only catch the typing. everything you see is drawn on the faces of the pieces in 3D */
+.msg{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}
+.msg input,.msg textarea,.msg select{font-size:16px}                 /* under 16px, phones zoom the whole page when a field is focused */
+.formopen,.formopen body{overflow:hidden;overscroll-behavior:none}
+.mback{position:absolute;left:var(--gut);top:clamp(58px,10vh,96px);pointer-events:auto;font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--bone);border:0;border-radius:2px;padding:15px 20px;cursor:pointer;opacity:0}
+.mback:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.mback[hidden]{display:none}
+.enter{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:clamp(18px,3.5vh,36px);pointer-events:auto}
+.enter button,.hud button{font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--bone);background:rgba(10,9,18,.55);border:1px solid var(--bone);border-radius:2px;cursor:pointer}
+.enter button{padding:16px 22px}
+.enter button:first-child{background:var(--bone);color:var(--ink)}
+.enter button:hover{border-color:var(--gold)}
+.enter button:focus-visible,.hud button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.hud button{padding:7px 10px;margin-left:14px;border-color:var(--line)}
+/* on a phone the sound switch leaves the top bar. up there it sat right under the name, and a thumb aiming for it
+   hit the name and was sent back to the top of the page. it has its own corner at the bottom left, as big as a thumb
+   needs, and the chapter text stays clear of it. while the message form is open the corner belongs to the pieces,
+   and over the work list, where there is nothing to hear, it fades out so it never covers the text */
+@media (max-width:640px){
+  #snd{position:fixed;left:var(--gut);bottom:14px;margin:0;padding:9px 10px;font-size:11px;background:rgba(10,9,18,.9);transition:opacity .25s}
+  .formopen #snd{display:none}
+  .inwork #snd{opacity:0;pointer-events:none}
+  .panel{bottom:max(7vh,64px)}
+  .home{padding:10px 12px 10px 0}
+}
+@media (max-width:760px){.row{grid-template-columns:1fr;grid-template-areas:"n" "h" "t" "m"}.more-b{justify-self:start}}
+
+/* the plain page: no JavaScript, or no WebGL. all the text, readable, top to bottom */
+.nogl #loader,.nogl .enter,.nogl .hud button,.nogl .scrim,.nogl #gl,.nogl .grid,.nogl .bar,.nogl #track,.nogl .callout,.nogl .hint,.nogl .mback,.nogl .msg,.nogl .kopen,.nogl .live,.nogl #chap{display:none}
+.nogl .stage{position:static;padding:90px 0 60px}
+.nogl .panel{position:static;opacity:1!important;transform:none!important;margin:0 var(--gut) 72px}
+.nogl .panel.hero{display:block;text-align:left}
+.nogl .panel.hero .eyebrow{justify-content:flex-start}
+.nogl .me-all{position:static;width:auto;height:auto;overflow:visible;clip-path:none}
+.nogl .work-intro{padding:40px 0}
+.nogl .end{height:auto}
+.nogl .end-pin{position:static;height:auto;padding-top:60px}
+.nogl #endText,.nogl #bigBack{opacity:1!important}
+.nogl #bigBack{position:static;transform:none!important;white-space:normal;margin:40px 0;-webkit-mask-image:none;mask-image:none}
+.nogl .big.v-c .r{margin-top:0}
+@media (prefers-reduced-motion:reduce){.hint::after{animation:none}.row{transition:none}}

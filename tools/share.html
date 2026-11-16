@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Not part of the site. `npm run icons` takes a picture of this page to make public/share.png (1200 × 630),
+     the image shown when a link to the site is shared. It is the wall: the six pieces laid flat, drawn by the site's own code. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Share image</title>
+<link rel="stylesheet" href="/src/styles.css">
+<style>
+  html,body{width:1200px;height:630px;overflow:hidden;background:#0a0912}
+  #wall{position:absolute;left:0;top:-15px;width:1200px;display:grid;grid-template-columns:600px 600px}
+  #wall canvas{width:600px;height:200px;display:block}
+  .veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,9,18,.96) 0%,rgba(10,9,18,.9) 46%,rgba(10,9,18,.35) 72%,rgba(10,9,18,.2) 100%)}
+  .words{position:absolute;left:64px;right:64px;bottom:52px}
+  .words .t1{font-size:150px}
+  .words .lead{max-width:none;font-size:30px;margin-top:18px}
+  .words .eyebrow{font-size:18px}.words .eyebrow b{font-size:52px}
+</style>
+</head>
+<body>
+<div id="wall"></div>
+<div class="veil"></div>
+<div class="words">
+  <div class="eyebrow"><b lang="zh-Hans">鲁班锁</b><span id="handle"></span></div>
+  <div class="t1" id="name"></div>
+  <p class="lead" id="line"></p>
+</div>
+<script type="module">
+  import { DRAW, FW, FH } from "/src/scene/faces.ts";
+  import { PIECES, SITE, HERO } from "/src/content.ts";
+  import { ORDER } from "/src/timeline.ts";
+  document.getElementById("handle").textContent = SITE.handle + " · portfolio";
+  document.getElementById("name").textContent = SITE.name;
+  document.getElementById("line").textContent = HERO.eyebrow;
+  await Promise.all([document.fonts.load('800 1em "Bricolage Grotesque"', "A"), document.fonts.load('900 1em "Noto Serif SC"', "软件开发机电实习方向我")]);
+  const wall = document.getElementById("wall");
+  /* the wall's own layout: chapters 1 to 3 down the left column, 4 to 6 down the right */
+  for (let row = 0; row < 3; row++) for (let col = 0; col < 2; col++) {
+    const i = ORDER[col * 3 + row], cv = document.createElement("canvas"); cv.width = FW; cv.height = FH;
+    DRAW[i](cv.getContext("2d"), 2.6, PIECES[i].color, 1); wall.appendChild(cv);
+  }
+</script>
+</body>
+</html>

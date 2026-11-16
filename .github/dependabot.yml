@@ -1,0 +1,26 @@
+# Weekly update pull requests for npm packages and GitHub Actions.
+# Each one runs the full build, tests and audit before it can be merged.
+#
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # The 3D: three and its types. A bump can change how the site looks, so check it by eye against docs/the-lock-prototype.html.
+      three:
+        patterns: ['three', '@types/three']
+      fonts:
+        patterns: ['@fontsource/*', '@fontsource-variable/*']
+    ignore:
+      # The site and its CI run on Node 24: Node's types stay on its major, so no newer API slips in.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+    open-pull-requests-limit: 5
+
+  # The actions are pinned to commits (.github/workflows); Dependabot moves the commit and the version beside it together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
