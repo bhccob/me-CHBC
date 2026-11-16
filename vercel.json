@@ -78,7 +78,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|fonts/|work/|\\.well-known/).*)",
+      "source": "/((?!api/|assets/|fonts/|work/|\\.well-known/)[^.]*)",
       "destination": "/"
     }
   ]
