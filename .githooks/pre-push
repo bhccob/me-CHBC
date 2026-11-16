@@ -1,0 +1,18 @@
+#!/bin/sh
+# Keeps old history out of the public repository. The site's earlier history lives in a private archive, and the
+# public repository began again from one commit. A branch that still carries the old history must never be pushed
+# to it: this refuses any push to the public repository whose commits do not all descend from that one commit.
+# Turned on with the other hook:  git config core.hooksPath .githooks
+root=e0ea55d57f5ba024e9aa4a52ad7ed99de29ef9f4
+case "$2" in
+  *bhccob/me-CHBC.git|*bhccob/me-CHBC) ;;
+  *) exit 0 ;;
+esac
+while read -r _ sha _ _; do
+  [ "$sha" = "0000000000000000000000000000000000000000" ] && continue
+  if [ "$(git rev-list --max-parents=0 "$sha")" != "$root" ]; then
+    echo "pre-push: refused. This branch carries history from before the public repository began. Start the work from origin/main instead." >&2
+    exit 1
+  fi
+done
+exit 0
