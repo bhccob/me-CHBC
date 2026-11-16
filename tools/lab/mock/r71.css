@@ -1,0 +1,279 @@
+/* LAB ONLY (throwaway). Round 71, "Digital DNA: Inside the Living Machine". The brief's palette: mostly dark, violet
+   second, off-white for words, yellow only where something is live (the current chapter, a lit system, the way on).
+   An exhibition, not a dashboard: large editorial heads, small mono labels, a lot of air. */
+@font-face { font-family: 'Barlow'; font-weight: 400; font-display: swap; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 500; font-display: swap; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 600; font-display: swap; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 500; font-display: swap; src: url('/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+:root {
+  --ground: #100b19;
+  --panel: #1a1028;
+  --violet: #7139c6;
+  --lav: #bba0ff;
+  --yellow: #f5d547;
+  --pale: #ffe98a;
+  --ink: #e9e5f0;
+  --mute: #b7accb;
+  --line: rgba(233, 229, 240, 0.16);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --edge: max(20px, 4.2vw);
+  --strip: 58px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scrollbar-color: #3b2a61 var(--ground); scrollbar-width: thin; }
+html, body { margin: 0; background: var(--ground); color: var(--ink); }
+body { font-family: 'Barlow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--violet); color: #fff; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 1px solid var(--pale); outline-offset: 4px; border-radius: 2px; }
+[hidden] { display: none !important; }
+.skip { position: fixed; z-index: 9; left: var(--edge); top: 14px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); transform: translateY(-64px); }
+.skip:focus-visible { transform: none; }
+
+.film, .motes { position: fixed; inset: 0; width: 100%; height: 100%; }
+.film { z-index: 0; background: var(--ground); }
+.motes { z-index: 1; pointer-events: none; }
+.runway { width: 1px; }
+
+/* shade for the words: a column on the left, the lower-left corner, or most of the frame when a project is open */
+.scrim { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+.scrim::before, .scrim::after { content: ''; position: absolute; inset: 0; }
+.scrim::before { opacity: var(--side, 0); background: linear-gradient(90deg, rgba(16, 11, 25, 0.95) 0%, rgba(16, 11, 25, 0.82) 30%, rgba(16, 11, 25, 0) 58%); }
+.scrim::after { opacity: var(--corner, 0); background: radial-gradient(120% 90% at 0% 100%, rgba(16, 11, 25, 0.92) 0%, rgba(16, 11, 25, 0.6) 30%, rgba(16, 11, 25, 0) 56%); }
+body::after { content: ''; position: fixed; inset: 0; z-index: 6; pointer-events: none; opacity: 0.07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.loader { position: fixed; z-index: 7; left: var(--edge); bottom: calc(var(--strip) + 5vh); margin: 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); transition: opacity 0.5s var(--ease); }
+.loader b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+body:not(.loading) .loader { opacity: 0; pointer-events: none; }
+body.loading .beat, body.loading .chapters { visibility: hidden; }
+
+/* ---------- top bar */
+.bar { position: fixed; z-index: 5; top: 0; left: 0; right: 0; height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--edge); }
+.bar::before { content: ''; position: absolute; inset: 0 0 -40px 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(16, 11, 25, 0.82), rgba(16, 11, 25, 0)); }
+.brand { font-weight: 600; font-size: 16px; letter-spacing: 0.01em; }
+.bar nav { display: flex; gap: clamp(20px, 2.6vw, 40px); font-weight: 500; font-size: 15px; }
+.bar nav a { position: relative; padding: 6px 0; }
+.bar nav a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease); }
+.bar nav a:hover::after, .bar nav a:focus-visible::after { transform: scaleX(1); }
+.bar nav .contact { color: var(--yellow); }
+
+/* ---------- each stop's words: fixed over the film, shown while the camera rests there */
+.beat { position: fixed; inset: 0; z-index: 2; opacity: 0; visibility: hidden; pointer-events: none; will-change: opacity, transform; }
+.beat.live { visibility: visible; }
+.beat.live a, .beat.live button { pointer-events: auto; }
+h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+h2 { font-weight: 600; text-transform: uppercase; font-size: clamp(30px, 3.4vw, 60px); line-height: 1.0; letter-spacing: -0.005em; text-wrap: balance; }
+.beat p { font-size: clamp(16px, 1.12vw, 19px); line-height: 1.5; color: var(--mute); text-wrap: pretty; }
+.kicker { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px !important; font-family: var(--mono); font-size: 12px !important; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
+.kicker span { color: var(--yellow); }
+.kicker em { font-style: normal; margin-left: auto; color: var(--ink); }
+
+/* first view: the title low on the left, under the gangway's horizon; the way in at the bottom */
+.title { position: absolute; left: var(--edge); bottom: calc(var(--strip) + 15vh); max-width: 44vw; }
+.title h1 { display: grid; font-weight: 600; text-transform: uppercase; font-size: clamp(52px, 7.6vw, 148px); line-height: 0.86; letter-spacing: -0.02em; }
+.title h1 span:last-child { color: var(--lav); }
+.sub { margin-top: 18px !important; font-family: var(--mono); font-size: 13px !important; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink) !important; }
+.lede { margin-top: 14px !important; max-width: 30ch; color: var(--mute); }
+.hint { position: absolute; left: var(--edge); bottom: calc(var(--strip) + 5vh); display: inline-flex; align-items: center; gap: 14px; padding: 10px 0;
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); }
+.hint svg { color: var(--yellow); }
+.hint:hover span, .hint:focus-visible span { color: var(--pale); }
+.first::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(16, 11, 25, 0.78) 0%, rgba(16, 11, 25, 0.35) 34%, rgba(16, 11, 25, 0) 52%); }
+
+/* a column of words on the left, centred on the screen's height; the machine sits to its right */
+.col { display: flex; flex-direction: column; justify-content: center; padding: 68px var(--edge) var(--strip); }
+.col > * { max-width: min(31rem, 38vw); }
+.col h2 { margin-bottom: 22px; }
+.col p + p { margin-top: 14px; }
+.col .own { color: var(--ink); font-weight: 500; }
+.wide > h2 { max-width: min(44rem, 52vw); font-size: clamp(34px, 4.2vw, 78px); }
+.wide > p { max-width: min(26rem, 30vw); }
+.roles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.roles li { padding: 7px 11px; border: 1px solid var(--line); font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
+
+/* 02 Foundation: a filled mark is done; a hollow one is where it is heading */
+.strands { display: grid; gap: 20px; margin-bottom: 22px; }
+.strand h3 { font-weight: 600; font-size: clamp(19px, 1.5vw, 24px); line-height: 1.15; margin-bottom: 7px; }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 7px; font-family: var(--mono); font-size: 13px !important; letter-spacing: 0.01em; }
+.status i { flex: none; width: 9px; height: 9px; border-radius: 50%; }
+.done .status { color: var(--ink) !important; }
+.done .status i { background: var(--lav); }
+.next .status { color: var(--lav) !important; }
+.next .status i { border: 1px solid var(--lav); }
+.check { font-weight: 500; padding: 2px 6px; border: 1px dashed var(--lav); color: var(--lav); letter-spacing: 0.04em; }
+.topics { font-size: clamp(15px, 1.02vw, 17px) !important; }
+.join { padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink) !important; }
+
+/* 03 and the workshop overview: the scene keeps the frame; the words keep to the lower-left corner */
+.corner { position: absolute; left: var(--edge); bottom: calc(var(--strip) + 5vh); max-width: min(26rem, 32vw); }
+.corner h2 { font-size: clamp(24px, 2.4vw, 42px); margin-bottom: 14px; }
+.say { min-height: 4.6em; }
+/* 03 keeps its words in the empty sky top left: the six systems fill the rest of the frame */
+.top .corner { top: calc(68px + 3vh); bottom: auto; max-width: min(27rem, 29vw); }
+.top::before { content: ''; position: absolute; inset: 0; background: radial-gradient(70% 70% at 0% 0%, rgba(16, 11, 25, 0.88) 0%, rgba(16, 11, 25, 0.5) 40%, rgba(16, 11, 25, 0) 70%); }
+.say.lit { color: var(--ink); }
+
+/* the six systems: a name over each, placed from the render's own coordinates */
+.systems li, .tags li { position: absolute; left: 0; top: 0; }
+.systems button, .tags a { position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 10px;
+  font-weight: 600; font-size: clamp(13px, 0.95vw, 15px); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: var(--ink);
+  text-shadow: 0 0 14px rgba(16, 11, 25, 0.95), 0 0 4px rgba(16, 11, 25, 0.9); }
+.systems span, .tags span { font-family: var(--mono); font-weight: 500; font-size: 11px; color: var(--lav); letter-spacing: 0.1em; }
+.systems button::after, .tags a::after { content: ''; width: 1px; height: 22px; background: var(--lav); transition: height 0.35s var(--ease), background 0.2s linear; }
+.systems button:hover::after, .systems button:focus-visible::after, .systems button.on::after,
+.tags a:hover::after, .tags a:focus-visible::after { height: 34px; background: var(--yellow); }
+.systems button.on, .tags a:hover { color: var(--pale); }
+.systems button.on span { color: var(--yellow); }
+.listbtn { margin-top: 18px; padding: 10px 0; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); transition: border-color 0.25s var(--ease), color 0.25s var(--ease); }
+.listbtn:hover, .listbtn:focus-visible { border-color: var(--yellow); color: var(--pale); }
+
+/* one installation: index, kind, name, one line, the way in, and the way along */
+.work > * { max-width: min(28rem, 34vw); }
+.cat { font-family: var(--mono); font-size: 12px !important; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lav) !important; margin-bottom: 22px; }
+.cat b { font-weight: 500; color: var(--yellow); margin-right: 10px; }
+.work h2 { font-size: clamp(34px, 4vw, 72px); margin-bottom: 14px; }
+.acts { margin-top: 26px; }
+.openbtn { display: inline-flex; align-items: center; gap: 12px; padding: 13px 20px; border: 1px solid var(--yellow); color: var(--ink); font-weight: 600; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase;
+  transition: background 0.25s var(--ease), color 0.25s var(--ease); }
+.openbtn::after { content: '→'; color: var(--yellow); transition: transform 0.35s var(--ease), color 0.25s; }
+.openbtn:hover, .openbtn:focus-visible { background: var(--yellow); color: var(--ground); }
+.openbtn:hover::after, .openbtn:focus-visible::after { transform: translateX(4px); color: var(--ground); }
+.openbtn:active { transform: translateY(1px); }
+.step { display: flex; justify-content: space-between; gap: 18px; margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
+.step a { padding: 6px 0; transition: color 0.25s var(--ease); }
+.step a:hover, .step a:focus-visible { color: var(--pale); }
+
+/* 06 Connection */
+.talk h2 { font-size: clamp(34px, 4.2vw, 78px); margin-bottom: 30px; }
+.talk .links { display: grid; max-width: min(24rem, 34vw); border-top: 1px solid var(--line); }
+.talk .links li { border-bottom: 1px solid var(--line); font-weight: 500; font-size: clamp(18px, 1.4vw, 22px); }
+.talk .links a, .talk .links li.todo { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0; }
+.talk .links a { transition: color 0.25s var(--ease); }
+.talk .links span { font-family: var(--mono); font-size: 13px; color: var(--mute); }
+.talk .links li:first-child a { color: var(--yellow); }
+.talk .links a:hover { color: var(--pale); }
+.todo { color: var(--lav) !important; font-style: italic; }
+.talk .links li.todo { font-style: normal; }
+
+/* ---------- a project, opened: the left half becomes a readable page that scrolls on its own; the installation
+   stays lit on the right */
+.sheet { position: fixed; z-index: 8; inset: 0 auto 0 0; width: min(46rem, 52vw); display: flex; flex-direction: column;
+  background: linear-gradient(90deg, rgba(16, 11, 25, 0.97) 0%, rgba(16, 11, 25, 0.95) 82%, rgba(16, 11, 25, 0.0) 100%);
+  opacity: 0; transform: translateX(-24px); transition: opacity 0.45s var(--ease), transform 0.6s var(--ease); }
+body.open .sheet { opacity: 1; transform: none; }
+.sheet-bar { display: flex; justify-content: space-between; align-items: center; height: 68px; padding: 0 calc(var(--edge) + 6%) 0 var(--edge); flex: none; }
+.back { display: inline-flex; align-items: center; gap: 12px; padding: 10px 0; white-space: nowrap; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.back svg { color: var(--yellow); }
+.back:hover span { color: var(--pale); }
+.pager { display: inline-flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--mute); }
+.pager b { font-weight: 500; color: var(--ink); white-space: nowrap; }
+.pager button { width: 36px; height: 36px; border: 1px solid var(--line); transition: border-color 0.25s var(--ease), color 0.25s; }
+.pager button:hover, .pager button:focus-visible { border-color: var(--yellow); color: var(--pale); }
+.sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 18px calc(var(--edge) + 6%) 64px var(--edge); scrollbar-width: thin; }
+.sheet-body:focus { outline: none; }
+.project .ptitle { font-size: clamp(40px, 4.4vw, 80px); margin-bottom: 14px; }
+.project .lead { font-size: clamp(18px, 1.35vw, 22px); line-height: 1.45; color: var(--ink); max-width: 36rem; }
+.project figure { margin: 30px 0 8px; }
+.project figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: var(--panel); }
+.project figure.tall img { width: min(15rem, 52%); }
+.project figure.empty { display: grid; place-items: center; aspect-ratio: 16 / 7; border: 1px dashed rgba(187, 160, 255, 0.4); }
+.project figure.empty p { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lav); }
+.project figcaption { margin-top: 10px; font-size: 14px; color: var(--mute); }
+.project dl { margin-top: 26px; border-top: 1px solid var(--line); }
+.project dl div { display: grid; grid-template-columns: 9rem 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.project dt { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); padding-top: 4px; }
+.project dd { font-size: 16px; line-height: 1.55; color: var(--ink); max-width: 34rem; }
+.project dd a { border-bottom: 1px solid var(--line); padding-bottom: 1px; transition: border-color 0.25s var(--ease), color 0.25s var(--ease); }
+.project dd a:hover { border-color: var(--yellow); color: var(--pale); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips i { font-style: normal; padding: 4px 9px; border: 1px solid var(--line); font-family: var(--mono); font-size: 12px; }
+body.open .beat.live, body.open .chapters { opacity: 0 !important; pointer-events: none; }
+body.open .beat.live * { pointer-events: none !important; }
+
+/* the plain list */
+.list { position: fixed; z-index: 9; inset: 0; display: grid; place-items: center; padding: var(--edge); background: rgba(16, 11, 25, 0.86); backdrop-filter: blur(6px); }
+.list-in { width: min(40rem, 100%); }
+.list-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; }
+.list-head h2 { font-size: clamp(28px, 3vw, 44px); }
+.list-close { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 0; color: var(--mute); }
+.list-close:hover { color: var(--pale); }
+.list ol { border-top: 1px solid var(--line); }
+.list li { border-bottom: 1px solid var(--line); }
+.list li button { width: 100%; display: grid; grid-template-columns: 3rem 1fr auto; grid-template-areas: 'n b y' 'n i y'; gap: 2px 12px; padding: 16px 0; text-align: left; transition: color 0.25s; }
+.list li button span { grid-area: n; font-family: var(--mono); font-size: 12px; color: var(--yellow); padding-top: 6px; }
+.list li button b { grid-area: b; font-weight: 600; font-size: 22px; }
+.list li button i { grid-area: i; font-style: normal; color: var(--mute); }
+.list li button em { grid-area: y; font-style: normal; font-family: var(--mono); font-size: 12px; color: var(--mute); padding-top: 6px; }
+.list li button:hover b { color: var(--pale); }
+
+/* ---------- the chapter strip: always there, never loud. The current chapter is lit. */
+.chapters { position: fixed; z-index: 5; left: 0; right: 0; bottom: 0; height: var(--strip); padding: 0 var(--edge); transition: opacity 0.4s var(--ease); }
+.chapters::before { content: ''; position: absolute; inset: -46px 0 0 0; z-index: -1; pointer-events: none; background: linear-gradient(0deg, rgba(16, 11, 25, 0.88), rgba(16, 11, 25, 0)); }
+.chapters ol { display: flex; justify-content: space-between; height: 100%; }
+.chapters a { position: relative; display: flex; align-items: center; gap: 9px; height: 100%; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); transition: color 0.3s var(--ease); }
+.chapters a span { color: var(--lav); opacity: 0.75; }
+.chapters a::before { content: ''; position: absolute; left: 0; top: 0; width: 1px; height: 7px; background: var(--line); transition: height 0.35s var(--ease), background 0.2s linear, width 0.2s linear; }
+.chapters a:hover, .chapters a[aria-current] { color: var(--ink); }
+.chapters a[aria-current]::before { height: 12px; width: 2px; background: var(--yellow); }
+.chapters a[aria-current] span { color: var(--yellow); opacity: 1; }
+.track { position: absolute; left: var(--edge); right: var(--edge); top: 0; height: 1px; background: var(--line); }
+.track i { position: absolute; inset: 0; background: var(--lav); transform-origin: left; transform: scaleX(var(--progress, 0)); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .hint svg { animation: nudge 2.4s var(--ease) infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet { transition: none; transform: none; }
+}
+@keyframes nudge { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(4px); } }
+
+/* ---------- phone: the frame is cropped to the machine; words go to the bottom; systems and projects become lists */
+@media (max-aspect-ratio: 1/1) {
+  :root { --edge: 6vw; --strip: 46px; }
+  .bar { height: 56px; }
+  .bar nav a:not(.contact) { display: none; }
+  .scrim::before, .scrim::after { background: linear-gradient(0deg, rgba(16, 11, 25, 0.96) 0%, rgba(16, 11, 25, 0.84) 42%, rgba(16, 11, 25, 0) 70%); }
+  .first::before { background: linear-gradient(0deg, rgba(16, 11, 25, 0.94) 0%, rgba(16, 11, 25, 0.6) 34%, rgba(16, 11, 25, 0) 58%); }
+  .title { right: var(--edge); bottom: calc(var(--strip) + 11vh); max-width: none; }
+  .title h1 { font-size: 15vw; }
+  .hint { bottom: calc(var(--strip) + 3vh); }
+  .col { justify-content: flex-end; padding: 0 var(--edge) calc(var(--strip) + 4vh); }
+  .col > *, .wide > h2, .wide > p, .work > * { max-width: none; }
+  h2, .wide > h2, .talk h2, .work h2 { font-size: 30px; }
+  .col h2 { margin-bottom: 12px; }
+  .beat p { font-size: 15px; }
+  .strands { gap: 12px; margin-bottom: 12px; }
+  .strand h3 { font-size: 18px; }
+  .topics { display: none; }
+  .corner { position: static; max-width: none; }
+  .top .corner { position: static; max-width: none; }
+  .top::before { display: none; }
+  .corner h2 { font-size: 26px; margin-bottom: 10px; }
+  .say { min-height: 5.5em; }
+  .free { display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--edge) calc(var(--strip) + 3vh); }
+  .systems, .tags { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; margin-top: 12px; border-top: 1px solid var(--line); }
+  .systems li, .tags li { position: static; border-bottom: 1px solid var(--line); }
+  .systems button, .tags a { position: static; transform: none; flex-direction: row; justify-content: flex-start; gap: 10px; width: 100%; padding: 12px 0; font-size: 13px; text-shadow: none; }
+  .systems button::after, .tags a::after { display: none; }
+  .acts { margin-top: 16px; }
+  .step { margin-top: 18px; }
+  .sheet { width: 100%; background: var(--ground); }
+  body.open .bar { visibility: hidden; }
+  .back { gap: 10px; font-size: 11px; letter-spacing: 0.06em; }
+  .pager { gap: 8px; }
+  .pager button { width: 32px; height: 32px; }
+  .sheet-bar { height: 56px; padding: 0 var(--edge); }
+  .sheet-body { padding: 8px var(--edge) 48px; }
+  .project dl div { grid-template-columns: 1fr; gap: 4px; }
+  .talk .links { max-width: none; }
+  .chapters li { display: none; }
+  .chapters li:has(a[aria-current]) { display: block; }
+  .chapters ol { justify-content: flex-start; }
+}

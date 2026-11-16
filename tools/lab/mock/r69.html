@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bob Chung · Experimental Universe</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="r68.css" />
+<link rel="stylesheet" href="r69.css" />
+<!-- LAB ONLY (throwaway). Round 69: the pages after the first view. The site never leaves the sculpture: scrolling moves
+     one camera round it (135 rendered frames from tools/lab/blender/journey69.py) and each page is the part it stops at.
+     ?p=0..1 holds that point of the journey without scrolling (for stills). Words marked "mine" in the notes are Claude's. -->
+</head>
+<body>
+<canvas class="film" aria-hidden="true"></canvas>
+<div class="scrim" aria-hidden="true"></div>
+
+<header class="bar">
+  <a class="brand" href="#first" data-go="first">Experimental Universe</a>
+  <nav aria-label="Main">
+    <a href="#work" data-go="work">Work</a>
+    <a href="#about" data-go="about">About</a>
+    <a class="contact" href="#talk" data-go="talk">Contact</a>
+  </nav>
+</header>
+
+<main>
+  <section class="beat first" data-beat="first" id="first">
+    <h1 class="sr-only">Bob Chung</h1>
+    <div class="intro">
+      <p class="role">Systems builder</p>
+      <p class="lede">Software engineer and cybersecurity intern, exploring mechatronics.</p>
+    </div>
+  </section>
+
+  <section class="beat col" data-beat="about" id="about">
+    <h2>I build things to find out how they work.</h2>
+    <p>From Aruba, based in Rotterdam. I write software, learn how systems get broken into, and build machines to see what moves.</p>
+  </section>
+
+  <section class="beat col study" data-beat="soft">
+    <h2>Software Engineering</h2>
+    <p class="part">The liquid core</p>
+    <p>Software takes the shape of the problem. Everything else in the experiment is built around it.</p>
+  </section>
+  <section class="beat col study" data-beat="game">
+    <h2>Game &amp; App Development</h2>
+    <p class="part">The stream</p>
+    <p>Where the work leaves the lab and reaches people: games and apps you can open and use.</p>
+    <p class="fact">Studied: MBO 4, Rotterdam</p>
+  </section>
+  <section class="beat col study" data-beat="sec">
+    <h2>Cybersecurity</h2>
+    <p class="part">The shell and its rail</p>
+    <p>Knowing how a system breaks is how you keep it whole.</p>
+    <p class="fact">Learning: TryHackMe and a company course</p>
+  </section>
+  <section class="beat col study" data-beat="mech">
+    <h2>Mechatronics</h2>
+    <p class="part">The gear and the axle</p>
+    <p>Code that moves something you can touch.</p>
+  </section>
+  <ol class="studies" aria-hidden="true">
+    <li data-s="soft">Software</li><li data-s="game">Games &amp; apps</li><li data-s="sec">Security</li><li data-s="mech">Mechatronics</li>
+  </ol>
+
+  <section class="beat work" data-beat="work" id="work">
+    <h2>Selected work</h2>
+    <div class="rail">
+      <div class="track">
+        <a class="pane" href="#"><span class="pic"><img src="/public/flight/jontai.webp" alt="Jontai Energy home page" /></span>
+          <span class="meta"><b>Jontai Energy</b><i>Concept website redesign</i><em>2026</em></span></a>
+        <a class="pane" href="#"><span class="pic"><img src="/tools/lab/mock/img/lumo.webp" alt="Lumo grocery list app" /></span>
+          <span class="meta"><b>Lumo</b><i>Grocery list app for Android</i><em>2026</em></span></a>
+        <a class="pane" href="#"><span class="pic"><img src="/public/flight/cookies.webp" alt="Cookies Clicker game" /></span>
+          <span class="meta"><b>Cookies Clicker</b><i>Browser game, school project</i><em>2025</em></span></a>
+        <a class="pane" href="#"><span class="pic empty">Pictures to come</span>
+          <span class="meta"><b>Locked</b><i>Android app</i><em>2026</em></span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="beat col talk" data-beat="talk" id="talk">
+    <h2>Let's talk.</h2>
+    <p>Have something to build, break or test? I'd like to hear about it.</p>
+    <a class="cta" href="#">Send a message</a>
+  </section>
+</main>
+<div class="runway" aria-hidden="true"></div>
+<script src="r69.js"></script>
+</body>
+</html>

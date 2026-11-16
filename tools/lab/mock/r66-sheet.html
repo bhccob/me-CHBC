@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Round 66 · Contact sheet</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Space+Grotesk:wght@400;500&display=block" />
+<link rel="stylesheet" href="r66.css" />
+<style>
+  /* LAB ONLY (throwaway). Round 66 contact sheet: the three ideas, three frames each, shot by shoot66.mjs. */
+  body { padding: 48px 48px 40px; }
+  h1 { margin: 0 0 6px; font: 500 40px/1.1 'Space Grotesk', sans-serif; letter-spacing: -0.03em; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 36px; }
+  .top .mono { color: var(--grey); }
+  h2 { margin: 0 0 14px; display: flex; gap: 14px; align-items: baseline; }
+  h2 b { font: 500 13px/1 'IBM Plex Mono', monospace; letter-spacing: 0.16em; color: var(--yellow); }
+  h2 span { color: var(--grey); }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+  .row img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: var(--deep); }
+  .row figure { margin: 0; }
+  .row figcaption { padding-top: 8px; color: var(--grey); }
+</style>
+</head>
+<body>
+<div class="top"><h1>Round 66 · The Digital Ecosystem, three interpretations</h1><span class="mono">First view · Digital systems · Horizon</span></div>
+<section><h2 class="mono"><b>1 · Overlap</b><span>Three disciplines, three structures; where they cross, the core</span></h2>
+  <div class="row" data-idea="overlap"></div></section>
+<section><h2 class="mono"><b>2 · Fold</b><span>One endless floor of tiles folds into every zone; white underneath</span></h2>
+  <div class="row" data-idea="fold"></div></section>
+<section><h2 class="mono"><b>3 · Counterweight</b><span>The ecosystem as one hanging mobile; every zone balances the others</span></h2>
+  <div class="row" data-idea="weight"></div></section>
+<script type="module">
+  const names = ['First view', 'Digital systems', 'Horizon'];
+  for (const row of document.querySelectorAll('.row')) {
+    row.innerHTML = [1, 2, 3].map((f, i) => `<figure><img src="/proof-out/lab/mock/r66-${row.dataset.idea}-${f}-1440x810.jpg" alt="" /><figcaption class="mono">${names[i]}</figcaption></figure>`).join('');
+  }
+  Promise.all([document.fonts.ready, ...[...document.images].map((i) => i.decode().catch(() => {}))]).then(() => { window.__ready = true; });
+</script>
+</body>
+</html>

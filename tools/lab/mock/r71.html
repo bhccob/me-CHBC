@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bob Chung · Digital DNA</title>
+<meta name="description" content="Digital DNA, inside the living machine: the systems, ideas and disciplines that shape how Bob Chung builds." />
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="r71.css" />
+<!-- LAB ONLY (throwaway). Round 71: Bob's revised "Digital DNA: Inside the Living Machine" brief (2026-11-13).
+     One monumental structure rendered in Blender (tools/lab/blender/dna71.py); scroll moves one camera through it:
+     the first view at the foot of the helix, 01 Origin, into the helix and up its inside (02 Foundation), out onto the
+     systems' deck (03 Development), up to the workshop and round its four installations (04 Selected work), back out to
+     the whole machine (05 Identity) and up to its core (06 Connection).
+     ?p=0..1 holds a point of the journey, &sys=0..5 lights a system, &open=jontai|lumo|locked|cookies opens a project,
+     &list opens the plain project list, &a=-1..1 holds the first view's turn (all for stills).
+     Headlines in capitals are the brief's own; other words are mine or Bob's live site, marked in the round's notes. -->
+</head>
+<body class="loading">
+<a class="skip" href="#works" data-go="works">Skip to selected work</a>
+<canvas class="film" aria-hidden="true"></canvas>
+<canvas class="motes" aria-hidden="true"></canvas>
+<div class="scrim" aria-hidden="true"></div>
+<p class="loader" role="status"><span>Sequencing</span> <b>0</b>%</p>
+
+<header class="bar">
+  <a class="brand" href="#top" data-go="hero">Bob Chung</a>
+  <nav aria-label="Main">
+    <a href="#foundation" data-go="foundation">Education</a>
+    <a href="#works" data-go="works">Work</a>
+    <a class="contact" href="#connection" data-go="connection">Contact</a>
+  </nav>
+</header>
+
+<main>
+  <section class="beat first" data-beat="hero" id="top">
+    <div class="title">
+      <h1><span>Digital</span> <span>DNA</span></h1>
+      <p class="sub">Inside the living machine</p>
+      <p class="lede">Exploring the systems, ideas and disciplines that shape how I build.</p>
+    </div>
+    <a class="hint" href="#origin" data-go="origin">
+      <span>Enter the structure</span>
+      <svg viewBox="0 0 12 18" width="12" height="18" aria-hidden="true"><path d="M6 1v15M1.5 11.5 6 16l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    </a>
+  </section>
+
+  <section class="beat col" data-beat="origin" id="origin">
+    <h2>Every system has an origin.</h2>
+    <p>I’m Bob Chung, a student software engineer based in Rotterdam. Born and raised in Aruba and Chinese by heritage, I moved to the Netherlands at eighteen.</p>
+    <p>I work across databases, game development and web development, and each discipline sharpens the others. Hardware and electrical engineering are next on my route.</p>
+    <p class="own">I build with curiosity and test with honesty.</p>
+  </section>
+
+  <section class="beat col" data-beat="foundation" id="foundation">
+    <h2>Education is the blueprint.</h2>
+    <div class="strands">
+      <article class="strand done">
+        <h3>MBO-4 Software Development</h3>
+        <p class="status"><i aria-hidden="true"></i>Completed <b class="check" title="The brief says completed; the site says student. To confirm.">to confirm</b></p>
+        <p class="topics">Programming, algorithms, software development, databases, application architecture, technical problem-solving.</p>
+      </article>
+      <article class="strand next">
+        <h3>Mechatronics</h3>
+        <p class="status"><i aria-hidden="true"></i>Future direction, not a completed qualification</p>
+        <p class="topics">Mechanics, electronics, embedded systems, control systems, hardware and software integration.</p>
+      </article>
+    </div>
+    <p class="join">Overhead, the rungs have become circuit boards, finished and lit. Further up they turn into shafts and gears, some still only drawn.</p>
+  </section>
+
+  <section class="beat free top dev" data-beat="development" id="development">
+    <div class="corner">
+      <h2>Six systems. One machine.</h2>
+      <p class="say" aria-live="polite" data-idle="Point at a system to light it and the ones it works with. Select it to read what it does.">Point at a system to light it and the ones it works with. Select it to read what it does.</p>
+    </div>
+    <ul class="systems">
+      <li><button type="button" data-sys="0" data-text="Programming, algorithms and computational thinking. Where it shows: Locked works out every leaderboard score on its server, with the app’s own scoring code."><span>01</span>Logic</button></li>
+      <li><button type="button" data-sys="1" data-text="Software architecture, application development and system design. Where it shows: Lumo never stores the list; it works it out from what was added, each time it is read."><span>02</span>Architecture</button></li>
+      <li><button type="button" data-sys="2" data-text="Electronics, embedded systems and hardware. An interest for now, and the reason mechatronics comes next."><span>03</span>Circuits</button></li>
+      <li><button type="button" data-sys="3" data-text="Mechanical systems and engineering. An interest I am taking further in mechatronics."><span>04</span>Mechanics</button></li>
+      <li><button type="button" data-sys="4" data-text="Analytical thinking, problem-solving and continuous learning. Where it shows: every figure on Jontai Energy is traced to a manufacturer’s document."><span>05</span>Intelligence</button></li>
+      <li><button type="button" data-sys="5" data-text="Experimentation, design and unconventional approaches. Where it shows: Jontai Energy’s home page plays as one day of sun as you scroll."><span>06</span>Creativity</button></li>
+    </ul>
+  </section>
+
+  <section class="beat free works" data-beat="works" id="works">
+    <div class="corner">
+      <h2>Turning knowledge into something real.</h2>
+      <p>The workshop at the top of the machine. Each project stands in it as its own installation.</p>
+      <button type="button" class="listbtn" data-list>All projects as a list</button>
+    </div>
+    <ul class="tags">
+      <li><a href="#w-jontai" data-go="w-jontai" data-tag="jontai"><span>01</span>Jontai Energy</a></li>
+      <li><a href="#w-lumo" data-go="w-lumo" data-tag="lumo"><span>02</span>Lumo</a></li>
+      <li><a href="#w-locked" data-go="w-locked" data-tag="locked"><span>03</span>Locked</a></li>
+      <li><a href="#w-cookies" data-go="w-cookies" data-tag="cookies"><span>04</span>Cookies Clicker</a></li>
+    </ul>
+  </section>
+
+  <section class="beat col work" data-beat="w-jontai" id="w-jontai">
+    <h2>Jontai Energy</h2>
+    <p class="cat"><b>01 / 04</b> Website · Concept redesign · 2026</p>
+    <p>A concept redesign for a solar, power and furniture store in Aruba. Its home page is one Aruban day that plays as you scroll, so the installation tracks a small sun along an arc.</p>
+    <div class="acts"><button type="button" class="openbtn" data-open="jontai">Open project</button></div>
+    <nav class="step" aria-label="Projects"><a href="#works" data-go="works">← Workshop</a><a href="#w-lumo" data-go="w-lumo">Lumo →</a></nav>
+  </section>
+  <section class="beat col work" data-beat="w-lumo" id="w-lumo">
+    <h2>Lumo</h2>
+    <p class="cat"><b>02 / 04</b> Android app · 2026</p>
+    <p>A grocery list for Android. Recipes and typed items merge into one list, sorted in the order of the store’s aisles, so the arm holds it over a row of parts lined up in order.</p>
+    <div class="acts"><button type="button" class="openbtn" data-open="lumo">Open project</button></div>
+    <nav class="step" aria-label="Projects"><a href="#w-jontai" data-go="w-jontai">← Jontai Energy</a><a href="#w-locked" data-go="w-locked">Locked →</a></nav>
+  </section>
+  <section class="beat col work" data-beat="w-locked" id="w-locked">
+    <h2>Locked</h2>
+    <p class="cat"><b>03 / 04</b> Android app · 2026</p>
+    <p>A gym log for Android. It gives you your next weight from your own history, keeps your streak and earns you a rank: a bar loaded with plates, each heavier than the last.</p>
+    <div class="acts"><button type="button" class="openbtn" data-open="locked">Open project</button></div>
+    <nav class="step" aria-label="Projects"><a href="#w-lumo" data-go="w-lumo">← Lumo</a><a href="#w-cookies" data-go="w-cookies">Cookies Clicker →</a></nav>
+  </section>
+  <section class="beat col work" data-beat="w-cookies" id="w-cookies">
+    <h2>Cookies Clicker</h2>
+    <p class="cat"><b>04 / 04</b> Browser game · School project · 2025</p>
+    <p>A browser game built with a classmate around one loop: click, earn, reinvest. One press, a counter and a belt that never stops.</p>
+    <div class="acts"><button type="button" class="openbtn" data-open="cookies">Open project</button></div>
+    <nav class="step" aria-label="Projects"><a href="#w-locked" data-go="w-locked">← Locked</a><a href="#identity" data-go="identity">The whole machine →</a></nav>
+  </section>
+
+  <section class="beat col wide" data-beat="identity" id="identity">
+    <h2>One foundation. Multiple disciplines. One connected system.</h2>
+    <p>The helix, the circuits, the systems and the workshop were one machine all along. That is how I work: software today, an internship in cybersecurity now, mechatronics next, and the most interesting problems where they meet.</p>
+    <ul class="roles"><li>Software development</li><li>Systems building</li><li>Creative technology</li></ul>
+  </section>
+
+  <section class="beat col talk" data-beat="connection" id="connection">
+    <h2>Every connection starts somewhere.</h2>
+    <ul class="links">
+      <li><a href="/contact">Email <span>write to me</span></a></li>
+      <li class="todo">LinkedIn <span>to add</span></li>
+      <li><a href="https://github.com/bhccob">GitHub <span>bhccob</span></a></li>
+      <li><a href="https://instagram.com/bhccob">Instagram <span>@bhccob</span></a></li>
+    </ul>
+  </section>
+</main>
+
+<!-- the project detail: the camera stays at the installation; the words take the left half and scroll on their own -->
+<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <div class="sheet-bar">
+    <button type="button" class="back"><svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M13 7H1.5M6 2.5 1.5 7 6 11.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Back to the workshop</span></button>
+    <span class="pager"><button type="button" class="prev" aria-label="Previous project">←</button><b>01 / 04</b><button type="button" class="next" aria-label="Next project">→</button></span>
+  </div>
+  <div class="sheet-body" tabindex="-1">
+    <article class="project" data-project="jontai" hidden>
+      <h2 class="ptitle">Jontai Energy</h2>
+      <p class="cat">Website · Concept redesign · 2026</p>
+      <p class="lead">A concept redesign of the website for Jontai Energy, a store in Oranjestad, Aruba, for solar, power, lighting and furniture. Its home page is one Aruban day that plays as you scroll.</p>
+      <figure><img src="img/jontai-type.webp" width="1440" height="810" alt="Jontai Energy redesign: JONTAI in large green letters above “Aruba sunlight, made useful.”, with Explore solar and Visit the store" loading="lazy" /><figcaption>The redesign’s first screen</figcaption></figure>
+      <dl>
+        <div><dt>Objective</dt><dd>One continuous film of a single day on one plaster wall: scrolling moves the sun, and each product does its work at its hour, from the solar panel catching first light to the generator taking over in a night-time outage.</dd></div>
+        <div><dt>My role</dt><dd>Design and front-end development. A personal project, not client work.</dd></div>
+        <div><dt>Built with</dt><dd class="chips"><i>Next.js</i><i>React</i><i>TypeScript</i><i>GSAP</i><i>Lenis</i><i>Blender</i></dd></div>
+        <div><dt>How it works</dt><dd>The film is rendered in Blender Cycles from a set built in Python, published as image frames and played on one canvas as you scroll, with GSAP ScrollTrigger and Lenis. Visitors who prefer reduced motion, use Save-Data or have no JavaScript get one still per chapter with its words.</dd></div>
+        <div><dt>Decisions</dt><dd>Honesty and pace: every figure traced to a manufacturer’s document, no prices or stock made up, the renders never presented as the real store, and the scroll resting on each product long enough to read it.</dd></div>
+        <div><dt>Outcome</dt><dd>A working concept redesign. It is not published, and jontaienergy.com is not my build.</dd></div>
+        <div><dt>Links</dt><dd><a href="https://github.com/bhccob/Jontai-Energy">Source on GitHub</a></dd></div>
+      </dl>
+    </article>
+    <article class="project" data-project="lumo" hidden>
+      <h2 class="ptitle">Lumo</h2>
+      <p class="cat">Android app · 2026</p>
+      <p class="lead">A grocery list for Android. Recipes and typed items merge into one list, sorted in the order of the store’s aisles, offline and checked off with one hand.</p>
+      <figure class="tall"><img src="img/lumo.webp" width="540" height="1050" alt="Lumo’s list for this week: produce, bakery, dairy and meat, each with its items to check off" loading="lazy" /><figcaption>The list, sorted by aisle</figcaption></figure>
+      <dl>
+        <div><dt>Objective</dt><dd>One list in the order you walk the store: what you typed and what your recipes need, together.</dd></div>
+        <div><dt>My role</dt><dd class="todo">To confirm</dd></div>
+        <div><dt>Built with</dt><dd class="chips"><i>Expo</i><i>React Native</i><i>SQLite</i></dd></div>
+        <div><dt>How it works</dt><dd>SQLite on the phone is the source of truth, and the list itself is never stored: it is worked out from what was added, each time it is read. Recipes, a pantry and your own stores and aisles came in three phases.</dd></div>
+        <div><dt>Decisions</dt><dd class="todo">To write</dd></div>
+        <div><dt>Outcome</dt><dd>Released as Lumo 0.3.1, a signed Android download, with its own website.</dd></div>
+        <div><dt>Links</dt><dd><a href="https://lumogrocery.com">lumogrocery.com</a> · <a href="https://github.com/bhccob/lumo-app">Download</a></dd></div>
+      </dl>
+    </article>
+    <article class="project" data-project="locked" hidden>
+      <h2 class="ptitle">Locked</h2>
+      <p class="cat">Android app · 2026</p>
+      <p class="lead">A gym log for Android. It gives you your next weight from your own history, keeps your streak and earns you a rank, with weekly leagues and a top 100.</p>
+      <figure class="empty"><p>Screens to come</p></figure>
+      <dl>
+        <div><dt>Objective</dt><dd>Make progress visible: the next weight to lift, a streak to keep and a rank to earn.</dd></div>
+        <div><dt>My role</dt><dd class="todo">To confirm</dd></div>
+        <div><dt>Built with</dt><dd class="chips"><i>Expo</i><i>React Native</i><i>SQLite</i><i>Supabase</i></dd></div>
+        <div><dt>How it works</dt><dd>SQLite on the phone stays the source of truth and backs up to Supabase. For the leagues and the top 100 the server works out every score itself, running a copy of the app’s own scoring code, so a phone cannot send its own score.</dd></div>
+        <div><dt>Decisions</dt><dd>Fair rankings: a lift above every world record, or a big jump within 30 days, does not count for the top 100.</dd></div>
+        <div><dt>Outcome</dt><dd>Version 0.4.2 is a public Android download, with 911 automated tests. It has run on the emulator; a real week of training with it is next.</dd></div>
+        <div><dt>Links</dt><dd><a href="https://lockedlifts.com">lockedlifts.com</a> · <a href="https://github.com/bhccob/locked-app">Download</a></dd></div>
+      </dl>
+    </article>
+    <article class="project" data-project="cookies" hidden>
+      <h2 class="ptitle">Cookies Clicker</h2>
+      <p class="cat">Browser game · School project · 2025</p>
+      <p class="lead">A browser-based incremental game, built as a school project around one satisfying loop: click, earn cookies, reinvest in upgrades and watch production compound.</p>
+      <figure><img src="img/cookies-playing.webp" width="1440" height="900" alt="Cookies Clicker being played: the cookie counter, the store of producers and the boosts panel" loading="lazy" /><figcaption>Cookies Clicker being played</figcaption></figure>
+      <dl>
+        <div><dt>Objective</dt><dd>Turn a single action into a progression system, for the school subject Web Game Development.</dd></div>
+        <div><dt>My role</dt><dd>Built with a classmate. <span class="todo">My own part: to write</span></dd></div>
+        <div><dt>Built with</dt><dd class="chips"><i>HTML</i><i>CSS</i><i>JavaScript</i><i>Bootstrap 5</i><i>localStorage</i></dd></div>
+        <div><dt>How it works</dt><dd>Producers share a reusable AutoClicker class, timed boosts and random bonus events keep the loop lively, and progress is saved in the browser with localStorage so players can pick up where they left off.</dd></div>
+        <div><dt>Decisions</dt><dd>Game feel and economy balancing: every click, purchase and boost gives clear feedback, and upgrade costs are paced so progress stays rewarding without becoming trivial.</dd></div>
+        <div><dt>Outcome</dt><dd>A playable browser game, its source public on GitHub.</dd></div>
+        <div><dt>Links</dt><dd><a href="https://github.com/bhccob/Cookies-Clicker">Source on GitHub</a></dd></div>
+      </dl>
+    </article>
+  </div>
+</div>
+
+<!-- the way out of the immersive part: the same projects as a plain list -->
+<div class="list" role="dialog" aria-modal="true" aria-labelledby="list-title" hidden>
+  <div class="list-in">
+    <div class="list-head"><h2 id="list-title">Selected work</h2><button type="button" class="list-close">Close</button></div>
+    <ol>
+      <li><button type="button" data-open="jontai"><span>01</span><b>Jontai Energy</b><i>Website · Concept redesign</i><em>2026</em></button></li>
+      <li><button type="button" data-open="lumo"><span>02</span><b>Lumo</b><i>Android app</i><em>2026</em></button></li>
+      <li><button type="button" data-open="locked"><span>03</span><b>Locked</b><i>Android app</i><em>2026</em></button></li>
+      <li><button type="button" data-open="cookies"><span>04</span><b>Cookies Clicker</b><i>Browser game · School project</i><em>2025</em></button></li>
+    </ol>
+  </div>
+</div>
+
+<nav class="chapters" aria-label="Chapters">
+  <ol>
+    <li><a href="#origin" data-go="origin" data-ch="origin"><span>01</span> Origin</a></li>
+    <li><a href="#foundation" data-go="foundation" data-ch="foundation"><span>02</span> Foundation</a></li>
+    <li><a href="#development" data-go="development" data-ch="development"><span>03</span> Development</a></li>
+    <li><a href="#works" data-go="works" data-ch="works"><span>04</span> Selected work</a></li>
+    <li><a href="#identity" data-go="identity" data-ch="identity"><span>05</span> Identity</a></li>
+    <li><a href="#connection" data-go="connection" data-ch="connection"><span>06</span> Connection</a></li>
+  </ol>
+  <i class="track" aria-hidden="true"><i></i></i>
+</nav>
+<div class="runway" aria-hidden="true"></div>
+<script src="r71.js"></script>
+</body>
+</html>

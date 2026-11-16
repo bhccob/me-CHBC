@@ -1,0 +1,72 @@
+/* LAB ONLY (throwaway). Round 69, on top of r68.css (tokens, bar, intro). One dark theme, amber only for contact. */
+.film { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; background: var(--ground); }
+.scrim { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, rgba(9, 8, 13, 0.92) 0%, rgba(9, 8, 13, 0.78) 32%, rgba(9, 8, 13, 0) 62%); }
+/* a soft shade under the top bar so the nav reads over bright glass */
+.bar::before { content: ''; position: absolute; inset: 0 0 -40px 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(9, 8, 13, 0.8), rgba(9, 8, 13, 0)); }
+body::after { content: ''; position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0.07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.bar { position: fixed; z-index: 5; }
+.runway { width: 1px; }
+
+.beat { position: fixed; inset: 0; z-index: 2; opacity: 0; visibility: hidden; pointer-events: none; will-change: opacity, transform; }
+.beat.live { visibility: visible; }
+.beat.live a { pointer-events: auto; }
+.beat .intro { position: absolute; }
+
+/* a text column on the left, centred on the screen's height; the sculpture's part sits to the right of it */
+.col { display: flex; flex-direction: column; justify-content: center; padding: 68px var(--edge) 0; }
+.col > * { max-width: min(30rem, 38vw); }
+.col h2 { margin: 0 0 20px; font-weight: 600; font-size: clamp(34px, 3.5vw, 58px); line-height: 1.04; letter-spacing: -0.015em; text-wrap: balance; }
+.col p { margin: 0; font-size: clamp(16px, 1.15vw, 19px); line-height: 1.5; color: var(--mute); }
+.col .part { margin-bottom: 12px; color: var(--ink); font-weight: 500; }
+.col .fact { margin-top: 18px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px; letter-spacing: 0.02em; color: var(--ink); }
+
+/* the four studies as a small index under the column; the one in view is lit */
+.studies { position: fixed; z-index: 2; left: var(--edge); bottom: 7vh; margin: 0; padding: 0; list-style: none; display: flex; gap: 26px;
+  font-weight: 500; font-size: 14px; opacity: 0; pointer-events: none; }
+.studies li { color: var(--mute); opacity: 0.55; padding-top: 10px; border-top: 1px solid rgba(235, 230, 243, 0.18); transition: opacity 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease); }
+.studies li.on { color: var(--ink); opacity: 1; border-top-color: var(--violet); }
+
+/* work: same-size panes of glass that travel across as you scroll */
+.work h2 { position: absolute; left: var(--edge); top: calc(68px + 4vh); margin: 0; font-weight: 600; font-size: clamp(22px, 1.7vw, 28px); letter-spacing: -0.005em; }
+.rail { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-46%); padding-left: var(--edge); perspective: 1400px; }
+.track { display: flex; gap: clamp(20px, 2.4vw, 40px); width: max-content; will-change: transform; }
+.pane { --rx: 0deg; --ry: 0deg; display: block; width: min(38vw, 54vh * 1.6); color: var(--ink);
+  transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 0.5s var(--ease); }
+.pic { position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 6px; background: var(--panel);
+  border: 1px solid rgba(235, 230, 243, 0.16); box-shadow: 0 30px 80px rgba(4, 3, 8, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+.pic img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(0.82) brightness(0.86); transform: scale(1.01);
+  transition: transform 0.9s var(--ease), filter 0.5s var(--ease); }
+.pic::after { content: ''; position: absolute; inset: 0; pointer-events: none; transform: translateX(-120%);
+  background: linear-gradient(105deg, transparent 35%, rgba(200, 180, 255, 0.22) 50%, transparent 65%); }
+.pic.empty { display: grid; place-items: center; color: var(--mute); font-size: 15px;
+  background: linear-gradient(140deg, #1d1630, #120e1c 60%); }
+.meta { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding-top: 14px; }
+.meta b { font-weight: 600; font-size: clamp(18px, 1.4vw, 22px); }
+.meta i { grid-column: 1; font-style: normal; color: var(--mute); font-size: 15px; }
+.meta em { grid-row: 1; grid-column: 2; font-style: normal; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px; color: var(--mute); align-self: center; }
+.pane:hover .pic img, .pane:focus-visible .pic img { transform: scale(1.06); filter: none; }
+.pane:hover .pic::after, .pane:focus-visible .pic::after { transform: translateX(120%); transition: transform 0.9s var(--ease); }
+.pane:hover .pic, .pane:focus-visible .pic { border-color: rgba(129, 85, 217, 0.9); }
+.pane:active { transform: rotateX(var(--rx)) rotateY(var(--ry)) scale(0.99); }
+
+/* contact: the only amber on the site is the cap's light and this button */
+.talk h2 { font-size: clamp(56px, 7vw, 120px); margin-bottom: 22px; }
+.cta { align-self: flex-start; margin-top: 30px; padding: 14px 22px; border-radius: 6px; background: var(--amber); color: #14110a;
+  font-weight: 600; font-size: 16px; transition: transform 0.25s var(--ease), background 0.25s var(--ease); }
+.cta:hover { background: #f3d970; transform: translateY(-1px); }
+.cta:active { transform: translateY(1px); }
+
+@media (max-width: 767px) and (orientation: portrait) {
+  .scrim { background: linear-gradient(0deg, rgba(9, 8, 13, 0.92) 0%, rgba(9, 8, 13, 0.7) 34%, rgba(9, 8, 13, 0) 62%); }
+  .col { justify-content: flex-end; padding: 0 7vw 16vh; }
+  .col > * { max-width: none; }
+  .col h2 { font-size: 32px; margin-bottom: 14px; }
+  .talk h2 { font-size: 56px; }
+  .studies { left: 7vw; right: 7vw; bottom: 5vh; gap: 14px; font-size: 12px; justify-content: space-between; }
+  .work h2 { left: 7vw; top: 76px; }
+  .rail { padding-left: 7vw; }
+  .pane { width: 80vw; }
+  .beat.first .intro { left: var(--edge); top: auto; bottom: 5vh; }
+}

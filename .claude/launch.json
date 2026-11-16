@@ -46,6 +46,17 @@
       "port": 5180
     },
     {
+      "name": "mock-2",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tools/lab/mock/serve.mjs"
+      ],
+      "env": {
+        "PORT": "5181"
+      },
+      "port": 5181
+    },
+    {
       "name": "journey",
       "runtimeExecutable": "node",
       "runtimeArgs": [
@@ -55,6 +66,33 @@
         "PORT": "4490"
       },
       "port": 4490
+    },
+    {
+      "name": "lock-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", ".claude/worktrees/the-lock", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "lock-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", ".claude/worktrees/the-lock", "run", "preview"],
+      "port": 4173
+    },
+    {
+      "name": "lock-proto",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-I",
+        "-m",
+        "http.server",
+        "5190",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:/Users/bhcco/AppData/Local/Temp/claude/7cc165e30a7dfa5b/aa76995d-6006-48b7-9adb-4ec6286388d9/scratchpad/proto"
+      ],
+      "port": 5190
     },
     {
       "name": "needle-pages",

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bob Chung · The Making of an Unknown</title>
+<meta name="description" content="One line of code becomes a machine on my desk: software engineering, game and app development, cybersecurity and mechatronics, one step after another." />
+<link rel="icon" href="data:," />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" />
+<link rel="stylesheet" href="r72.css" />
+<link rel="stylesheet" href="r73.css" />
+<!-- LAB ONLY (throwaway). Round 75: idea A, "Compiled" (Bob's pick, 2026-11-14). One continuous camera move rendered in
+     Blender (tools/lab/blender/compiled75.py): from his print on his monitor glass, into the screen, where a line of code
+     becomes a structure, a game, a protected system and finally one chip; the same chip in his PC; out along the cable
+     into a robot arm that builds his projects on a turntable; back out to his desk.
+     ?p=0..1 holds a point of the journey, &open=jontai|lumo|locked|cookies opens a project, &list the plain list,
+     &spin=0..35 turns the turntable (all for stills). -->
+</head>
+<body class="loading">
+<a class="skip" href="#works" data-go="works">Skip to selected work</a>
+<canvas class="film" aria-hidden="true"></canvas>
+<canvas class="motes" aria-hidden="true"></canvas>
+<div class="scrim" aria-hidden="true"></div>
+<div class="spinpad" aria-hidden="true"></div>
+<p class="loader" role="status"><span>Compiling</span> <b>0</b>%</p>
+
+<header class="bar">
+  <a class="brand" href="#top" data-go="print">Bob Chung</a>
+  <nav aria-label="Main">
+    <a href="#software" data-go="software">Education</a>
+    <a href="#works" data-go="works">Work</a>
+    <a class="contact" href="#desk" data-go="desk">Contact</a>
+  </nav>
+</header>
+
+<main>
+  <section class="beat first" data-beat="print" id="top">
+    <div class="title">
+      <h1>The Making<br /><em>of an</em> Unknown</h1>
+      <p class="lede">Every creation has an origin.</p>
+    </div>
+    <a class="hint" href="#software" data-go="software">
+      <span>Scroll to discover</span>
+      <svg viewBox="0 0 12 18" width="12" height="18" aria-hidden="true"><path d="M6 1v15M1.5 11.5 6 16l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    </a>
+  </section>
+
+  <section class="beat free eyebeat" data-beat="cursor" id="cursor">
+    <div class="corner"><p class="eyeline">A print on the glass. Behind it, where everything I make starts: a cursor.</p></div>
+  </section>
+
+  <section class="beat col" data-beat="software" id="software">
+    <h2>Software Engineering</h2>
+    <p class="status done"><i aria-hidden="true"></i>MBO-4 · completed education <b class="check" title="The brief says completed; the live site and my notes say student. To confirm.">to confirm</b></p>
+    <ul class="focus">
+      <li>Software development</li><li>Programming</li><li>Logical problem-solving</li>
+      <li>Application development</li><li>Software architecture</li><li>Technical thinking</li>
+    </ul>
+    <p class="part">The code lifts off the screen and becomes structure: modules in tiers, joined where their interfaces meet.</p>
+  </section>
+
+  <section class="beat col" data-beat="game" id="game">
+    <h2>Game &amp; App Development</h2>
+    <p class="status done"><i aria-hidden="true"></i>Part of the same education</p>
+    <p>Where software turns into something people play and use.</p>
+    <p class="part">Light comes on in the same blocks: platforms, a coin over the gap, a flag at the top, a player making the climb. Two blocks open into apps.</p>
+  </section>
+
+  <section class="beat col" data-beat="cyber" id="cyber">
+    <h2>Cybersecurity internship</h2>
+    <p class="status exp"><i aria-hidden="true"></i>Professional experience, not a degree</p>
+    <dl class="facts">
+      <div><dt>Where</dt><dd>An internship at a cybersecurity company</dd></div>
+      <div><dt>Responsibilities</dt><dd class="todo">To add</dd></div>
+      <div><dt>Tools</dt><dd class="todo">To add</dd></div>
+      <div><dt>Lessons</dt><dd class="todo">To add</dd></div>
+    </dl>
+    <p class="part">Glitches come in from outside. The edges fold up into walls, and a lock closes over the top.</p>
+  </section>
+
+  <section class="beat free eyebeat" data-beat="compile" id="compile">
+    <div class="corner"><p class="eyeline">All of it compiles down to one chip.</p></div>
+  </section>
+
+  <section class="beat free eyebeat" data-beat="chip" id="chip">
+    <div class="corner"><p class="eyeline">The same chip, in my PC.</p></div>
+  </section>
+
+  <section class="beat col" data-beat="arm" id="evolution">
+    <h2 class="big">Beyond software</h2>
+    <h3>Mechatronics Engineering</h3>
+    <p class="status next"><i aria-hidden="true"></i>Planned for next year · not started yet</p>
+    <p>My next academic direction: expanding from software development into the integration of mechanical systems, electronics, embedded technology and automation.</p>
+    <p class="part">The signal leaves the chip, runs out along the cable and wakes a machine. Part of the arm is still only drawn: it is not finished yet, and neither am I.</p>
+  </section>
+
+  <section class="beat free works" data-beat="works" id="works">
+    <div class="corner">
+      <h2>The creations</h2>
+      <p>The arm builds each project and sets it on the turntable. Hold and drag to turn it.</p>
+      <div class="front inline" aria-live="polite">
+        <p class="cat"><b class="front-n">01 / 04</b><span class="front-kind"></span></p>
+        <h3 class="front-title"></h3>
+        <button type="button" class="openbtn front-open">Open project</button>
+      </div>
+      <button type="button" class="listbtn" data-list>All projects as a list</button>
+    </div>
+  </section>
+
+  <section class="beat col talk" data-beat="desk" id="desk">
+    <h2>Behind every machine is a mind.</h2>
+    <p class="who">Software Engineer · Systems Builder · Creative Technologist</p>
+    <ul class="links">
+      <li><a href="https://github.com/bhccob">GitHub <span>bhccob</span></a></li>
+      <li class="todo">LinkedIn <span>to add</span></li>
+      <li><a href="/contact">Email <span>write to me</span></a></li>
+    </ul>
+    <p class="standin">This desk is a stand-in. Mine goes here once I send a photo.</p>
+  </section>
+</main>
+
+<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <div class="sheet-bar">
+    <button type="button" class="back"><svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M13 7H1.5M6 2.5 1.5 7 6 11.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Back to the turntable</span></button>
+    <span class="pager"><button type="button" class="prev" aria-label="Previous project">←</button><b>01 / 04</b><button type="button" class="next" aria-label="Next project">→</button></span>
+  </div>
+  <div class="sheet-body" tabindex="-1"></div>
+</div>
+
+<div class="list" role="dialog" aria-modal="true" aria-labelledby="list-title" hidden>
+  <div class="list-in">
+    <div class="list-head"><h2 id="list-title">Selected work</h2><button type="button" class="list-close">Close</button></div>
+    <ol></ol>
+  </div>
+</div>
+
+<nav class="chapters" aria-label="Chapters">
+  <ol>
+    <li><a href="#top" data-go="print" data-ch="origin"><span>01</span> Origin</a></li>
+    <li><a href="#software" data-go="software" data-ch="foundation"><span>02</span> Foundation</a></li>
+    <li><a href="#cyber" data-go="cyber" data-ch="protection"><span>03</span> Protection</a></li>
+    <li><a href="#evolution" data-go="arm" data-ch="evolution"><span>04</span> Evolution</a></li>
+    <li><a href="#works" data-go="works" data-ch="works"><span>05</span> Selected work</a></li>
+    <li><a href="#desk" data-go="desk" data-ch="maker"><span>06</span> The maker</a></li>
+  </ol>
+  <i class="track" aria-hidden="true"><i></i></i>
+</nav>
+<div class="runway" aria-hidden="true"></div>
+<script type="module" src="r75.js"></script>
+</body>
+</html>

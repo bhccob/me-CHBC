@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Frame</title>
+<link rel="icon" href="data:," />
+<!-- LAB ONLY (throwaway): a fixed-size frame for headless stills. ?p=obs-a (page), &w=390&h=844 (size, phone by default),
+     &scroll=0.5 (scrolls the framed page that many screens after load, to check the scroll motion), &live (no ?still). -->
+<style>
+  html, body { margin: 0; background: #080a0d; }
+  iframe { display: block; border: 0; }
+</style>
+</head>
+<body>
+<script>
+  const q = new URLSearchParams(location.search);
+  const f = document.createElement('iframe');
+  f.style.width = `${q.get('w') ?? 390}px`;
+  f.style.height = `${q.get('h') ?? 844}px`;
+  f.src = `${q.get('p') ?? 'obs-a'}.html${q.has('live') ? '' : '?still'}`;
+  if (q.has('scroll')) f.addEventListener('load', () => setTimeout(() => f.contentWindow.scrollTo(0, f.contentWindow.innerHeight * Number(q.get('scroll'))), 2500));
+  document.body.append(f);
+</script>
+</body>
+</html>

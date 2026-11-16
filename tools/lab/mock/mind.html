@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Through the Coin</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<link rel="stylesheet" href="r60.css" />
+<link rel="stylesheet" href="/node_modules/@fontsource/ma-shan-zheng/index.css" />
+<style>
+  /* LAB ONLY (throwaway). Round 62: the coin is a door into the mind. A 3D world outside, the brain inside. */
+  @font-face { font-family: Barlow; font-weight: 900; font-display: block; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-900-normal.woff2') format('woff2'); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #07030e; }
+  #gl { z-index: 0; }
+  .sec { position: fixed; inset: 0; z-index: 10; pointer-events: none; opacity: 0; }
+  .sec > * { position: absolute; margin: 0; }
+
+  .chrome .tl { display: flex; gap: 12px; align-items: center; }
+  .chrome .tl b { font-weight: 500; color: var(--gold-hi); }
+  .chrome .tr span { color: var(--ink); }
+
+  #intro .bl { left: var(--gutter); bottom: var(--gutter); max-width: 33ch; font: 400 16px/1.45 Barlow; color: var(--soft); }
+  #intro .bl b { font-weight: 500; color: var(--ink); }
+  #intro .cue { right: var(--gutter); bottom: var(--gutter); display: flex; align-items: center; gap: 14px; font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); }
+  #intro .cue i { display: block; width: 46px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+  .sig { font-family: 'Ma Shan Zheng', cursive; color: var(--violet); line-height: 1; white-space: nowrap; transform-origin: left bottom; }
+
+  #about .col { left: calc(var(--gutter) * 2); top: 50%; transform: translateY(-50%); width: min(34vw, 500px); }
+  #about .lead { margin-top: 22px; font-size: clamp(34px, 3.8vw, 58px); line-height: 0.96; }
+  #about .lead em { color: var(--gold-hi); }
+  #about .copy { margin-top: 20px; font-size: 16px; max-width: 37ch; }
+  .studies { list-style: none; margin: 30px 0 0; padding: 0; border-top: 1px solid var(--hair); }
+  .studies li { display: grid; grid-template-columns: 44px 1fr; align-items: baseline; padding: 13px 0 12px; border-bottom: 1px solid var(--hair); color: var(--faint); transition: color 0.4s; }
+  .studies li .hand { font-size: 24px; color: inherit; line-height: 1; }
+  .studies li span { font: 600 17px Barlow; letter-spacing: -0.005em; }
+  .studies li em { grid-column: 2; display: block; height: 0; overflow: hidden; font: 400 15px/1.4 Barlow; font-style: normal; color: var(--soft); transition: height 0.4s, margin 0.4s; }
+  .studies li.on { color: var(--ink); }
+  .studies li.on .hand { color: var(--gold-hi); }
+  .studies li.on em { height: 21px; margin-top: 4px; }
+  .region { position: absolute; font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-hi); white-space: nowrap; transform: translate(14px, -50%); display: flex; align-items: center; gap: 10px; }
+  .region::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--gold-hi); margin-left: -24px; box-shadow: 0 0 0 4px rgb(231 184 119 / 0.18); }
+
+  #works .top { left: 50%; top: calc(var(--gutter) + 46px); transform: translateX(-50%); }
+
+  #end .below { left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; }
+  #end .below .copy { max-width: 46ch; text-align: center; }
+  #end .links { display: flex; gap: 34px; font: 600 17px Barlow; }
+  #end .links span { border-bottom: 1px solid rgb(207 154 98 / 0.6); padding-bottom: 3px; }
+  #end .fine { left: var(--gutter); right: var(--gutter); bottom: var(--gutter); display: flex; justify-content: space-between; font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
+
+  .phone #about .col { left: var(--gutter); right: var(--gutter); width: auto; top: auto; bottom: calc(var(--gutter) + 8px); transform: none; }
+  .phone #about .lead { font-size: 30px; margin-top: 12px; }
+  .phone #about .copy { display: none; }
+  .phone .studies { margin-top: 16px; }
+  .phone .studies li { padding: 9px 0 8px; }
+  .phone .studies li span { font-size: 16px; }
+  .phone #intro .cue { display: none; }
+  .phone .region { display: none; }
+  .phone #end .links { gap: 22px; }
+
+  .dot { position: fixed; z-index: 40; left: 0; top: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 1px solid rgb(231 184 119 / 0.8); pointer-events: none; }
+  .dot::after { content: ''; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: var(--gold-hi); }
+  body { cursor: none; }
+</style>
+</head>
+<body class="grain">
+<canvas id="gl" class="layer"></canvas>
+
+<div class="chrome">
+  <p class="tl"><b>Bob Chung</b> Software engineer</p>
+  <p class="tr"><span>About</span><span>Work</span><span>Contact</span><span>EN</span></p>
+</div>
+
+<section id="intro" class="sec">
+  <p class="sig">Chung</p>
+  <p class="bl">Born and raised in <b>Aruba</b>, now in <b>Rotterdam</b>, studying software and heading for mechatronics.</p>
+  <p class="cue">Scroll, look through the coin <i></i></p>
+</section>
+
+<section id="about" class="sec">
+  <div class="col">
+    <p class="eyebrow"><i></i><b>About</b> &nbsp;inside the coin</p>
+    <h2 class="lead">This is how<br /><em>I think.</em></h2>
+    <p class="copy">Born in Aruba, Chinese by heritage, in Rotterdam since eighteen. Four parts of one brain, one for each thing I study.</p>
+    <ol class="studies">
+      <li><b class="hand">码</b><span>Software Engineering</span><em>The code that makes it think.</em></li>
+      <li><b class="hand">戏</b><span>Game &amp; App Development</span><em>How a person plays with it.</em></li>
+      <li><b class="hand">安</b><span>Cybersecurity</span><em>What keeps it safe.</em></li>
+      <li><b class="hand">机</b><span>Mechatronics</span><em>Gears, motors and movement.</em></li>
+    </ol>
+  </div>
+  <p class="region"></p>
+</section>
+
+<section id="works" class="sec">
+  <p class="top eyebrow"><i></i><b>Selected work</b> &nbsp;what it made</p>
+</section>
+
+<section id="end" class="sec">
+  <div class="below">
+    <p class="copy">A project, a question or a job: I’d like to hear it. Click the coin to write to me.</p>
+    <p class="links"><span>Email</span><span>GitHub</span><span>Instagram</span></p>
+  </div>
+  <p class="fine"><span>© 2026 Bob Chung</span><span>Aruba · Rotterdam</span><span>Back to the front ↑</span></p>
+</section>
+
+<div class="dot"></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "/node_modules/three/build/three.module.js",
+  "three/addons/": "/node_modules/three/examples/jsm/",
+  "postprocessing": "/node_modules/postprocessing/build/index.js"
+} }
+</script>
+<script type="module" src="mind.js"></script>
+</body>
+</html>

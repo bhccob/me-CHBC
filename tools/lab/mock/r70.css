@@ -1,0 +1,225 @@
+/* LAB ONLY (throwaway). Round 70, "Digital DNA". One dark theme, the brief's palette: mostly dark, violet second,
+   off-white for words, yellow only where something is live (the current chapter, a lit branch, contact). */
+@font-face { font-family: 'Barlow'; font-weight: 400; font-display: swap; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 500; font-display: swap; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 600; font-display: swap; src: url('/node_modules/@fontsource/barlow/files/barlow-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 500; font-display: swap; src: url('/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+:root {
+  --ground: #100b19;
+  --panel: #1a1028;
+  --violet: #7139c6;
+  --lav: #bba0ff;
+  --yellow: #f5d547;
+  --pale: #ffe98a;
+  --ink: #e9e5f0;
+  --mute: #b7accb;
+  --line: rgba(233, 229, 240, 0.16);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  /* Where the render puts the title: DIGITAL's left edge 8.5% across the plate, its baseline 39% down, DNA's right
+     edge 8.5% in from the right. The plate covers the screen, but never loses more than 6% a side or 10% top and bottom
+     (the title would be cut); past that it stops growing and its edges fade into the ground. r70.js does the same sum. */
+  --plate-w: min(max(100vw, 177.78dvh), 113.64vw, 222.22dvh);
+  --plate-h: calc(0.5625 * var(--plate-w));
+  --edge: max(20px, calc(50vw - 0.415 * var(--plate-w)));
+  --title-base: calc(50dvh - 0.110 * var(--plate-h));
+  --strip: 58px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scrollbar-color: #3b2a61 var(--ground); scrollbar-width: thin; }
+html, body { margin: 0; background: var(--ground); color: var(--ink); }
+body { font-family: 'Barlow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--violet); color: #fff; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 1px solid var(--pale); outline-offset: 4px; border-radius: 2px; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.skip { position: fixed; z-index: 9; left: var(--edge); top: 14px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); transform: translateY(-64px); }
+.skip:focus-visible { transform: none; }
+
+.film, .motes { position: fixed; inset: 0; width: 100%; height: 100%; }
+.film { z-index: 0; background: var(--ground); }
+.motes { z-index: 1; pointer-events: none; }
+.runway { width: 1px; }
+
+/* shade for the words: a column on the left, or only the lower-left corner where the scene needs the whole frame */
+.scrim { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+.scrim::before, .scrim::after { content: ''; position: absolute; inset: 0; opacity: 0; }
+.scrim::before { opacity: var(--side, 0); background: linear-gradient(90deg, rgba(16, 11, 25, 0.94) 0%, rgba(16, 11, 25, 0.80) 30%, rgba(16, 11, 25, 0) 60%); }
+.scrim::after { opacity: var(--corner, 0); background: radial-gradient(120% 90% at 0% 100%, rgba(16, 11, 25, 0.92) 0%, rgba(16, 11, 25, 0.6) 30%, rgba(16, 11, 25, 0) 56%); }
+/* grain over everything, fixed and inert */
+body::after { content: ''; position: fixed; inset: 0; z-index: 6; pointer-events: none; opacity: 0.07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.loader { position: fixed; z-index: 7; left: var(--edge); bottom: calc(var(--strip) + 5vh); margin: 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); transition: opacity 0.5s var(--ease); }
+.loader b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+body:not(.loading) .loader { opacity: 0; pointer-events: none; }
+body.loading .beat, body.loading .chapters { visibility: hidden; }
+
+/* ---------- top bar */
+.bar { position: fixed; z-index: 5; top: 0; left: 0; right: 0; height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--edge); }
+.bar::before { content: ''; position: absolute; inset: 0 0 -40px 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(16, 11, 25, 0.82), rgba(16, 11, 25, 0)); }
+.brand { font-weight: 600; font-size: 16px; letter-spacing: 0.01em; }
+.bar nav { display: flex; gap: clamp(20px, 2.6vw, 40px); font-weight: 500; font-size: 15px; }
+.bar nav a { position: relative; padding: 6px 0; transition: color 0.25s var(--ease); }
+.bar nav a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease); }
+.bar nav a:hover::after, .bar nav a:focus-visible::after { transform: scaleX(1); }
+.bar nav a:active { transform: translateY(1px); }
+.bar nav .contact { color: var(--yellow); }
+
+/* ---------- the pages: each is fixed over the film and shown while the camera rests at its stop */
+.beat { position: fixed; inset: 0; z-index: 2; opacity: 0; visibility: hidden; pointer-events: none; will-change: opacity, transform; }
+.beat.live { visibility: visible; }
+.beat.live a, .beat.live button { pointer-events: auto; }
+h2, h3, p, ul, ol, dl, dd { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+h2 { font-weight: 600; text-transform: uppercase; font-size: clamp(30px, 3.5vw, 62px); line-height: 1.0; letter-spacing: -0.005em; text-wrap: balance; }
+.beat p { font-size: clamp(16px, 1.15vw, 19px); line-height: 1.5; color: var(--mute); text-wrap: pretty; }
+
+/* first view: almost no words. One sentence in the dark gap between the two words of the title; the way on, lower left */
+.lede { position: absolute; right: var(--edge); top: calc(var(--title-base) + 0.055 * var(--plate-h)); width: calc(0.23 * var(--plate-w)); max-width: 32ch; color: var(--ink) !important; }
+.hint { position: absolute; left: var(--edge); bottom: calc(var(--strip) + 5vh); display: inline-flex; align-items: center; gap: 14px; padding: 10px 0;
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
+.hint svg { color: var(--yellow); }
+.hint:hover span, .hint:focus-visible span { color: var(--pale); }
+
+/* a column of words on the left, centred on the screen's height; the structure sits to the right of it */
+.col { display: flex; flex-direction: column; justify-content: center; padding: 68px var(--edge) var(--strip); }
+.col > * { max-width: min(31rem, 38vw); }
+.col h2 { margin-bottom: 22px; }
+.col p + p { margin-top: 14px; }
+.col .own { color: var(--ink); font-weight: 500; }
+.wide > h2 { max-width: min(46rem, 54vw); font-size: clamp(36px, 4.6vw, 84px); }
+.wide > p { max-width: min(25rem, 27vw); }
+
+/* 02 Foundation: two strands. A filled mark is done; a hollow one is where it is heading. */
+.strands { display: grid; gap: 22px; margin-bottom: 22px; }
+.strand h3 { font-weight: 600; font-size: clamp(18px, 1.45vw, 23px); line-height: 1.15; }
+.status { display: flex; align-items: center; gap: 10px; margin: 7px 0 8px; font-family: var(--mono); font-size: 12px !important; letter-spacing: 0.06em; text-transform: uppercase; }
+.status i { flex: none; width: 9px; height: 9px; border-radius: 50%; }
+.done .status { color: var(--ink) !important; }
+.done .status i { background: var(--lav); }
+.next .status { color: var(--lav) !important; }
+.next .status i { border: 1px solid var(--lav); }
+.topics { font-size: clamp(15px, 1.05vw, 17px) !important; }
+.join { padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink) !important; }
+
+/* 03 and 04: the scene keeps the frame; the words keep to the lower-left corner */
+.corner { position: absolute; left: var(--edge); bottom: calc(var(--strip) + 5vh); max-width: min(27rem, 34vw); }
+.corner h2 { font-size: clamp(24px, 2.5vw, 44px); margin-bottom: 14px; }
+.exp .corner { max-width: min(21rem, 24vw); }
+
+/* the six branches: a name beside each node, placed from the render's own coordinates */
+.arms li, .slides li, .talk .links li { position: absolute; left: 0; top: 0; }
+.arms button { position: absolute; left: var(--x); top: var(--y); transform: translate(0, -50%); display: flex; align-items: center; gap: 10px; padding: 14px 4px;
+  font-weight: 600; font-size: clamp(13px, 1vw, 16px); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: var(--ink); }
+.arms button.left { transform: translate(-100%, -50%); flex-direction: row-reverse; }
+.arms button::before { content: ''; width: 16px; height: 1px; background: var(--lav); transition: width 0.35s var(--ease), background 0.2s linear; }
+.arms button:hover::before, .arms button:focus-visible::before, .arms button.on::before { width: 34px; background: var(--yellow); }
+.arms button.on { color: var(--pale); }
+.arms button:active { translate: 0 1px; }
+.seq { min-height: 3em; }
+.seq.lit { color: var(--ink); }
+
+/* the four projects: the slide itself is the button; its name sits under it */
+.slides button { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h); text-align: left; border-radius: 3px; }
+.slides button::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: rgba(187, 160, 255, 0); transition: background 0.3s var(--ease); }
+.slides button:hover::before, .slides button:focus-visible::before { background: rgba(187, 160, 255, 0.10); }
+.slides b, .slides i, .slides em { position: absolute; left: 2px; top: calc(100% + 12px); white-space: nowrap; font-style: normal; }
+.slides b { font-weight: 600; font-size: clamp(15px, 1.15vw, 18px); }
+.slides i { top: calc(100% + 34px); font-size: 14px; color: var(--mute); }
+.slides em { left: auto; right: 2px; font-family: var(--mono); font-size: 12px; color: var(--mute); top: calc(100% + 15px); }
+.slides b, .slides i, .slides em { text-shadow: 0 0 14px rgba(16, 11, 25, 0.95), 0 0 4px rgba(16, 11, 25, 0.9); }
+.slides [data-slide='locked'] b { top: auto; bottom: 38px; left: 14px; }
+.slides [data-slide='locked'] i { top: auto; bottom: 16px; left: 14px; }
+.slides [data-slide='locked'] em { top: 14px; right: 14px; }
+.slides b::after { content: ''; display: block; height: 1px; margin-top: 3px; background: var(--yellow); transform: scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease); }
+.slides button:hover b::after, .slides button:focus-visible b::after { transform: scaleX(1); }
+
+/* inside a project: the camera has gone to its slide; the words take the left column */
+.detail { position: absolute; left: var(--edge); top: 50%; transform: translateY(-50%); width: min(27rem, 34vw); opacity: 0; transition: opacity 0.5s var(--ease) 0.15s; }
+.detail h3 { font-weight: 600; text-transform: uppercase; font-size: clamp(28px, 3vw, 52px); line-height: 1; margin-bottom: 16px; }
+.detail dl { margin-top: 22px; border-top: 1px solid var(--line); }
+.detail dl div { display: grid; grid-template-columns: 9.5rem 1fr; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.detail dt { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); padding-top: 3px; }
+.detail dd { font-size: 16px; }
+.todo { color: var(--lav) !important; font-style: italic; }
+.detail .links { margin-top: 18px; }
+.detail .links a, .talk .links a { border-bottom: 1px solid var(--line); padding-bottom: 2px; color: var(--ink); transition: border-color 0.25s var(--ease), color 0.25s var(--ease); }
+.detail .links a:hover, .talk .links a:hover { border-color: var(--yellow); color: var(--pale); }
+.close { position: absolute; left: var(--edge); top: calc(68px + 3vh); display: inline-flex; align-items: center; gap: 12px; padding: 10px 0;
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0; transition: opacity 0.4s var(--ease); }
+.close svg { color: var(--yellow); }
+.exp .corner, .exp .slides { transition: opacity 0.35s var(--ease); }
+body.open .exp .corner, body.open .exp .slides { opacity: 0; pointer-events: none; }
+body.open .exp .slides button { pointer-events: none; }
+body.open .detail.on, body.open .close { opacity: 1; }
+body.open .chapters { opacity: 0.35; }
+
+/* 06 Connection: the links as a short list; the amber node in the network is the live one */
+.talk h2 { font-size: clamp(36px, 4.6vw, 84px); margin-bottom: 30px; }
+.talk .links { display: grid; gap: 0; max-width: min(24rem, 34vw); border-top: 1px solid var(--line); }
+.talk .links li { position: static; border-bottom: 1px solid var(--line); font-weight: 500; font-size: clamp(18px, 1.4vw, 22px); }
+.talk .links a { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0; border: 0; }
+.talk .links li.todo { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0; font-style: normal; }
+.talk .links span { font-family: var(--mono); font-size: 13px; color: var(--mute); }
+.talk .links li:first-child a { color: var(--yellow); }
+.talk .links a:hover { color: var(--pale); }
+
+/* ---------- the chapter strip: always there, never loud. A scale along the bottom; the current chapter is lit. */
+.chapters { position: fixed; z-index: 5; left: 0; right: 0; bottom: 0; height: var(--strip); padding: 0 var(--edge); transition: opacity 0.4s var(--ease); }
+.chapters::before { content: ''; position: absolute; inset: -46px 0 0 0; z-index: -1; pointer-events: none; background: linear-gradient(0deg, rgba(16, 11, 25, 0.88), rgba(16, 11, 25, 0)); }
+.chapters ol { display: flex; justify-content: space-between; height: 100%; }
+.chapters a { position: relative; display: flex; align-items: center; gap: 9px; height: 100%; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); transition: color 0.3s var(--ease); }
+.chapters a span { color: var(--lav); opacity: 0.75; }
+.chapters a::before { content: ''; position: absolute; left: 0; top: 0; width: 1px; height: 7px; background: var(--line); transition: height 0.35s var(--ease), background 0.2s linear, width 0.2s linear; }
+.chapters a:hover { color: var(--ink); }
+.chapters a[aria-current] { color: var(--ink); }
+.chapters a[aria-current]::before { height: 12px; width: 2px; background: var(--yellow); }
+.track { position: absolute; left: var(--edge); right: var(--edge); top: 0; height: 1px; background: var(--line); }
+.track i { position: absolute; inset: 0; background: var(--lav); transform-origin: left; transform: scaleX(var(--progress, 0)); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .hint svg { animation: nudge 2.4s var(--ease) infinite; }
+}
+@keyframes nudge { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(4px); } }
+
+/* ---------- phone: the frame is cropped to the structure; words go to the bottom; branches and projects become lists */
+@media (max-aspect-ratio: 1/1) {
+  :root { --edge: 6vw; --strip: 46px; }
+  .bar { height: 56px; }
+  .bar nav a:not(.contact) { display: none; }
+  .scrim::before, .scrim::after { background: linear-gradient(0deg, rgba(16, 11, 25, 0.95) 0%, rgba(16, 11, 25, 0.82) 38%, rgba(16, 11, 25, 0) 66%); }
+  .lede { left: var(--edge); right: var(--edge); top: auto; bottom: calc(var(--strip) + 12vh); width: auto; max-width: none; }
+  .first::before { content: ''; position: absolute; inset: 55% 0 0 0; background: linear-gradient(0deg, rgba(16, 11, 25, 0.94) 30%, rgba(16, 11, 25, 0)); }
+  .slides [data-slide='locked'] b, .slides [data-slide='locked'] i { position: static; }
+  .hint { bottom: calc(var(--strip) + 4vh); }
+  .col { justify-content: flex-end; padding: 0 var(--edge) calc(var(--strip) + 5vh); }
+  .col > *, .wide > h2 { max-width: none; }
+  h2, .wide > h2, .talk h2 { font-size: 30px; }
+  .col h2 { margin-bottom: 14px; }
+  .strands { gap: 14px; margin-bottom: 14px; }
+  .corner { position: static; max-width: none; }
+  .corner h2 { font-size: 26px; margin-bottom: 10px; }
+  .free { display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--edge) calc(var(--strip) + 4vh); }
+  .arms, .slides { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; margin-top: 14px; border-top: 1px solid var(--line); }
+  .arms li, .slides li { position: static; border-bottom: 1px solid var(--line); }
+  .arms button, .arms button.left { position: static; transform: none; flex-direction: row; width: 100%; padding: 13px 0; font-size: 13px; }
+  .slides button { position: static; width: 100%; height: auto; padding: 12px 0; display: grid; gap: 2px; }
+  .slides button::before { display: none; }
+  .slides b, .slides i, .slides em { position: static; }
+  .slides em { display: none; }
+  .seq { min-height: 4.5em; }
+  .detail { left: var(--edge); right: var(--edge); width: auto; top: auto; bottom: calc(var(--strip) + 4vh); transform: none; }
+  .detail h3 { font-size: 30px; }
+  .detail dl div { grid-template-columns: 7.5rem 1fr; padding: 8px 0; }
+  .close { top: 64px; }
+  .talk .links { max-width: none; }
+  .chapters li { display: none; }
+  .chapters li:has(a[aria-current]) { display: block; }
+  .chapters ol { justify-content: flex-start; }
+}

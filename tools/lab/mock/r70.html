@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bob Chung · Digital DNA</title>
+<meta name="description" content="Digital DNA: an exploration of the systems, ideas and disciplines that shape how Bob Chung builds." />
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="r70.css" />
+<!-- LAB ONLY (throwaway). Round 70: Bob's "Digital DNA" brief (2026-11-13) as one scrollable mock-up.
+     One tall structure rendered in Blender (tools/lab/blender/dna70.py); scroll moves one camera along it:
+     first view, 01 Origin, 02 Foundation, 03 Development, 04 Experiments, 05 Identity, 06 Connection.
+     The first view turns ±16° by itself and under the pointer (41 frames); the rest is 129 frames of one move.
+     ?p=0..1 holds a point of the journey, &arm=0..5 lights a branch, &open=jontai|lumo|cookies|locked opens a project,
+     &a=-1..1 holds the first view's turn (all for stills).
+     Headlines are the brief's own. Lines marked "mine" in the round's notes are Claude's and wait for Bob. -->
+</head>
+<body class="loading">
+<a class="skip" href="#origin" data-go="origin">Skip to the first chapter</a>
+<canvas class="film" aria-hidden="true"></canvas>
+<canvas class="motes" aria-hidden="true"></canvas>
+<div class="scrim" aria-hidden="true"></div>
+<p class="loader" role="status"><span>Sequencing</span> <b>0</b>%</p>
+
+<header class="bar">
+  <a class="brand" href="#top" data-go="hero">Bob Chung</a>
+  <nav aria-label="Main">
+    <a href="#experiments" data-go="experiments">Work</a>
+    <a href="#identity" data-go="identity">About</a>
+    <a class="contact" href="#connection" data-go="connection">Contact</a>
+  </nav>
+</header>
+
+<main>
+  <section class="beat first" data-beat="hero" id="top">
+    <h1 class="sr-only">Digital DNA</h1>
+    <p class="lede">An exploration of the systems, ideas and disciplines that shape how I build.</p>
+    <a class="hint" href="#origin" data-go="origin">
+      <span>Explore the structure</span>
+      <svg viewBox="0 0 12 18" width="12" height="18" aria-hidden="true"><path d="M6 1v15M1.5 11.5 6 16l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    </a>
+  </section>
+
+  <section class="beat col" data-beat="origin" id="origin">
+    <h2>Every system has an origin.</h2>
+    <p>Mine is curiosity. I grew up in Aruba wanting to know how things work, and I have been taking that question further ever since: first software, then games, then security, and next the machines themselves.</p>
+    <p class="own">“I build with curiosity and test with honesty.”</p>
+  </section>
+
+  <section class="beat col" data-beat="foundation" id="foundation">
+    <h2>The foundation of my technical DNA.</h2>
+    <div class="strands">
+      <article class="strand done">
+        <h3>MBO-4 Software Development</h3>
+        <p class="status"><i aria-hidden="true"></i>Completed</p>
+        <p class="topics">Software development, programming and algorithms, databases, application development, software architecture, technical problem-solving.</p>
+      </article>
+      <article class="strand next">
+        <h3>Mechatronics / Physical Engineering</h3>
+        <p class="status"><i aria-hidden="true"></i>Future direction, not a completed qualification</p>
+        <p class="topics">Mechanics, electronics, embedded systems, control systems, hardware and software integration.</p>
+      </article>
+    </div>
+    <p class="join">One strand is glass, one is machined. Every rung is where they meet.</p>
+  </section>
+
+  <section class="beat free dev" data-beat="development" id="development">
+    <div class="corner">
+      <h2>Six sequences. One structure.</h2>
+      <p class="seq" aria-live="polite" data-idle="Each branch is a capability. Point at one to light it, select it to keep it lit.">Each branch is a capability. Point at one to light it, select it to keep it lit.</p>
+    </div>
+    <ul class="arms">
+      <li><button type="button" data-arm="0" data-text="Programming, algorithms and computational thinking.">Logic</button></li>
+      <li><button type="button" data-arm="1" data-text="Software architecture, system design and development.">Architecture</button></li>
+      <li><button type="button" data-arm="2" data-text="Electronics, embedded systems and hardware interests.">Circuits</button></li>
+      <li><button type="button" data-arm="3" data-text="Mechanical systems and engineering interests.">Mechanics</button></li>
+      <li><button type="button" data-arm="4" data-text="Analytical thinking, problem-solving and learning.">Intelligence</button></li>
+      <li><button type="button" data-arm="5" data-text="Experimentation, design and unconventional ideas.">Creativity</button></li>
+    </ul>
+  </section>
+
+  <section class="beat free exp" data-beat="experiments" id="experiments">
+    <div class="corner">
+      <h2>What the structure has built so far.</h2>
+      <p>Each branch that let go became a project. Open a slide to step inside it.</p>
+    </div>
+    <ul class="slides">
+      <li><button type="button" data-slide="jontai"><b>Jontai Energy</b><i>Concept website</i><em>2026</em></button></li>
+      <li><button type="button" data-slide="lumo"><b>Lumo</b><i>Android app</i><em>2026</em></button></li>
+      <li><button type="button" data-slide="cookies"><b>Cookies Clicker</b><i>Browser game</i><em>2025</em></button></li>
+      <li><button type="button" data-slide="locked"><b>Locked</b><i>Android app</i><em>2026</em></button></li>
+    </ul>
+
+    <article class="detail" data-detail="jontai" aria-labelledby="d-jontai" hidden>
+      <h3 id="d-jontai">Jontai Energy</h3>
+      <p>A concept website for a family-owned store in Oranjestad, Aruba. A personal project, not client work.</p>
+      <dl>
+        <div><dt>Year</dt><dd>2026</dd></div>
+        <div><dt>Built with</dt><dd class="todo">To confirm</dd></div>
+        <div><dt>My part</dt><dd class="todo">To write</dd></div>
+        <div><dt>Hardest problem</dt><dd class="todo">To write</dd></div>
+      </dl>
+      <p class="links"><a href="https://github.com/bhccob/JE">Source on GitHub</a></p>
+    </article>
+    <article class="detail" data-detail="lumo" aria-labelledby="d-lumo" hidden>
+      <h3 id="d-lumo">Lumo</h3>
+      <p>A grocery list for Android. Recipes and typed items merge into one list, sorted in the order of the supermarket's aisles.</p>
+      <dl>
+        <div><dt>Year</dt><dd>2026</dd></div>
+        <div><dt>Built with</dt><dd class="todo">To confirm</dd></div>
+        <div><dt>My part</dt><dd class="todo">To write</dd></div>
+        <div><dt>Hardest problem</dt><dd class="todo">To write</dd></div>
+      </dl>
+    </article>
+    <article class="detail" data-detail="cookies" aria-labelledby="d-cookies" hidden>
+      <h3 id="d-cookies">Cookies Clicker</h3>
+      <p>A browser clicker game, built as a school project with a classmate. Timed boosts, random bonus events and progress that saves itself.</p>
+      <dl>
+        <div><dt>Year</dt><dd>2025</dd></div>
+        <div><dt>Built with</dt><dd>HTML, CSS, JavaScript</dd></div>
+        <div><dt>My part</dt><dd class="todo">To write</dd></div>
+        <div><dt>Hardest problem</dt><dd class="todo">To write</dd></div>
+      </dl>
+      <p class="links"><a href="https://github.com/bhccob/Cookies-Clicker">Source on GitHub</a></p>
+    </article>
+    <article class="detail" data-detail="locked" aria-labelledby="d-locked" hidden>
+      <h3 id="d-locked">Locked</h3>
+      <p>A gym log for Android. It gives you your next weight from your own history and keeps your streak.</p>
+      <dl>
+        <div><dt>Year</dt><dd>2026</dd></div>
+        <div><dt>Built with</dt><dd class="todo">To confirm</dd></div>
+        <div><dt>Pictures</dt><dd class="todo">To come: the slide is empty until then</dd></div>
+      </dl>
+    </article>
+    <button type="button" class="close" hidden>
+      <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M13 7H1.5M6 2.5 1.5 7 6 11.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      <span>Back to the structure</span>
+    </button>
+  </section>
+
+  <section class="beat col wide" data-beat="identity" id="identity">
+    <h2>Not defined by one discipline. Built through connections.</h2>
+    <p>Software engineer, systems builder, creative technologist. Software and games today, security as an intern, mechatronics next. What I care about is the place where they join.</p>
+  </section>
+
+  <section class="beat col talk" data-beat="connection" id="connection">
+    <h2>Every connection starts somewhere.</h2>
+    <ul class="links">
+      <li><a href="/contact">Email</a></li>
+      <li><a href="https://github.com/bhccob">GitHub <span>bhccob</span></a></li>
+      <li><a href="https://instagram.com/bhccob">Instagram <span>@bhccob</span></a></li>
+      <li class="todo">LinkedIn <span>to add</span></li>
+    </ul>
+  </section>
+</main>
+
+<nav class="chapters" aria-label="Chapters">
+  <ol>
+    <li><a href="#origin" data-go="origin"><span>01</span> Origin</a></li>
+    <li><a href="#foundation" data-go="foundation"><span>02</span> Foundation</a></li>
+    <li><a href="#development" data-go="development"><span>03</span> Development</a></li>
+    <li><a href="#experiments" data-go="experiments"><span>04</span> Experiments</a></li>
+    <li><a href="#identity" data-go="identity"><span>05</span> Identity</a></li>
+    <li><a href="#connection" data-go="connection"><span>06</span> Connection</a></li>
+  </ol>
+  <i class="track" aria-hidden="true"><i></i></i>
+</nav>
+<div class="runway" aria-hidden="true"></div>
+<script src="r70.js"></script>
+</body>
+</html>

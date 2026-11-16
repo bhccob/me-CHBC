@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bob Chung · Experimental Universe</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="r68.css" />
+<!-- LAB ONLY (throwaway). Round 68: the first view of "Experimental Universe" with the round 67 sculpture.
+     The name is in the render (real letters behind the glass, so the glass bends them); the page adds the brand strip,
+     the nav, one line about Bob, and turns the sculpture a few degrees with the pointer (17 pre-rendered frames).
+     ?still: no entrance motion (for stills). ?f=0..16: hold that orbit frame. Plates from tools/lab/blender/firstview68.py. -->
+<link rel="preload" as="image" href="/proof-out/lab/mock/r68/r68-desk-08.jpg" media="(min-width: 768px), (orientation: landscape)" />
+</head>
+<body>
+<main class="fv">
+  <h1 class="sr-only">Bob Chung</h1>
+  <div class="stage" aria-hidden="true">
+    <img class="plate plate-desk" src="/proof-out/lab/mock/r68/r68-desk-08.jpg" alt="" />
+    <img class="plate plate-phone" src="/proof-out/lab/mock/r68/r68-phone.jpg" alt="" />
+    <canvas class="orbit"></canvas>
+  </div>
+
+  <header class="bar">
+    <a class="brand" href="#">Experimental Universe</a>
+    <nav aria-label="Main">
+      <a href="#work">Work</a>
+      <a href="#about">About</a>
+      <a class="contact" href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <section class="intro" aria-label="Introduction">
+    <p class="role">Systems builder</p>
+    <p class="lede">Software engineer and cybersecurity intern, exploring mechatronics.</p>
+  </section>
+</main>
+<script src="r68.js"></script>
+</body>
+</html>

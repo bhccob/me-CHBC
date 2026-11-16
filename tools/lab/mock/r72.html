@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bob Chung · The Making of an Unknown</title>
+<meta name="description" content="A machine assembled one study at a time: software at its heart, cybersecurity around it, mechatronics next, and the person behind its eye." />
+<link rel="icon" href="data:," />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" />
+<link rel="stylesheet" href="r72.css" />
+<!-- LAB ONLY (throwaway). Round 72: Bob's "The Making of an Unknown" brief (2026-11-14).
+     One automaton rendered in Blender (tools/lab/blender/unknown72.py); scroll moves one camera round it while it is
+     built: 01 an engraved surface no one can place, 02 the heart (software) and its eye (game & app), 03 the shell
+     (cybersecurity), 04 the body (mechatronics, next), 05 a ring of four artifacts (the real projects), 06 it stands,
+     07 through its eye to a stand-in of Bob's desk.
+     ?p=0..1 holds a point of the journey, &open=jontai|lumo|locked|cookies opens a project, &list the plain list,
+     &a=-1..1 holds the first view's drift (all for stills). Words in capitals are the brief's; the rest is mine,
+     from the live site and the project notes, and marked "to add" or "to confirm" where only Bob knows. -->
+</head>
+<body class="loading">
+<a class="skip" href="#works" data-go="works">Skip to selected work</a>
+<canvas class="film" aria-hidden="true"></canvas>
+<canvas class="motes" aria-hidden="true"></canvas>
+<div class="scrim" aria-hidden="true"></div>
+<p class="loader" role="status"><span>Assembling</span> <b>0</b>%</p>
+
+<header class="bar">
+  <a class="brand" href="#top" data-go="origin">Bob Chung</a>
+  <nav aria-label="Main">
+    <a href="#foundation" data-go="foundation">Education</a>
+    <a href="#works" data-go="works">Work</a>
+    <a class="contact" href="#desk" data-go="desk">Contact</a>
+  </nav>
+</header>
+
+<main>
+  <section class="beat first" data-beat="origin" id="top">
+    <div class="title">
+      <h1>The Making<br /><em>of an</em> Unknown</h1>
+      <p class="lede">Every creation has an origin.</p>
+    </div>
+    <a class="hint" href="#foundation" data-go="foundation">
+      <span>Scroll to discover</span>
+      <svg viewBox="0 0 12 18" width="12" height="18" aria-hidden="true"><path d="M6 1v15M1.5 11.5 6 16l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    </a>
+  </section>
+
+  <section class="beat col" data-beat="foundation" id="foundation">
+    <h2>MBO-4 Software Development</h2>
+    <p class="status done"><i aria-hidden="true"></i>Completed education <b class="check" title="This brief says completed; the live site and my notes say student. To confirm.">to confirm</b></p>
+    <ul class="focus">
+      <li>Software development</li><li>Programming</li><li>Logical problem-solving</li>
+      <li>Application development</li><li>Software architecture</li><li>Technical thinking</li>
+    </ul>
+    <p class="part">The heart of the machine: a cut core in three turning rings, engraved with code. Six modules dock on it and light the paths in.</p>
+  </section>
+
+  <section class="beat col" data-beat="interaction" id="interaction">
+    <h2>Game &amp; App Development</h2>
+    <p class="status done"><i aria-hidden="true"></i>Part of the same education</p>
+    <p>The interaction and control layer: where software turns into something people can see, play and use. Games and apps are built around a person on the other side of the screen.</p>
+    <p class="part">In the machine it is the eye and its rings, the part that senses and answers. It opens last.</p>
+  </section>
+
+  <section class="beat col" data-beat="protection" id="protection">
+    <h2>Cybersecurity internship</h2>
+    <p class="status exp"><i aria-hidden="true"></i>Professional experience, not a degree</p>
+    <dl class="facts">
+      <div><dt>Where</dt><dd>An internship at a cybersecurity company</dd></div>
+      <div><dt>Responsibilities</dt><dd class="todo">To add</dd></div>
+      <div><dt>Tools</dt><dd class="todo">To add</dd></div>
+      <div><dt>Lessons</dt><dd class="todo">To add</dd></div>
+    </dl>
+    <p class="part">Ribs, plates and a three-ring seal close over the heart. The seal turns until its gaps line up, then it locks.</p>
+  </section>
+
+  <section class="beat col" data-beat="evolution" id="evolution">
+    <h2 class="big">Beyond software</h2>
+    <h3>Mechatronics Engineering</h3>
+    <p class="status next"><i aria-hidden="true"></i>Planned for next year · not started yet</p>
+    <p>My next academic direction: expanding from software development into the integration of mechanical systems, electronics, embedded technology and automation.</p>
+    <ul class="focus small">
+      <li>Mechanical engineering</li><li>Electronics</li><li>Embedded systems</li><li>Automation and control</li><li>Hardware and software</li>
+    </ul>
+    <p class="part">The body grows out of the core: spine, joints, limbs. Some plates still float loose. It is still being built.</p>
+  </section>
+
+  <section class="beat free works" data-beat="works" id="works">
+    <div class="corner">
+      <h2>The creations</h2>
+      <p>A ring opens out of the machine’s waist. On it, four artifacts, one for each real project. Choose one to go to it.</p>
+      <button type="button" class="listbtn" data-list>All projects as a list</button>
+    </div>
+    <ul class="tags">
+      <li><a href="#w-jontai" data-go="w-jontai" data-tag="jontai"><span>01</span>Jontai Energy</a></li>
+      <li><a href="#w-lumo" data-go="w-lumo" data-tag="lumo"><span>02</span>Lumo</a></li>
+      <li><a href="#w-locked" data-go="w-locked" data-tag="locked"><span>03</span>Locked</a></li>
+      <li><a href="#w-cookies" data-go="w-cookies" data-tag="cookies"><span>04</span>Cookies Clicker</a></li>
+    </ul>
+  </section>
+
+  <!-- one beat per project, filled from PROJECTS in r72.js -->
+  <section class="beat col work" data-beat="w-jontai" id="w-jontai" data-work="jontai"></section>
+  <section class="beat col work" data-beat="w-lumo" id="w-lumo" data-work="lumo"></section>
+  <section class="beat col work" data-beat="w-locked" id="w-locked" data-work="locked"></section>
+  <section class="beat col work" data-beat="w-cookies" id="w-cookies" data-work="cookies"></section>
+
+  <section class="beat awake" data-beat="awakening" id="awakening">
+    <div class="awake-in">
+      <h2>One foundation. <em>Multiple disciplines.</em> One connected system.</h2>
+      <ul class="roles"><li>Software Engineer</li><li>Systems Builder</li><li>Creative Technologist</li></ul>
+    </div>
+  </section>
+
+  <section class="beat free eyebeat" data-beat="eye" id="eye">
+    <div class="corner">
+      <p class="eyeline">It sees you. Keep going, through it.</p>
+    </div>
+  </section>
+
+  <section class="beat col talk" data-beat="desk" id="desk">
+    <h2>Behind every machine is a mind.</h2>
+    <p class="who">Software Engineer · Systems Builder · Creative Technologist</p>
+    <ul class="links">
+      <li><a href="https://github.com/bhccob">GitHub <span>bhccob</span></a></li>
+      <li class="todo">LinkedIn <span>to add</span></li>
+      <li><a href="/contact">Email <span>write to me</span></a></li>
+    </ul>
+    <p class="standin">This desk is a stand-in. Mine goes here once I send a photo.</p>
+  </section>
+</main>
+
+<!-- a project, opened: the camera stays at its artifact; the words take the left half and scroll on their own -->
+<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <div class="sheet-bar">
+    <button type="button" class="back"><svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M13 7H1.5M6 2.5 1.5 7 6 11.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Back to the machine</span></button>
+    <span class="pager"><button type="button" class="prev" aria-label="Previous project">←</button><b>01 / 04</b><button type="button" class="next" aria-label="Next project">→</button></span>
+  </div>
+  <div class="sheet-body" tabindex="-1"></div>
+</div>
+
+<div class="list" role="dialog" aria-modal="true" aria-labelledby="list-title" hidden>
+  <div class="list-in">
+    <div class="list-head"><h2 id="list-title">Selected work</h2><button type="button" class="list-close">Close</button></div>
+    <ol></ol>
+  </div>
+</div>
+
+<nav class="chapters" aria-label="Chapters">
+  <ol>
+    <li><a href="#top" data-go="origin" data-ch="origin"><span>01</span> Origin</a></li>
+    <li><a href="#foundation" data-go="foundation" data-ch="foundation"><span>02</span> Foundation</a></li>
+    <li><a href="#protection" data-go="protection" data-ch="protection"><span>03</span> Protection</a></li>
+    <li><a href="#evolution" data-go="evolution" data-ch="evolution"><span>04</span> Evolution</a></li>
+    <li><a href="#works" data-go="works" data-ch="works"><span>05</span> Selected work</a></li>
+    <li><a href="#awakening" data-go="awakening" data-ch="awakening"><span>06</span> Awakening</a></li>
+    <li><a href="#eye" data-go="eye" data-ch="eye"><span>07</span> The eye</a></li>
+  </ol>
+  <i class="track" aria-hidden="true"><i></i></i>
+</nav>
+<div class="runway" aria-hidden="true"></div>
+<script src="r72.js"></script>
+</body>
+</html>

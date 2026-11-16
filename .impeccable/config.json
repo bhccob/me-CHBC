@@ -1,8 +1,20 @@
 {
   "detector": {
     "ignoreRules": [],
-    "ignoreFiles": [],
+    "ignoreFiles": [
+      ".superpowers/brainstorm/**"
+    ],
     "ignoreValues": [
+      {
+        "rule": "wide-tracking",
+        "value": "*",
+        "files": [
+          "tools/lab/mock/square.html",
+          "tools/lab/mock/mind.html"
+        ],
+        "createdAt": "2026-11-12T18:55:00.000Z",
+        "reason": "Claude: the only wide tracking on these lab mock-ups is on short uppercase mono labels (scroll cue, footer line, region tag), which the rule allows; not shipping UI"
+      },
       {
         "rule": "undersized-ui-text",
         "value": "*",
@@ -515,6 +527,96 @@
         ],
         "createdAt": "2026-10-12T15:24:58.719Z",
         "reason": "Claude's triage: .shelf__tab::after is a 3px bottom underline marking the current project tab (DESIGN.md nav-link-active pattern), not a side border on a card"
+      },
+      {
+        "rule": "hero-eyebrow-chip",
+        "value": "*",
+        "files": [
+          ".superpowers/brainstorm/828-1794127460/content/brain-dive.html"
+        ],
+        "createdAt": "2026-11-08T09:01:54.298Z",
+        "reason": "Throwaway mock-up keeps the live end page's words as they are: 'End of portfolio' over 'Let's talk.' is in Bob's approved rebuild spec, section 5.9"
+      },
+      {
+        "rule": "undersized-ui-text",
+        "value": "*",
+        "files": [
+          ".superpowers/brainstorm/828-1794127460/content/brain-dive-v6.html"
+        ],
+        "createdAt": "2026-11-08T19:15:27.393Z",
+        "reason": "Agent: spent brainstorm mock-up, superseded by mock-up 20 and excluded from git; not shipping UI, the site lives in src/"
+      },
+      {
+        "rule": "undersized-ui-text",
+        "value": "*",
+        "files": [
+          ".superpowers/brainstorm/828-1794127460/content/brain-dive-v7.html"
+        ],
+        "createdAt": "2026-11-08T19:15:27.655Z",
+        "reason": "Agent: spent brainstorm mock-up, superseded by mock-up 20 and excluded from git; not shipping UI, the site lives in src/"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "tools/lab/mock/coin-02-lift.html"
+        ],
+        "createdAt": "2026-11-11T10:49:02.990Z",
+        "reason": "Claude: mock-up still of the brief's beat 2, where 'Studies' is mid write-in; the faint letters are the animation's frozen state, not resting text"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "tools/lab/mock/fv-b-insert.html"
+        ],
+        "createdAt": "2026-11-11T11:35:16.755Z",
+        "reason": "Bob's brief (2026-11-11): one glow colour carries the story through the hole, the coin slot, the visor and the controller light; this is that slot"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "tools/lab/mock/fv-b-insert.html"
+        ],
+        "createdAt": "2026-11-11T11:35:16.936Z",
+        "reason": "Claude: text is #f2efe8 at 60% alpha on #07050b, about 8:1; the detector reads the alpha as low contrast"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "tools/lab/mock/domain.html"
+        ],
+        "createdAt": "2026-11-11T11:37:13.803Z",
+        "reason": "Claude: labels are #f2efe8 at 50-65% alpha on #06050a (about 6:1 and up) and the gate line is the site's ink-soft on its page; the detector reads alpha as low contrast"
+      },
+      {
+        "rule": "tight-leading",
+        "value": "*",
+        "files": [
+          "tools/lab/mock/index.html"
+        ],
+        "createdAt": "2026-11-13T09:35:52.377Z",
+        "reason": "Claude: lab-only contact sheet (not shipping UI); the tight leading is the display headings' style from earlier rounds' mock.css, unchanged this session"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "tools/lab/mock/index.html"
+        ],
+        "createdAt": "2026-11-13T09:35:52.542Z",
+        "reason": "Claude: lab-only contact sheet (not shipping UI); its paper ground comes from mock.css of earlier rounds and is not part of the new site direction"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "tools/lab/mock/r66-sheet.html"
+        ],
+        "createdAt": "2026-11-13T12:01:44.362Z",
+        "reason": "Bob's 2026-11-13 Digital Ecosystem brief names Space Grotesk, Inter and IBM Plex Mono; throwaway round 66 lab contact sheet, not the live design system"
       }
     ]
   }

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Behind the Eyes</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="mock.css" />
+<link rel="stylesheet" href="r60.css" />
+<link rel="stylesheet" href="/node_modules/@fontsource/ma-shan-zheng/index.css" />
+<link rel="stylesheet" href="r63.css" />
+</head>
+<body class="grain">
+<canvas id="gl" class="layer"></canvas>
+
+<div class="chrome">
+  <p class="tl"><b>Bob Chung</b> Software engineer</p>
+  <p class="tr"><span>About</span><span>Work</span><span>Contact</span><span>EN</span></p>
+</div>
+
+<section id="intro" class="sec">
+  <p class="sig">Chung</p>
+  <p class="bl">Born and raised in <b>Aruba</b>, now in <b>Rotterdam</b>, studying software and heading for mechatronics.</p>
+  <p class="cue">Scroll, go through the coin <i></i></p>
+</section>
+
+<section id="about" class="sec">
+  <div class="col">
+    <p class="eyebrow"><i></i><b>About &nbsp;inside my head</b></p>
+    <h2 class="lead">This is how<br /><em>I think.</em></h2>
+    <p class="copy">Born in Aruba, Chinese by heritage, in Rotterdam since eighteen. Four parts of one brain, one for each thing I study, each wired to my eyes.</p>
+    <ol class="studies">
+      <li><b class="hand">码</b><span>Software Engineering</span><em>The code that makes it think.</em></li>
+      <li><b class="hand">戏</b><span>Game &amp; App Development</span><em>How a person plays with it.</em></li>
+      <li><b class="hand">安</b><span>Cybersecurity</span><em>What keeps it safe.</em></li>
+      <li><b class="hand">机</b><span>Mechatronics</span><em>Gears, motors and movement.</em></li>
+    </ol>
+  </div>
+  <p class="region"></p>
+  
+</section>
+
+<section id="works" class="sec">
+  <p class="top eyebrow"><i></i><b>Selected work</b> &nbsp;on my desk</p>
+  <p class="hint">Point at a screen</p>
+</section>
+
+<section id="end" class="sec">
+  <div class="col">
+    <h2 class="lead">Pull up a chair.<br /><em>Let’s talk.</em></h2>
+    <p class="copy">A project, a question or a job: I’d like to hear it.</p>
+    <p class="links"><span>Email</span><span>GitHub</span><span>Instagram</span></p>
+  </div>
+  <p class="fine"><span>© 2026 Bob Chung</span><span>Aruba · Rotterdam</span><span>Back to the front ↑</span></p>
+</section>
+
+<div class="dot"></div>
+<p class="open">Open ↗</p>
+
+<script type="importmap">
+{ "imports": {
+  "three": "/node_modules/three/build/three.module.js",
+  "three/addons/": "/node_modules/three/examples/jsm/",
+  "postprocessing": "/node_modules/postprocessing/build/index.js"
+} }
+</script>
+<script type="module" src="eyes.js"></script>
+</body>
+</html>
