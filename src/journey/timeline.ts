@@ -69,6 +69,9 @@ export interface Timeline {
 export function buildTimeline(flightEnd = BASE_FLIGHT_END, reads: readonly number[] = [399, 448, 493, 537], flightFrames?: number): Timeline {
   // The flight's own frame count when its layout gives one (`flightFrames` in flight/layout.ts), else as far as it goes.
   const shift = flightFrames === undefined ? Math.round((flightEnd - BASE_FLIGHT_END) * FRAMES_PER_UNIT) : flightFrames - BASE_FLIGHT_FRAMES;
+  // ── THE BRAIN BOUNDARY ── `head[0]` is where the brain section starts: frame 477, scroll 18,456 px with today's two
+  // projects. Everything before it is the opening and may change; from it on is frozen (docs/redesign-boundary.md), and
+  // tests/unit/journey/brain-boundary.test.ts fails if the frozen side or the brain's 930 frames change.
   const head: [number, number] = [566 + shift, 566 + shift + HEAD_FRAMES];
   const last = head[1];
   return {

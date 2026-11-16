@@ -391,6 +391,7 @@ function LiveJourney({ onFailed }: { onFailed: () => void }): JSX.Element {
       <StackWords />
       <PortalWord />
       <ProjectLinks />
+      {/* ── THE BRAIN BOUNDARY ── Above: the opening's layers. Below: the brain's, frozen (docs/redesign-boundary.md). */}
       <ScanHud />
       <HeadAnswers />
       <ScanReport />

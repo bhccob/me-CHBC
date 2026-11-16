@@ -183,6 +183,8 @@ export class TunnelScene {
     this.scene.add(wires.mesh, rings.mesh, wires.mirror, rings.mirror);
     this.camera.add(streaks.mesh);
     // Where the flight leaves off, the head's way begins: the flight's last view, looking ahead along the tunnel.
+    // ── THE BRAIN BOUNDARY ── This scene hosts the frozen brain: it lives in `this.scene`, under this camera, background and
+    // fog, placed from `join`. A new opening may replace the flight, but must keep this pose for the brain's first frame.
     this.join = { pos: center(end, end, new Vector3()), look: center(end + LOOK_AHEAD, end, new Vector3()), up: frameAt(end, end).U.clone() };
     this.headPlace = headPlace(this.join);
     this.headTrack = buildHeadTrack(this.join, this.headPlace, false);
