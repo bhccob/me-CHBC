@@ -33,8 +33,8 @@ Date: 2026-10-21, revised 2026-10-22. Owner: Bob Chung. Status: **approved 2026-
 - **The M2b preview** (2026-10-22), on the review page `bob-m2b-preview.html`, with its frames in `docs/design/bob-compass/`:
   - `d01`: the dive, inside the tunnel
   - `d02`: the overview, the three beads under the glass sky
-  - `d03`: the needle pointing at the Funcial bead
-  - `b01`–`b03`: the bead concepts Bob approved (Funcial, Jontai Energy, Cookies Clicker), objects sealed inside ("way A")
+  - `d03`: the needle pointing at the first bead
+  - `b02`–`b03`: the bead concepts Bob approved (Jontai Energy, Cookies Clicker), objects sealed inside ("way A")
 - **Frames from that preview**, in `docs/design/bob-compass/`:
   - `o01`: the laser on the circle
   - `o02`: the rise
@@ -115,7 +115,7 @@ The shot:
    - The wide framing is closer than before, since only the O has to fit: the circle and its outer ring, with room round them.
 6. **The needle** swings in and settles with a damped wobble.
 
-**Direct arrival** (kept from v3). A visitor may arrive straight at `/projects/funcial/`, for example. The loader plays, in its full or short form by the rules above and still skippable, and its final move goes straight to that place instead of the home.
+**Direct arrival** (kept from v3). A visitor may arrive straight at `/projects/jontai-energy/`, for example. The loader plays, in its full or short form by the rules above and still skippable, and its final move goes straight to that place instead of the home.
 
 ### 2.2 Home: preview `o03` (revised 2026-10-22)
 
@@ -169,10 +169,10 @@ Scrolling (wheel, trackpad, touch, arrow keys) scrubs one continuous camera move
 **The scroll's stretches** (M2b; *my call*, on the preview's frames). Each is one stop of the scroll, as M2a's rise is:
 1. **the rise:** the home to BOB from above (M2a)
 2. **the dive:** BOB from above, down the tunnel and out under the glass
-3. **the overview:** all three beads in view (p09)
-4. **Funcial,** then **Jontai Energy,** then **Cookies Clicker:** one stop each. The needle points at that bead and it comes forward (p10).
+3. **the overview:** all the beads in view (p09)
+4. **Jontai Energy,** then **Cookies Clicker:** one stop each. The needle points at that bead and it comes forward (p10).
 
-That makes six stops in all; the old chapters' long stretches (eleven units of "parts", two of "morph") go.
+That makes five stops in all; the old chapters' long stretches (eleven units of "parts", two of "morph") go.
 
 *2026-10-24: a seventh, the end page, follows Cookies Clicker; see `2026-10-24-bob-end-page-design.md`.*
 
@@ -188,27 +188,24 @@ That makes six stops in all; the old chapters' long stretches (eleven units of "
   - Below and ahead is a deep dark-violet void with light mist and slowly drifting gold dust.
   - The build adds depth layers of mist and a soft beam of light falling from the opening.
 - **An overview** (p09): all projects float far apart at different depths.
-- **The beads** (concepts `b01`–`b03`). Each project is one bead:
+- **The beads** (concepts `b02`–`b03`). Each project is one bead:
   - round deep-purple lacquer with fine gold veins
   - a gold halo band around its outline
   - a gold-rimmed porthole with curved glass
   - behind the porthole glass, **sealed inside like a ship in a bottle**, the project's own object, with the project's **real screen** beside it on a small black glass display, lit as part of the bead (never a flat paste)
     - *Bob picked this ("way A") on 2026-10-22, over the screen filling the porthole with the object engraved in gold around it.*
-    - The screens are real screenshots from `docs/discovery/`: Funcial `funcial-app-home.webp` (on a phone), Jontai Energy `je-home.webp` (on a landscape display), Cookies Clicker `cookies-playing.webp` (on a phone-sized screen). The concept frames' screens were redrawn by the AI and are not the reference for what they show.
+    - The screens are real screenshots from `docs/discovery/`: Jontai Energy `je-home.webp` (on a landscape display), Cookies Clicker `cookies-playing.webp` (on a phone-sized screen). The concept frames' screens were redrawn by the AI and are not the reference for what they show.
 
   In category order:
-  - **01 — SECURE ELEMENT**: Funcial
   - **02 — FRONT PANEL**: Jontai Energy
   - **03 — OSCILLATOR**: Cookies Clicker
 
   NL labels follow `docs/art-direction.md` (for example "BEVEILIGD ELEMENT").
 - **Each bead carries its project's own object** from the discovery Bob approved on 2026-10-20 (`docs/projects-discovery.md`, which has every part's meaning). Bob confirmed the objects on 2026-10-22 ("the three beads look good"):
-  - **Funcial** (`b01`): a mirror-polished hard-drive platter with one glowing track and four test pins (TP1–TP4, the app's four layers), an upright lacquered abacus (purple beads on gold rods), and the phone with the app.
   - **Jontai Energy** (`b02`): a solar module of 16 cells, 4 × 4, one cell per page, with silver busbars (the one design system), blue-black cells under glass in a satin aluminium frame with a white backsheet at its edge; a junction box with three leads (EN · ES · 中, the three languages); one output cable ending in a connector (the quote path). Beside it, the website.
   - **Cookies Clicker** (`b03`): an open clockwork movement in copper and caramel on a dark bridge with ruby jewels: the crown on its side (the click), a train of eight wheels that grow in size (the eight producers), the escapement and balance wheel (the production tick), a mainspring barrel (the save) and a dial with sub-dials (the stats). Beside it, the game. Warm copper, clearly not the bead's gold.
 
   The objects are small and finely made, modelled in Blender. Each moves its own way, from the discovery's motion signatures:
-  - Funcial: the platter turns slowly while a light pulse runs along its track from TP1 to TP4; when the bead is selected, the abacus beads slide up one by one.
   - Jontai Energy: no spin. A slow arc of light sweeps across the module and the cells charge one by one in page order; the module tilts a few degrees after the light, like a solar tracker.
   - Cookies Clicker: a discrete tick, stop and start: the escapement beats once a second and the train moves one step per beat.
 
@@ -231,18 +228,16 @@ That makes six stops in all; the old chapters' long stretches (eleven units of "
 - **Adding a project** later means one bead, its screenshots and its object. **One bead per project**, never filler.
 - **The void is the end of the home scroll** at `/`, not a page of its own.
 
-### 2.5 Project pages (kept from v3 §2.6): v3 frames 13–15, `ui-06`, `ui-07`
+### 2.5 Project pages (kept from v3 §2.6): v3 frames 14–15, `ui-06`, `ui-07`
 
 URL: `/projects/<slug>/`. You arrive by flying through the porthole.
 
 - **The scene.** A dark-violet interior with a mirror floor. On the right, the project's screen stands on a large curved glass display: portrait for a phone app, landscape for a website or a game.
 - **The test points.** A glowing gold track runs across the floor with one pin per test point, which is a real layer of the project. The labels light up one by one when the page opens. Data comes from `docs/projects-discovery.md` and `src/data/projects.ts`:
-  - Funcial: LOG, GAME LAYER, MONEY RULES, VAULT, RESULT
   - Jontai Energy: 16 PAGES, DESIGN SYSTEM, THREE LANGUAGES, QUOTE PATH
   - Cookies Clicker: CLICK LOOP, 8 PRODUCERS, BOOSTS & EVENTS, SAVE, STATS
 - **On the left:** the category line, the title as 3D extruded type, one summary line, and buttons.
   - **Look inside:** a gallery of the real screenshots in `docs/discovery/`, with arrows, thumbnails and Esc.
-  - **Download** (Funcial only): funcial.vercel.app/get.
   - **Code:** the GitHub repo.
 - **Esc or back** flies you back out to the same bead in the void, also after a direct arrival.
 
@@ -313,7 +308,6 @@ These routes existed only on unmerged branches and were never live, so no redire
 - NL (default, `/`) and EN (`/en/`), formal first-person copy.
 - Never invent facts; use `[FILL: …]` until Bob supplies them.
 - The real portrait only, and no faces in generated images.
-- "FUNCIAL" is spelled exactly so. No AI is claimed for Funcial.
 - Jontai Energy is never "client work". jontaienergy.com is his brother's build and is not linked as Bob's. The uncommitted Rewards work stays out.
 - Cookies Clicker was made with a classmate who is never named. Its role line stays neutral until Bob states his part.
 
@@ -373,7 +367,7 @@ These routes existed only on unmerged branches and were never live, so no redire
 - simplifications on phones and low-end devices: fewer glass bands, no smoke layers, simpler glass
 - exact material and lighting values, within the art direction
 
-**Designed on 2026-10-22:** the three bead objects and how they sit in the bead (§2.4, `b01`–`b03`). They are modelled in Blender and exported as glTF with the beads; their motion is in code.
+**Designed on 2026-10-22:** the bead objects and how they sit in the bead (§2.4, `b02`–`b03`). They are modelled in Blender and exported as glTF with the beads; their motion is in code.
 
 **Not designed yet** (concept frames or a preview first, then Bob's OK):
 - the restyled Lite and contact pages
@@ -408,7 +402,6 @@ These routes existed only on unmerged branches and were never live, so no redire
   - overview: 442
   - first project: 478
 - **Beads** (in the void): radius 0.95. These are Blender's coordinates; the site's frame is Blender (x, y, z) → three (x, z, −y):
-  - Funcial at (1.2, 3.6, −6.9), in the site (1.2, −6.9, −3.6)
   - Jontai at (−5.0, 9.5, −5.7), in the site (−5.0, −5.7, −9.5)
   - Cookies at (5.4, 13.0, −8.7), in the site (5.4, −8.7, −13.0)
 - **The void's camera** (`bob_scroll.py` `cam_pose`, frames 362–480):
@@ -423,7 +416,7 @@ These routes existed only on unmerged branches and were never live, so no redire
 
 ## 8. Open items for Bob (none block planning)
 
-1. ~~**Bead objects:** confirm the abacus, solar module and clockwork come back inside the beads.~~ Settled 2026-10-22: they do, sealed inside behind the porthole glass with the real screen beside them (§2.4, `b01`–`b03`).
+1. ~~**Bead objects:** confirm the solar module and clockwork come back inside the beads.~~ Settled 2026-10-22: they do, sealed inside behind the porthole glass with the real screen beside them (§2.4, `b01`–`b03`).
 2. ~~**About on Lite:** the countries and the Hakka line.~~ Settled 2026-10-22: the Hakka line is dropped (§2.6).
 3. **Cookies Clicker:** Bob's own part, if he wants a role line beyond "with a classmate".
 4. **Branch `needle-v3-m2`:** kept as a parts source, or deleted once its reusable parts are carried over. Its commits reached redesign-bench with M1's merge.

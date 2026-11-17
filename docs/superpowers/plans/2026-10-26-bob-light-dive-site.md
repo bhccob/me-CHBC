@@ -112,7 +112,7 @@ it('steps keys through the top, each fact at full strength, each project and the
   expect(placeOfFrame(300)).toBe(4);
 });
 it('puts each project at its ring stop', () => {
-  expect(['funcial', 'jontai-energy', 'cookies-clicker'].map(stopForProject)).toEqual([4, 5, 6]);
+  expect(['jontai-energy', 'cookies-clicker'].map(stopForProject)).toEqual([4, 5]);
 });
 it('maps chapters to phases', () => {
   expect(transition({ kind: 'HOME_IDLE' }, { type: 'CHAPTER', chapter: 'LIGHT', category: null })).toEqual({ kind: 'LIGHT' });
@@ -240,7 +240,7 @@ it('starts from the site\'s own top shot', () => {
     - `angle` is the ring's degrees in RING and SHEET (240 in SHEET);
     - `project` is the front bead's index when `angle` is within 20° of a project's, else null.
   - `interface JourneyPose { at; rise; shot; needle: NeedleOverride | null; light: LightPose | null; fact: FactPose | null; beads: readonly BeadPose[] | null; void: VoidPose; sheet: number }`, where `sheet` runs 0..1.
-  - `BEADS`, the ids and categories in ring order: index 0 is Funcial at 0°, 1 Jontai Energy at 120°, 2 Cookies Clicker at 240°.
+  - `BEADS`, the ids and categories in ring order: index 0 is Jontai Energy at 0°, 1 Cookies Clicker at 120°.
   - `focusShotFor(id, aspect)`: the close view in front of the bead's porthole, `FOCUS_VIEW.standOff` 1.6 from the porthole along the line to the camera at the bead's ring stop.
 
 - [ ] **Step 1: Write the failing tests.**
@@ -351,7 +351,7 @@ it('stands the close view in front of each bead\'s porthole, toward its stop\'s 
 
 - [ ] **Step 1: Write the failing tests.**
   - `a mouse drag sideways in the ring moves the target 0.25° a px`: a pointer down, then 300 px right, gives +0.625 units.
-  - `a drag stops at Cookies Clicker and at Funcial`: from 6, a further 300 px leaves the target at 6.
+  - `a drag stops at Cookies Clicker and at Jontai Energy`: from 6, a further 300 px leaves the target at 6.
   - `a sideways swipe is a drag, an upright one a scroll`:
     - touch moves of (60, 5) give a 'drag' delta;
     - (5, 60) gives a 'finger' delta.
@@ -369,7 +369,7 @@ it('stands the close view in front of each bead\'s porthole, toward its stop\'s 
 - [ ] **Step 4: Run them.**
   - Command: `npx vitest run tests/unit/input`.
   - Expected: PASS.
-- [ ] **Step 5: Commit.** Message: `input: a sideways drag turns the ring as a scroll would, from Funcial to Cookies Clicker`.
+- [ ] **Step 5: Commit.** Message: `input: a sideways drag turns the ring as a scroll would, from Jontai Energy to Cookies Clicker`.
 
 ### Task 6: The void for the light dive
 
@@ -601,7 +601,7 @@ it('stands the close view in front of each bead\'s porthole, toward its stop\'s 
   - **`light-dive`:**
     - from BOB from above, wheel notches run frames 1→300, monotone;
     - the light's screen position (the pose projected) is within 6 px of `tests/fixtures/light-dive/way-<size>.json` at frames 20, 60, 121, 241 and 280;
-    - the camera's azimuth turns on at the orbit rate across 300 (no stop at Funcial);
+    - the camera's azimuth turns on at the orbit rate across 300 (no stop at the first project);
     - scrolling up runs it back;
     - stopping mid-fall rests there, and the canvas sleeps within 1 s.
   - **`light-facts`:**

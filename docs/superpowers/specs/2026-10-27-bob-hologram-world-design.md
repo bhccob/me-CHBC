@@ -47,7 +47,6 @@ maybe?"
    light falling into it. Then the end page, as today.
 5. **A click opens a project, Overworld's way.** A click or tap on a project, on its name or on its area's words: the
    camera flies to it (round the board when it is on the other side), the rest of the world dims, and the project opens:
-   - Funcial: the chip's lid lifts off its die of four glowing quadrants;
    - Jontai Energy: the solar module's 16 cells light one after another;
    - Cookies Clicker: the crystal brightens, the gears tick once a second;
    - its touch points (the site's own, `src/data/projects.ts`) on thin lines, in two neat columns beside it.
@@ -113,7 +112,7 @@ maybe?"
   on the way (past `PATH_LIMIT`) is not on the board; the menu and the Lite page still reach it.
 - The skip button shows from the world through the look back's stop, as it showed from the first bead, and goes to the
   end page.
-- The objects: Funcial's chip with a lock on its lid, Jontai Energy's solar module, Cookies Clicker's crystal and two
+- The objects: Jontai Energy's solar module, Cookies Clicker's crystal and two
   gears, each turned a little toward where its views stand; any other project gets a plain chip.
 - The camera's places, framing and pace: the mock-up's, as functions of the screen's shape.
 - The words: the mock-up's, in Dutch, with English beside them ("Scroll of klik op een project" / "Scroll or click a

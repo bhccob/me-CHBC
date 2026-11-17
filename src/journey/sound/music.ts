@@ -225,7 +225,7 @@ class Music {
     if (!a || this.voices) return;
     const { ctx } = a;
     this.startedAt = ctx.currentTime;
-    // The machine's own hum: one steady electrical note, not a chord.
+    // The machine's own hum: one constant electrical note, not a chord.
     const humGain = ctx.createGain();
     humGain.gain.value = 0;
     humGain.connect(a.fx);

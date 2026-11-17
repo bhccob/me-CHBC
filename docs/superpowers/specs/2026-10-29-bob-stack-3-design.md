@@ -1,12 +1,12 @@
-# Stack round 3: a slower drop, a glowing light, a clear end, no switches, Portle
+# Stack round 3: a slower drop, a glowing light, a clear end, no switches
 
 Date: 2026-10-29. Branch `bob-stack-3`, from `main` at b4623fc (the redesign as it went live on bhccob.me that day).
 
 ## Why
 
-Bob looked at the live site the evening it went up and asked for five things: the light "drops down too fast to the
+Bob looked at the live site the evening it went up and asked for four things: the light "drops down too fast to the
 project", "the lichte versie and 3d option to turn off should be removed", "the light is a bit too light and not bright",
-"when it ends on stuur bericht i want it to be more obvious that it ends", and "update my project to current projects".
+and "when it ends on stuur bericht i want it to be more obvious that it ends".
 Each was settled with him in turn; the two that are seen were picked from mock-ups (the real site in a throwaway copy,
 `?light=` and `?end=`, review page `.superpowers/stack-3-mockup/`).
 
@@ -64,28 +64,6 @@ When the ring reaches its last mark ("Stuur een bericht."):
 
 Measured on the mock-up: 0.027 (laptop) and 0.038 (phone) mean luma.
 
-### 5. The projects: Portle in place of Porfael
-
-From Bob's GitHub and this computer (2026-10-29): Porfael was renamed Portle (its repository's first commit is
-"Scaffold Porfael"). Steady, Jontai Energy and Cookies Clicker stay as they are; Funcial and the private second-brain
-vault stay off the site.
-
-- Everywhere the site names Porfael (its board on the world, its own page over the stack, its longer project page, the
-  Lite page, the home's list, both languages): **Portle**.
-- Its words from its own README and PRODUCT.md, nothing added: "A private archive for your portfolio, your investment
-  theses, and the friends you trust with them", and what it combines (a portfolio tracker across accounts, an archive of
-  investment theses with their revisions, a paper-trading lab, a journal, and a friends-first social layer with Guilds
-  and Relics; exact values private by default). Dutch the same words in Dutch.
-- Type: a web app, a personal project in early access; 2026; sole developer; still on the App board beside Steady.
-- Tools: Next.js, React, TypeScript, Tailwind CSS, Drizzle, PostgreSQL, Better Auth.
-- Links: GitHub `github.com/bhccob/Portle` and the live early-access site `portle-azure.vercel.app`.
-- Its address `/projects/portle/` (and `/en/projects/portle/`); the old `/projects/porfael/` addresses forward to it.
-- Its 3D object (the ring with the relic) stays: Relics are still Portle's.
-- **Pictures** (Bob: "Looks right"): made by running Portle on this computer with its own example members (ada, ben,
-  cleo: sample portfolios, theses, a Guild; no real data), from a scratch copy of its last commit with its own example
-  settings, so Bob's Portle folder is not touched, as Steady's were made from its own code. A web app, so one
-  16:9 card on its own page, like Jontai Energy's.
-
 ## Non-goals
 
 - No change to the fall past the facts, the world, the boards, the Q&A's questions or the project pages' other content.
@@ -97,7 +75,6 @@ vault stay off the site.
 - Bright or busy: the glow must stay one warm point in the dark, not light the page; every still under the gates.
 - A visitor stuck with 3D off and no way back: with the switch gone, nothing may leave 3D off but a device that cannot
   run it.
-- Any fact about Portle not in its own repository.
 
 ## Constraints
 
@@ -108,7 +85,6 @@ vault stay off the site.
 
 - The drop's curve and the land's new length, within "about twice the scroll, eased in and out".
 - How the stored 3D choice is retired (ignored or cleared) and how the tests that switched 3D off reach that state now.
-- Which of Portle's screens is the card, among the example members' (the portfolio overview first).
 
 ## Build notes (2026-10-29)
 
@@ -125,7 +101,5 @@ Calls made while building that change what the spec says or add to it:
   as Bob picked it.
 - **The end** places its words on the screen the visitor sees (dvh, a phone's browser toolbar left out). Its marks'
   numbers go out of reach as well as out of sight, and with the keyboard in the header, the header stands over the dark.
-- **A live site's link** reads "Naar de site" / "Visit the site" (Portle's is its web app, not a download), on its own
+- **A live site's link** reads "Naar de site" / "Visit the site", on its own
   page and on its page over the stack.
-- **Portle's picture** is the dark colour scheme of its portfolio overview, from a scratch copy of its last commit run on
-  its own example members (Ada), on other ports than Bob's own Portle, which was running.

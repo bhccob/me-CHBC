@@ -10,7 +10,6 @@ Bob wants his portfolio (Astro + TypeScript, `C:\Users\bhcco\Downloads\Portfolio
 - projects as the main thing, each opening a step-by-step page where every part of the project can be clicked and explained
 - the roadmap as a Q&A at the bottom
 - "What I work with" cut to the full-stack foundation and working with AI
-- his new fintech project added: he wrote "Funancial", but the app was renamed **Funcial** on 2026-10-18 (Funcial commit `fee214c`), repo `bhccob/Funcial`
 
 **History:**
 - **Revision 1 (2026-10-18):** a workbench dive into a toy-like device that comes apart. Milestone 1 built and verified it on `redesign-bench` (599fa6b..bdeb821, page `/lab/device/`).
@@ -62,13 +61,12 @@ The visitor's cursor is the **pearl** that the dragon chases in a dragon dance, 
 | Interaction (2026-10-19) | The object turns freely with the cursor; the scroll wheel moves the story; transitions make two objects seem the same; every step has a reason. |
 | Categories (2026-10-18) | **Front panel** (web), **Feedback loop** (games), **Secure element** (fintech), **Bare metal** (next: embedded) |
 | Kept from the old site (2026-10-18) | **Off duty** only. Terminal, engine room, origin route and clocks are dropped. |
-| Funcial links (2026-10-18) | The repo (github.com/bhccob/Funcial) and the download page (https://funcial.vercel.app/get) |
 | Higgsfield | GPT Image 2.5 for images and textures, Seedance 2.5 for video. Plus plan; **598 credits left on 2026-10-19, about 88 spent** on this redesign |
 
 **Approved concept frames** (Higgsfield job IDs in Bob's account; reference only, never shipped, and their baked text is not copy):
 - the compass hero: `98297482-0e52-46db-aa9a-5bc484737282`
 - compass becoming a hard drive: `8ede1697-eeed-48ca-9bd2-f401b50e8bb7`
-- the Funcial track with TP1–TP4: `129b2051-7767-4371-b72c-44e490861df5`
+- a project track with TP1–TP4: `129b2051-7767-4371-b72c-44e490861df5`
 - the dragon and its pearl (for the pearl only): `aa6b9455-6ecf-4feb-9752-80f58127f169`
 - the abacus rod with step beads (for the project pages): `33027210-df6e-425c-b136-42c7e432adb0`
 
@@ -172,15 +170,14 @@ The visitor's cursor is the **pearl** that the dragon chases in a dragon dance, 
       - A caption: "The same force that guided ships now stores data."
    5. **Projects: the tracks.** *(Carries over: the needle, now the arm.)*
       - The platter spins, and each project is one glowing track:
-        1. **Funcial**
-        2. **Jontai Energy**
-        3. **Cookies Clicker**
-        4. an empty, dashed track: **Bare metal · next**
+        1. **Jontai Energy**
+        2. **Cookies Clicker**
+        3. an empty, dashed track: **Bare metal · next**
       - The tracks run from the outer edge inwards, as a drive counts its tracks.
       - Scrolling steps the arm from track to track. On each track, the platter turns the project's four test points (TP1–TP4) under the head one by one, the way a drive reads.
       - In the text column, for the track under the head only: the name, the category, one line and "Open project".
       - Hovering a track lights it and shows only its name, as a small label; clicking a track (with a mouse or pen) or the link opens the project. On touch, a tap on the platter opens nothing, so a stray tap never leaves the page; the link in the text opens it.
-      - Until milestone 6 builds the project pages, a track links where its project lives today: Jontai Energy and Cookies Clicker their current pages, Funcial its repository. Bare metal has no link.
+      - Until milestone 6 builds the project pages, a track links where its project lives today: Jontai Energy and Cookies Clicker their current pages. Bare metal has no link.
       - Each track has a real anchor at its scroll position, so `/#<slug>` lands on it.
    6. **Off duty: the spindle.** *(Carries over: the heaven pool, now the spindle motor.)*
       - The head parks on its ramp off the platter's edge, as a drive's does, and the camera sinks to the spindle at the centre, the spot where the portrait was.
@@ -203,15 +200,15 @@ The visitor's cursor is the **pearl** that the dragon chases in a dragon dance, 
      - The loader shows for at least about 1.2 s, so the settle can be seen.
      - If the scene has not arrived after about 10 s, the loader gives up and shows the stacked page.
    - **Reduced motion** goes straight to a still of the hero, decided before the first paint.
-9. **Project pages: one abacus** (Shelby's step bar + Silvia's hotspots, now beads), at `/projects/<slug>/` and `/en/projects/<slug>/`, with the slugs `funcial`, `jontai-energy` and `cookies-clicker`:
+9. **Project pages: one abacus** (Shelby's step bar + Silvia's hotspots, now beads), at `/projects/<slug>/` and `/en/projects/<slug>/`, with the slugs `jontai-energy` and `cookies-clicker`:
    - **Top:**
      - the name, the category label and a one-line summary
      - facts: year, type ("Personal project" / "School project"), role, stack and links
    - **The scene:** a Chinese abacus (suanpan) in purple lacquer with brass corners: two upper beads and five lower beads on each rod, one rod per project. The current project's rod is lit; the others are dim; the last, Bare metal, has no lit beads yet.
      - **The beads:** the lit rod's five lower beads are the steps: TP1 to TP4, then **Result** (the links and the finished screens), as in the approved frame. The upper beads stay at rest.
      - **Scrolling** pushes the lower beads up to the beam, one at a time. Each bead opens a short "datasheet" panel in the text column:
-       - **Screen features** (Log, Game layer, Pages, Quote, Click…) show a zoomed crop of a real screenshot.
-       - **Inner features** (Money rules, Vault, Design system, Languages, Producers, Boosts, Save) show a short explanation and, where it helps, a small diagram.
+       - **Screen features** (Pages, Quote, Click…) show a zoomed crop of a real screenshot.
+       - **Inner features** (Design system, Languages, Producers, Boosts, Save) show a short explanation and, where it helps, a small diagram.
      - **Jumping:** clicking or dragging a bead goes to its step. The beads glint toward the pearl. A small readout shows "02 / 05".
      - **The end:** after Result, the rod's beads drop back and the light moves to the neighbouring rod: **Next project**.
    - **Screenshots:** fresh, properly framed ones captured with headless Edge from the real projects run locally (the current `cookies.png` is a 2267×604 strip).
@@ -230,11 +227,8 @@ The visitor's cursor is the **pearl** that the dragon chases in a dragon dance, 
 
 | Project | Track and beads (copy honest; Bob approves the final EN/NL wording) |
 |---|---|
-| **Funcial**: Secure element · personal project 2026 · React 19, TypeScript, Tailwind CSS, Capacitor (Android), SQLCipher, Vercel functions, Upstash Redis. **No AI** (the advisor was removed 2026-10-16, Funcial `ec0fb39`) | TP1 **Log** (a spend in seconds) · TP2 **Game layer** (XP, levels, quests, streaks; coins are cosmetic and have no money value) · TP3 **Money rules** (a pure TypeScript core does all the maths, including the offline "Should I buy it?" check) · TP4 **Vault** (local-first and encrypted on the phone; an account keeps only a locked copy, so a friend can move phones) |
 | **Jontai Energy**: Front panel · personal project 2026 | TP1 **Pages** (15+) · TP2 **Design system** (one Tailwind system) · TP3 **Languages** (EN/ES/ZH, PowerShell automation) · TP4 **Quote** (the main action) |
 | **Cookies Clicker**: Feedback loop (also Front panel) · school project 2025 | TP1 **Click** · TP2 **Producers** (shared AutoClicker class) · TP3 **Boosts** (timed boosts, random events) · TP4 **Save** (localStorage) |
-
-**Funcial screenshot:** run the app locally (`npm run dev` in `C:\Users\bhcco\Downloads\Funcial`) with demo data, capture it with headless Edge, save it to `src/assets/funcial.png`, and Bob confirms it. If onboarding or the PIN screen blocks a clean capture, ask Bob for a phone screenshot.
 
 ## Assets via Higgsfield (connected Higgsfield tools; no CLI installed)
 
@@ -275,7 +269,7 @@ The visitor's cursor is the **pearl** that the dragon chases in a dragon dance, 
 - **`ui/CompassLoader.ts`** (the SVG loader and its hand-over) and **`ui/TestPointPanel.ts`**.
 
 **Data:**
-- `src/data/projects.ts`: add Funcial, per-locale `testPoints` (each with either a screen crop or a part), a `kind`, and the track label
+- `src/data/projects.ts`: per-locale `testPoints` (each with either a screen crop or a part), a `kind`, and the track label
 - `src/data/categories.ts`: the four electronics categories
 - `src/i18n/*.ts`: rewritten, minimal
 
@@ -296,7 +290,7 @@ The visitor's cursor is the **pearl** that the dragon chases in a dragon dance, 
   - **Reduced motion or no WebGL:** a stacked page with a still render of each state.
   - **Without JavaScript:** real HTML text.
 - **Performance:**
-  - a steady 60 fps scroll on an ordinary laptop. The quality ladder gains a "clearcoat off" rung for the lacquer, measured on an integrated GPU.
+  - an even 60 fps scroll on an ordinary laptop. The quality ladder gains a "clearcoat off" rung for the lacquer, measured on an integrated GPU.
   - home JavaScript about 250 KB gzipped, with three.js in its own chunk behind the loader
   - under 1.5 MB before the hero
   - textures as WebP, within about 4 MB together

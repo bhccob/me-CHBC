@@ -143,7 +143,7 @@ Command shape for the renders, from the worktree root:
   - **Frames 261–300, the landing.**
     - The ring's three beads (`bob_scroll.py`'s beads) rise into view.
     - The camera eases back and levels into the ring camera of Task 2's frame 0.
-    - The light slows over the ring's centre and stretches into the needle over frames 285–300, pointing at Funcial in front.
+    - The light slows over the ring's centre and stretches into the needle over frames 285–300, pointing at the bead in front.
     - Frame 300 equals the ring's frame 0 pose.
   - Write the JSON from the light's world position projected through the camera (`bpy_extras.object_utils.world_to_camera_view`).
   - **The phone size** uses a 585×1266 frame, with the camera's lens chosen so the whole of BOB fits the width at frame 1, as the site's portrait framing does.
@@ -169,7 +169,7 @@ Command shape for the renders, from the worktree root:
   ```
 
   - `angle` is the ring's turn in degrees, 1.5° per frame.
-  - `front` is the index (0 Funcial, 1 Jontai Energy, 2 Cookies Clicker) of the bead nearest the front.
+  - `front` is the index (0 Jontai Energy, 1 Cookies Clicker) of the bead nearest the front.
   - The resting frames are 0, 80 and 160.
 
 - [ ] **Step 1: Extend `check-frames.mjs` with `ring <size>`.** It asserts:
@@ -267,7 +267,7 @@ Command shape for the renders, from the worktree root:
 - [ ] **Step 2: Build each video's frame list.**
   - way frames 1–300;
   - a 1 s hold on ring frame 0;
-  - the ring turning 0 → 80 (hold 1 s), 80 → 160 (hold 1 s), then 160 → 239 and on to frame 0, back to Funcial (hold 1 s);
+  - the ring turning 0 → 80 (hold 1 s), 80 → 160 (hold 1 s), then 160 → 239 and on to frame 0, back to the first bead (hold 1 s);
   - with the facts' labels burned in.
 
   For the labels, render each frame of the page by headless Edge at the target size, with `__mockup` driven to that frame, or composite the label PNGs onto the frames with sharp. The labels must look exactly as on the page.

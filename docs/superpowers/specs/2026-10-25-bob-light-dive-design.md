@@ -100,7 +100,7 @@ The frames are generated concept stills. The labels, the button and the diagrams
      - a click on it or Enter flies into the project, and Esc or back returns to the same bead in front;
      - the beads keep their objects and real screens, and their motion runs only for the bead in front or hovered.
    - **After the last project** in the ring, scrolling on slides the end page up from below (goal 4b).
-   - **It replaces the void's layout.** The three beads at different depths, the overview stop and the large pointer give way to this ring. The ring's first position, with Funcial in front, is where the fall ends, and it shows all the projects at once.
+   - **It replaces the void's layout.** The three beads at different depths, the overview stop and the large pointer give way to this ring. The ring's first position, with the first project in front, is where the fall ends, and it shows all the projects at once.
 4b. **The end page slides up from below** (2026-10-26: "when end of project the scroll brings up a 2d page like sliding a page from below").
    - After the last project, scrolling on slides the 2D end page (the questions and the message form) up from the bottom of the screen like a sheet, over the ring. It follows the scroll; when the visitor stops part-way, it finishes by itself straight away, up if they were scrolling on and down if they were scrolling back, with no pause and without slowing first (revised 2026-10-26: "Follow, then finish").
    - Once it covers the screen, it is the ordinary end page, scrolling natively as today.
@@ -222,7 +222,7 @@ Everything binding on M2b and on the end page still binds:
 - **The ring's controls:**
   - about one screen height of scroll per project;
   - the camera's swing into the ring at the landing leaves it turning at the same rate the scroll then turns it, so the fall runs on into the ring with no change of pace;
-  - a drag turns the ring by moving the page's scroll, so the ring has one place, from Funcial to Cookies Clicker;
+  - a drag turns the ring by moving the page's scroll, so the ring has one place, from the first project to the last;
   - the arrows move one project, gliding about 1.2 s;
   - the first ring position replaces the overview stop.
 - **The end sheet** takes about one screen height of scroll to cover the screen. When the scroll stops part-way, the sheet carries on at the speed it had, easing only at its end (about 0.08 s after the last scroll input counts as stopped).

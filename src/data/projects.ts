@@ -179,8 +179,8 @@ export class ProjectCatalog {
   }
 
   /**
-   * The project whose page a route is (`/projects/steady/`), or undefined for any other route,
-   * which includes a real page under another spelling (`/Projects/Steady/`): the page lives at one URL.
+   * The project whose page a route is (`/projects/jontai-energy/`), or undefined for any other route,
+   * which includes a real page under another spelling (`/Projects/Jontai-Energy/`): the page lives at one URL.
    */
   byRoute(route: string): Project | undefined {
     return this.items.find((project) => this.route(project) === route);
@@ -198,8 +198,7 @@ export class ProjectCatalog {
  * The projects, in the order of the stack: Jontai Energy (a website), Cookies Clicker (game development). Their objects,
  * palettes, motion and links are the ones Bob approved on 2026-10-20 (docs/projects-discovery.md); Jontai Energy's words,
  * tools, test points and picture from its concept redesign's own notes (Bob, 2026-10-30); the words are in each project's
- * `copy`. Steady and Portle are off the site for now (Bob, 2026-11-07: "remove the 2 for now"); their entries are in the
- * history at 35003bf.
+ * `copy`.
  */
 export const projects = new ProjectCatalog([
   {

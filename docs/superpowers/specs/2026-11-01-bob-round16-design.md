@@ -15,7 +15,7 @@ He picked from mock-ups on the real site (review page `.superpowers/r16/index.ht
 - the start screen: "Dial (C)";
 - the BOB screen: after three rounds of new looks, "or just keep the original".
 
-Checking the floors for the mock-up turned up a live bug from round 15: at the first floor Portle stands behind the
+Checking the floors for the mock-up turned up a live bug from round 15: at the first floor a project stands behind the
 tower's core.
 
 ## Goals
@@ -26,7 +26,7 @@ tower's core.
    an engraving on a dial.
 3. **Jontai's picture.** The picture on Jontai's page shows the redesign as it is now (type-led, 2026-10-28), not the
    retired sunrise film.
-4. **Floor 1.** Both of the first floor's projects (Steady and Portle) are in view at its stop.
+4. **Floor 1.** Both of the first floor's projects are in view at its stop.
 
 ## Not in this round
 
@@ -68,7 +68,7 @@ is the look Bob approved; these are its numbers.
 - The world clock keeps running while the tower's projects are drawn. Today it stops 12 s after the last stir
   (`worldClockRuns`); with breathing it does not stop while the tower is in view, so the tower keeps drawing frames
   there. That cost is accepted: Bob asked for it always. Outside the tower the clock behaves as today.
-- Reduced motion: no breathing. Every part is held where `b = 0.5` puts it, a steady lift, and the clock rules as today.
+- Reduced motion: no breathing. Every part is held where `b = 0.5` puts it, an even lift, and the clock rules as today.
 
 ## 2 · Dial
 
@@ -107,12 +107,12 @@ screen; the build puts it in the 3D scene, on the glass.
 
 ## 4 · Floor 1
 
-- The bug: since round 15's half turn, the first floor (Apps) is seen from behind at its stop, and Portle stands
+- The bug: since round 15's half turn, the first floor (Apps) is seen from behind at its stop, and one of its projects stands
   behind the core (its screen x 811 of 1440, inside the spine).
 - The fix: the first floor's turn goes 40° further, `floorTurn(0) = FLOOR_TURN − 40°` (−220°); the second and third
   floors stay at −360° and −540°. The move from one stop to the next turns from the one's turn to the other's
   (`floorTurn(i−1) + (floorTurn(i) − floorTurn(i−1))·e`) rather than a fixed half turn, so the first move turns 220° and
-  the second 140°. In the mock-up (`?r16shift=-40`) Steady and Portle are both clear of the core.
+  the second 140°. In the mock-up (`?r16shift=-40`) both of its projects are clear of the core.
 - A unit test that would have caught it: at every floor's stop, on a laptop and a phone, the line from the camera to
   each of that floor's projects passes no nearer the spine's axis than the spine's radius plus a margin. The existing
   `floorTurn` test takes the new value, and any test that pins every move to a half turn takes the new turns. The harness checks at floor 1 that both projects are on screen and clear of the

@@ -534,25 +534,25 @@ Harness `cursor`: on a mouse the corners close around `#go`'s bounds within 400 
 
 ```ts
 const real = flightLayout(projects.byDate());
-expect(projects.byDate().map((p) => p.id)).toEqual(['cookies-clicker', 'jontai-energy', 'steady', 'portle']);
-expect(real.stops.map((s) => s.s)).toEqual([40, 80, 116, 152]);
-expect(real.stops.map((s) => s.side)).toEqual([1, -1, 1, -1]);
+expect(projects.byDate().map((p) => p.id)).toEqual(['cookies-clicker', 'jontai-energy']);
+expect(real.stops.map((s) => s.s)).toEqual([40, 80]);
+expect(real.stops.map((s) => s.side)).toEqual([1, -1]);
 expect(real.years).toEqual([{ year: 2025, s: 20 }, { year: 2026, s: 60 }]);
-expect(real.gates).toEqual([8, 30, 48, 70, 88, 98, 106, 124, 134, 142, 160, 170]);
-expect(real.end).toBe(180);
-readFrames(real, distanceTable(real)).forEach((f, i) => expect(Math.abs(f - [399, 448, 493, 537][i])).toBeLessThanOrEqual(1));
+expect(real.gates).toEqual([8, 30, 48, 70, 88, 98]);
+expect(real.end).toBe(108);
+readFrames(real, distanceTable(real)).forEach((f, i) => expect(Math.abs(f - [399, 448][i])).toBeLessThanOrEqual(1));
 // a project added to the data alone
 const more = flightLayout([...projects.byDate(), { id: 'next', year: 2026 }]);
-expect([more.stops.at(-1)!.s, more.end, timelineFor(more).shift]).toEqual([188, 216, 43]);
+expect([more.stops.at(-1)!.s, more.end]).toEqual([116, 144]);
 const newYear = flightLayout([...projects.byDate(), { id: 'next', year: 2027 }]);
-expect(newYear.years.at(-1)).toEqual({ year: 2027, s: 172 }); expect(newYear.stops.at(-1)!.s).toBe(192);
+expect(newYear.years.at(-1)).toEqual({ year: 2027, s: 100 }); expect(newYear.stops.at(-1)!.s).toBe(120);
 for (const l of [real, more, newYear]) for (const g of l.gates) for (const s of l.stops) expect(Math.abs(g - (s.s - READ))).toBeGreaterThanOrEqual(5);
 ```
 
 The rules behind those numbers: a first project or a new year puts a year gate 20 after the last stop (20 for the first) and the stop 20 after that; the same year is 36 on; the end is 28 past the last stop. Gates: 8 at the start; a year gate's +10; each stop's +8; then +18 and +26 if the next stop has the same year, or +18 if it is the last.
 
 - [ ] **Step 2: Run it.** Expected: FAIL.
-- [ ] **Step 3: Implement.** Port `TABLE` and `distanceAt` from `tunnel.src.js`. `tools/flight_assets.mjs` ports `assets6.mjs` to files: the cookie painted out, the cookie and ring cut out, at most 300 KB each. Dates: Cookies 2025, Jontai 2026-01-19, Steady 2026-10-25, Portle 2026-10-28.
+- [ ] **Step 3: Implement.** Port `TABLE` and `distanceAt` from `tunnel.src.js`. `tools/flight_assets.mjs` ports `assets6.mjs` to files: the cookie painted out, the cookie and ring cut out, at most 300 KB each. Dates: Cookies 2025, Jontai 2026-01-19.
 - [ ] **Step 4: Run** `node tools/flight_assets.mjs` and the tests. Expected: PASS.
 - [ ] **Step 5: Commit.** `git commit -m "flight: stops, gates and years come from the project data"`
 
@@ -651,12 +651,12 @@ Harness `projects`: at each read frame one stop is the only bright thing (far ga
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-expect(closeHref('steady', 'nl')).toBe('/#project-steady'); expect(closeHref('steady', 'en')).toBe('/en/#project-steady');
-expect(frameForHash('#project-steady', tl, ['cookies-clicker', 'jontai-energy', 'steady', 'portle'])).toBe(tl.reads[2]);
-expect(langPathWhileOpen('/projects/steady/', 'en')).toBe('/en/projects/steady/');
+expect(closeHref('cookies-clicker', 'nl')).toBe('/#project-cookies-clicker'); expect(closeHref('cookies-clicker', 'en')).toBe('/en/#project-cookies-clicker');
+expect(frameForHash('#project-jontai-energy', tl, ['cookies-clicker', 'jontai-energy'])).toBe(tl.reads[1]);
+expect(langPathWhileOpen('/projects/cookies-clicker/', 'en')).toBe('/en/projects/cookies-clicker/');
 ```
 
-Harness `project-open`: click at frame 448; the screen grows to fill the view; the address is `/projects/jontai-energy/`; case text, pictures and links show; Back closes it within 2 frames of the same place; focus returns to the link. `project-direct`: `/projects/steady/` works with WebGL off and its close link lands at Steady's stop.
+Harness `project-open`: click at frame 448; the screen grows to fill the view; the address is `/projects/jontai-energy/`; case text, pictures and links show; Back closes it within 2 frames of the same place; focus returns to the link. `project-direct`: `/projects/cookies-clicker/` works with WebGL off and its close link lands at Cookies Clicker's stop.
 
 - [ ] **Step 2: Run it.** Expected: FAIL.
 - [ ] **Step 3: Implement.** Build on the existing `View` in `ProjectView.tsx`. Background goes `inert`, scroll locks, the world pauses.

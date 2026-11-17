@@ -33,8 +33,6 @@ describe('pagePaths', () => {
     expect(paths).toContain('/en/');
     expect(paths).toContain('/projects/jontai-energy/');
     expect(paths).toContain('/en/projects/cookies-clicker/');
-    expect(paths.some((path) => /steady|portle/.test(path))).toBe(false);
-    expect(paths.some((path) => path.includes('funcial'))).toBe(false);
     expect(paths).toContain('/en/lite/');
   });
 });

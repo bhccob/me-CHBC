@@ -56,7 +56,7 @@ T('brass-shadow', 'r3', [40, 80, 400, 400], p => H(p) >= 15 && H(p) <= 50 && S(p
 T('brass', 'r3', [40, 80, 400, 400], p => gold(p) && V(p) >= 0.35, 'median', 'compass body, lit brass');
 T('brass-hi', 'r2', [90, 40, 500, 380], gold, 0.08, 'rim and engraving highlights');
 T('gold-type', 'r2', [550, 165, 805, 195], p => gold(p) && V(p) > 0.55, 'median', 'BOB CHUNG letterforms');
-T('gold-title', 'r4', [33, 92, 322, 132], p => gold(p) && V(p) > 0.55, 'median', 'FUNCIAL title');
+T('gold-title', 'r4', [33, 92, 322, 132], p => gold(p) && V(p) > 0.55, 'median', 'reference title');
 T('gold-glow', 'r4', [200, 180, 500, 330], p => gold(p) && V(p) > 0.8, 'median', 'track glow');
 T('amber-spill', 'r1', [160, 120, 340, 175], p => H(p) >= 20 && H(p) <= 50 && V(p) > 0.75, 'median', 'light under the probed chip');
 T('gold-core', 'r4', [200, 180, 500, 330], p => V(p) > 0.9, 0.2, 'hottest part of the track');

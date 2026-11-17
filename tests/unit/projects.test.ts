@@ -33,25 +33,11 @@ describe('categories', () => {
 });
 
 describe('projects', () => {
-  it('are two, Jontai Energy then Cookies Clicker (Bob, 2026-11-07: Portle and Steady off for now)', () => {
+  it('are two, Jontai Energy then Cookies Clicker', () => {
     expect(all.map((entry) => entry.id)).toEqual(['jontai-energy', 'cookies-clicker']);
     expect(all.map((entry) => entry.order)).toEqual([1, 2]);
   });
 
-  it('have no Portle or Steady for now: no project, page or route of theirs', () => {
-    for (const id of ['portle', 'steady']) {
-      expect(projects.byId(id), id).toBeUndefined();
-      expect(Object.keys(PAGES).some((page) => page.includes(id)), id).toBe(false);
-      expect(projects.byRoute(`/projects/${id}/`), id).toBeUndefined();
-    }
-  });
-
-  it('has no Funcial anywhere: no project, page or route by that id (Bob, 2026-10-28)', () => {
-    expect(projects.byId('funcial')).toBeUndefined();
-    expect(Object.keys(PAGES).some((page) => page.includes('funcial'))).toBe(false);
-    expect(Object.values(PAGES).some((route) => route.includes('funcial'))).toBe(false);
-    expect(projects.byRoute('/projects/funcial/')).toBeUndefined();
-  });
 
   it('have unique ids', () => {
     expect(new Set(all.map((entry) => entry.id)).size).toBe(all.length);

@@ -126,7 +126,7 @@ The mock-up's `path.ts` imports the site's journey and chapters. These change fr
 
 ```ts
 it('puts every project on the way while there are five or fewer', () => {
-  expect(projects.onPath().map((p) => p.id)).toEqual(['funcial', 'jontai-energy', 'cookies-clicker']);
+  expect(projects.onPath().map((p) => p.id)).toEqual(['jontai-energy', 'cookies-clicker']);
   expect(projects.offPath()).toEqual([]);
 });
 it('takes the flagged projects onto the way when there are more than five', () => {
@@ -140,7 +140,7 @@ it('refuses more than five flagged, or none, past five projects', () => {
 });
 ```
 
-  `sevenStubs` is a test helper: seven copies of Funcial's data with `order` 1–7 and `onPath` set where it is listed.
+  `sevenStubs` is a test helper: seven copies of Jontai Energy's data with `order` 1–7 and `onPath` set where it is listed.
 - [ ] **Step 2: Run them.**
   - Command: `npx vitest run tests/unit/projects.test.ts`.
   - Expected: FAIL, because `onPath` is not a function.
@@ -220,8 +220,6 @@ it('comes back to the place a bead was opened from, else to its arrival', () => 
   expect(placeForProject('jontai-energy')).toBeCloseTo(L + 6.95, 9);
   noteOpenedFrom('jontai-energy', L + 8.3);
   expect(placeForProject('jontai-energy')).toBeCloseTo(L + 8.3, 9);
-  expect(placeForProject('funcial')).toBeCloseTo(L + 2.7, 9);
-  noteOpenedFrom('funcial', L + 14.55);
   expect(placeForProject('jontai-energy')).toBeCloseTo(L + 6.95, 9);
 });
 ```
@@ -414,7 +412,6 @@ it('flies back only from a rest where the bead is in view', () => {
   expect(restsAt('jontai-energy', L + 6.95, L + 6.95)).toBe(true);   // its arrival
   expect(restsAt('jontai-energy', L + 8.3 - 1e-3, L + 8.3 - 1e-3)).toBe(true); // its inside
   expect(restsAt('jontai-energy', L + 14.55, L + 14.55)).toBe(true);  // the look back's own stop (SHEET at local 0)
-  expect(restsAt('jontai-energy', L + 2.7, L + 2.7)).toBe(false);     // Funcial's arrival
   expect(restsAt('jontai-energy', L + 6.95, L + 7)).toBe(false);      // moving
 });
 it('selects the bead of an orbit or inside, nowhere else', () => {
@@ -502,23 +499,18 @@ it('holds the target at the hand-over while the beads load', () => { /* the exis
 
 ```ts
 // beadBuild.ts (pure)
-export interface BuildPose { time: number; slide?: number; abacus?: number; apart?: number; screen: number }
+export interface BuildPose { time: number; apart?: number; screen: number }
 export function buildPose(id: ProjectId, b: number): BuildPose;
 // BeadsModel gains
 setFade(id: ProjectId, fade: number): void;     // its light uniform × fade, its inner light × fade, its parts hidden at 0
 setWake(id: ProjectId, wake: { centre: readonly [number, number]; start: number; span: number; dir: 1 | -1; hot: number }): void;
-setBuild(id: ProjectId, b: number): void;       // buildPose applied: setMotion, the abacus's scale, the wheels apart, the screens
+setBuild(id: ProjectId, b: number): void;       // buildPose applied: setMotion, the wheels apart, the screens
 export const WAKE = { rest: 0.12, lit: 1.4, hot: 2.6 } as const;
 ```
 
 - [ ] **Step 1: Write the failing tests.**
 
 ```ts
-it('builds Funcial: the abacus rises, its beads slide, the screen lights', () => {
-  expect(buildPose('funcial', 0)).toEqual({ time: 0, slide: 0, abacus: 0.02, screen: 0 });
-  expect(buildPose('funcial', 0.5)).toMatchObject({ time: 1.5, slide: closeTo(2.3 * 0.14 / 0.6), abacus: 1, screen: 1 });
-  expect(buildPose('funcial', 1)).toEqual({ time: 3, slide: 2.3, abacus: 1, screen: 1 });
-});
 it('builds Jontai Energy: the cells light one by one', () => {
   expect(buildPose('jontai-energy', 0.5)).toMatchObject({ time: closeTo(4.6 * 0.38 / 0.88), screen: 1 });
 });
@@ -528,24 +520,20 @@ it('builds Cookies Clicker: the wheels meet, then the train ticks', () => {
 });
 // build-beads.test.ts, on the loaded fixture GLB as the file's other cases load it
 it('dresses the shell with the wake and writes it', () => {
-  const body = model.beads.funcial.body.material as THREE.MeshStandardMaterial;
+  const body = model.beads['jontai-energy'].body.material as THREE.MeshStandardMaterial;
   expect(body.customProgramCacheKey()).toBe('bob-bead:shell');
   const shader = compileFake(body); // the file's helper: runs onBeforeCompile on ShaderLib.physical's sources
   expect(shader.fragmentShader).toContain('uWakeA');
   expect(shader.vertexShader).toContain('vWakeView = mvPosition.xyz;');
-  model.setWake('funcial', { centre: [1, 2], start: 0.5, span: 3, dir: -1, hot: 2.6 });
+  model.setWake('jontai-energy', { centre: [1, 2], start: 0.5, span: 3, dir: -1, hot: 2.6 });
   expect(shader.uniforms.uWakeA.value.toArray()).toEqual([1, 2, 0.5, 3]);
   expect(shader.uniforms.uWakeB.value.toArray()).toEqual([0.12, 1.4, 2.6, -1]);
 });
 it('fades a bead into the dark and hides it at nothing', () => {
-  model.setLit('funcial', 1); model.setFade('funcial', 0.5);
-  expect(lightUniform(model, 'funcial')).toBeCloseTo(0.5 * litLevel, 9);
-  model.setFade('funcial', 0);
-  expect(drawnParts(model.beads.funcial.root).every((p) => !p.visible)).toBe(true);
-});
-it('builds the abacus from its scale at rest', () => {
-  model.setBuild('funcial', 0);
-  expect(abacus(model).scale.y).toBeCloseTo(0.02 * restScaleY, 9);
+  model.setLit('jontai-energy', 1); model.setFade('jontai-energy', 0.5);
+  expect(lightUniform(model, 'jontai-energy')).toBeCloseTo(0.5 * litLevel, 9);
+  model.setFade('jontai-energy', 0);
+  expect(drawnParts(model.beads['jontai-energy'].root).every((p) => !p.visible)).toBe(true);
 });
 ```
 
@@ -554,7 +542,6 @@ it('builds the abacus from its scale at rest', () => {
   - Expected: FAIL.
 - [ ] **Step 3: Implement it.**
   - **`buildPose`.** `smooth` is the clamped smoothstep, and `seg(x, a, b)` is the clamped `(x − a)/(b − a)`.
-    - funcial: time `3b`, slide `2.3·seg(b, .36, .96)`, abacus `max(.02, smooth(b/.42))`;
     - jontai-energy: time `4.6·seg(b, .12, 1)`;
     - cookies-clicker: time `7·seg(b, .48, 1)`, apart `1 − smooth(seg(b, 0, .5))`;
     - every bead: screen `smooth(seg(b, .04, .4))`.
@@ -696,7 +683,7 @@ it('shows the void all along the path', () => {
   - Expected:
     - the tests PASS;
     - the typecheck fails only in the modules Tasks 10 and 11 rewrite (BeadLabel.tsx, SkipButton.tsx);
-    - in the browser pane at 1440×900, scrolled to Funcial's arrival stop, the frame matches the mock-up's still at the same place: the bead's veins awake on its left, the light at rest on its right.
+    - in the browser pane at 1440×900, scrolled to Jontai Energy's arrival stop, the frame matches the mock-up's still at the same place: the bead's veins awake on its left, the light at rest on its right.
 - [ ] **Step 5: Commit.** Message: `scene: the void on the light's path: beads fading in and out, veins waking, insides building, the fog and the look back's way line`.
 
 ### Task 10: The labels: the bead's beside the light, the look back's on hover and focus, the touch points
@@ -725,9 +712,9 @@ export function showTouchPoints(view: { id: ProjectId; opacity: number; at: read
 
 ```ts
 it('stands the label right of the light on a laptop, under the bead on a phone, inside the screen', () => {
-  expect(pathLabelPlace({ id: 'funcial', anchor: { x: 900, y: 450 }, side: 'right', opacity: 1, quiet: false }, { w: 300, h: 96 }, { width: 1440, height: 900 })).toEqual({ x: 934, y: 402 });
-  expect(pathLabelPlace({ id: 'funcial', anchor: { x: 195, y: 600 }, side: 'below', opacity: 1, quiet: false }, { w: 260, h: 88 }, { width: 390, height: 844 })).toEqual({ x: 65, y: 600 });
-  expect(pathLabelPlace({ id: 'funcial', anchor: { x: 1300, y: 450 }, side: 'right', opacity: 1, quiet: false }, { w: 300, h: 96 }, { width: 1440, height: 900 }).x).toBe(1124);
+  expect(pathLabelPlace({ id: 'jontai-energy', anchor: { x: 900, y: 450 }, side: 'right', opacity: 1, quiet: false }, { w: 300, h: 96 }, { width: 1440, height: 900 })).toEqual({ x: 934, y: 402 });
+  expect(pathLabelPlace({ id: 'jontai-energy', anchor: { x: 195, y: 600 }, side: 'below', opacity: 1, quiet: false }, { w: 260, h: 88 }, { width: 390, height: 844 })).toEqual({ x: 65, y: 600 });
+  expect(pathLabelPlace({ id: 'jontai-energy', anchor: { x: 1300, y: 450 }, side: 'right', opacity: 1, quiet: false }, { w: 300, h: 96 }, { width: 1440, height: 900 }).x).toBe(1124);
 });
 it('look back labels are focusable and shown on focus; a fading label is not', () => {
   expect(labelFocusable({ ...view, quiet: true, opacity: 0 })).toBe(true);
@@ -759,7 +746,6 @@ it('places a touch point by its side, inside the screen', () => {
   - **The skip button.** It still never covers a label: keep `skipPlace` on the shown label's box.
   - **CSS.** A quiet label shows at opacity 1 on `:focus-visible` and on hover. Void writes `data-hover` for the picked bead, since the canvas takes the pointer. Its `tabindex` comes from `labelFocusable`.
   - **`TOUCH_POINTS`.** The mock-up's anchors, verbatim:
-    - funcial: `funcial_pin_1..4` (below, below2, below, below2) and `funcial_bead_5` (above);
     - jontai-energy: `tl` left, `bl` left, `tr` right, `br` right;
     - cookies-clicker: `cookies_balance` above, `cookies_wheel_4` below, `cookies_wheel_8` below2, `bl` below, `tr` right.
   - **`touchBox`:**
@@ -927,14 +913,14 @@ it('holds a failed void at the hand-over, with no projects after it', () => {
     - From the fall's end, wheel notches run the story into TRAVEL 0 with no stop.
     - At every sample on the way (not the look back), at most one bead is visible with fade ≥ 0.5.
     - In ORBIT 0 the wake's span grows monotonically, and scrolling back up runs it back.
-    - At Funcial's arrival stop the label shows within 1 s of rest, right of the light (desk) or under the bead (phone).
-    - In INSIDE 0 the label is gone and five touch points show, each within the screen.
-    - Then Jontai Energy (four points) and Cookies Clicker (five), in order.
+    - At Jontai Energy's arrival stop the label shows within 1 s of rest, right of the light (desk) or under the bead (phone).
+    - In INSIDE 0 the label is gone and four touch points show, each within the screen.
+    - Then Cookies Clicker (five points).
     - Stopping anywhere rests there, and the canvas sleeps within 1 s.
   - **Add `look-back`:**
-    - At the look's end all three beads are visible and inside the frame, and the way line shows.
+    - At the look's end all the beads are visible and inside the frame, and the way line shows.
     - Hovering each bead's px shows its label.
-    - Tab goes Funcial, Jontai Energy, Cookies Clicker, then the skip button, each label shown on focus.
+    - Tab goes Jontai Energy, Cookies Clicker, then the skip button, each label shown on focus.
     - Enter on one opens its page.
   - **Add `credits`** (three sizes):
     - From the look back, a wheel down fades to black and raises the credits.
@@ -946,7 +932,7 @@ it('holds a failed void at the hand-over, with no projects after it', () => {
     - At the document's top, a wheel up takes the story back to the look back.
   - **In English too.** `path`, `look-back` and `credits` also run at `/en/`, with the English labels, questions and answers.
   - **Update:**
-    - `bridge`, `persist`: Back to `/` puts the story at Funcial's arrival stop.
+    - `bridge`, `persist`: Back to `/` puts the story at Jontai Energy's arrival stop.
     - `light-dive`: frames 1 to 256, with the light within 6 px of the fixture at 20, 60, 121 and 241.
     - `light-facts`: fact 05 fades out and is never cut.
     - `bead-open`: open Jontai Energy from its arrival, from its inside and from the look back. Back returns to each place.
@@ -957,7 +943,7 @@ it('holds a failed void at the hand-over, with no projects after it', () => {
     - `resize`: a portrait resize mid-orbit keeps the place, and the label stays on the light.
     - `no-webgl`, `fps` and `sleep`.
 - [ ] **Step 2: Run them against the build.**
-  - Commands: `npm run build`, `PORT=4421 npm run preview` (in the background), then `PLAYWRIGHT_CORE=C:/Users/bhcco/Downloads/Funcial/node_modules/playwright-core BASE=http://localhost:4421 node tools/proof/needle.mjs`.
+  - Commands: `npm run build`, `PORT=4421 npm run preview` (in the background), then `PLAYWRIGHT_CORE=<path to a local node_modules/playwright-core> BASE=http://localhost:4421 node tools/proof/needle.mjs`.
   - Expected: every step PASS. A step that fails on `ERR_NO_BUFFER_SPACE` is re-run alone (`STEPS=<id>`).
 - [ ] **Step 3: Commit.** Message: `proof: the light's path, the look back and the credits, by real input at three sizes`.
 
@@ -981,7 +967,7 @@ it('holds a failed void at the hand-over, with no projects after it', () => {
   - Put stills beside the mock-up's at the same places.
 - [ ] **Step 3: Write `review.html` for Bob**, formal and plain:
   - what is built;
-  - where it differs from the mock-up, if anywhere. Name the abacus: it rises as one piece, as in the approved mock-up, because a rod-by-rod rise needs the beads' file rigged in Blender;
+  - where it differs from the mock-up, if anywhere;
   - how to see it (`npm run preview`, port 4421);
   - the open questions: merging `bob-dive`, and Way 2.
 

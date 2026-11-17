@@ -23,7 +23,7 @@ export const meta: MetaFunction = ({ location }) => {
   return head({
     locale,
     route,
-    // "Steady · Work": the same project page in both languages needs a title of its own in each.
+    // "Jontai Energy · Work": the same project page in both languages needs a title of its own in each.
     title: `${project.title} · ${t.nav.work}`,
     description: project.copy(locale).metaDescription,
     jsonLd: [

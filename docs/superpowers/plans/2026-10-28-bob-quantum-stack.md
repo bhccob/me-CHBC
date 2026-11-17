@@ -64,8 +64,7 @@
 **Files:**
 - Modify:
   - `src/data/categories.ts`: the ids, labels and doc comment;
-  - `src/data/projects.ts`: each project's `categoryId`. Funcial goes; Steady and Porfael come, with the design's words, touch points and links;
-  - `src/data/pages.ts`, `src/app/routes.ts`, `src/app/handle.ts`, `src/i18n/locale.ts`, `src/seo/head.ts`, `src/seo/structured.ts`: Funcial's page and route go, and Steady's and Porfael's come (`/projects/steady/`, `/projects/porfael/`, with `/en/` beside them);
+  - `src/data/projects.ts`: each project's `categoryId`;
   - `src/ui/nameLine.ts`: its offsets' keys;
   - `src/scene/bob/worldLayout.ts` and `src/scene/bob/journey.ts`: their keys only, until Task 2 replaces them.
 - Test: `tests/unit/projects.test.ts`; every test and `tools/proof/needle.mjs` where the old ids appear (find them with `grep -rln "secure-element\|front-panel\|'oscillator'" tests tools`).
@@ -75,20 +74,17 @@
   - `app`: number 1, `{ nl: 'APP', en: 'APP' }`;
   - `website`: number 2, `{ nl: 'WEBSITE', en: 'WEBSITE' }`;
   - `game`: number 3, `{ nl: 'GAME-ONTWIKKELING', en: 'GAME DEVELOPMENT' }`.
-- `ProjectId = 'steady' | 'porfael' | 'jontai-energy' | 'cookies-clicker'`, in that order.
-- Steady and Porfael are `app`, Jontai Energy `website`, Cookies Clicker `game`.
+- `ProjectId = 'jontai-energy' | 'cookies-clicker'`, in that order.
+- Jontai Energy is `website`, Cookies Clicker `game`.
 - `heading()` stays as it is: "01 — APP", "03 — GAME-ONTWIKKELING".
 
 - [ ] **Step 1: Write the failing tests** in `tests/unit/projects.test.ts`:
-  - `'files each project under the kind of work it is'`: Steady and Porfael `app`, Jontai Energy `website`, Cookies Clicker `game`.
-  - `'has no Funcial anywhere'`: no project, page or route by that id.
-  - `"gives Steady and Porfael their own words, in both languages"`: Steady's summary is its README's line; Porfael says it is in development; both are "Enige ontwikkelaar" / "Sole developer", 2026.
-  - In `tests/unit/pages.test.ts` and `tests/unit/routes.test.ts`: `'serves Steady\'s and Porfael\'s pages, in both languages'`.
+  - `'files each project under the kind of work it is'`: Jontai Energy `website`, Cookies Clicker `game`.
   - `"heads the categories by number and kind, in both languages"`: "01 — APP", "02 — WEBSITE", "03 — GAME DEVELOPMENT" and "03 — GAME-ONTWIKKELING".
-- [ ] **Step 2:** Run `npx vitest run tests/unit/projects.test.ts tests/unit/pages.test.ts tests/unit/routes.test.ts`. Expected: FAIL, on the old ids and the missing projects.
-- [ ] **Step 3:** Implement as above. Update the tests and the harness that name the old ids, labels or Funcial to the new ones; they check the same things (a click on Funcial becomes a click on Steady). The old device-part names stay only in `docs/projects-discovery.md`, as its history.
+- [ ] **Step 2:** Run `npx vitest run tests/unit/projects.test.ts tests/unit/pages.test.ts tests/unit/routes.test.ts`. Expected: FAIL, on the old ids.
+- [ ] **Step 3:** Implement as above. Update the tests and the harness that name the old ids or labels to the new ones; they check the same things. The old device-part names stay only in `docs/projects-discovery.md`, as its history.
 - [ ] **Step 4:** Run `npm test` and `npx tsc --noEmit`. Expected: PASS, with no type errors.
-- [ ] **Step 5:** Commit: `data: Steady and Porfael in, Funcial out, the projects filed by kind of work: app, website, game development`.
+- [ ] **Step 5:** Commit: `data: the projects filed by kind of work: app, website, game development`.
 
 ### Task 2: The stack's places
 
@@ -105,7 +101,7 @@
   - `boardTops(boards: readonly BoardPlace[], open: number): number[]`.
   - `LID_TOP = 0.2`, for the new CPU.
   - `boardCentre` stays.
-  - `ObjectKind` becomes `'streak' | 'portfolio' | 'solar' | 'crystal' | 'chip'`: Steady's streak path, Porfael's ring and relic, Jontai Energy's solar module, Cookies Clicker's crystal, and a plain chip for any other. Funcial's `'lock-chip'` goes. `OBJECT_MIDDLE` gains the new kinds' middles: 0.2 for `streak`, 0.3 for `portfolio`.
+  - `ObjectKind` becomes `'solar' | 'crystal' | 'chip'`: Jontai Energy's solar module, Cookies Clicker's crystal, and a plain chip for any other.
 
 - [ ] **Step 1: Write the failing tests:**
   - `'puts the power board first, at the board centre, with no hole and no sockets'`: radius 3.8, top `boardCentre()[1]`.
@@ -188,7 +184,7 @@
   - `"sizes it to half the screen's height on a laptop, and to fit a phone's width"`: the projected diameter 0.5 of the height ±1e-3; on a phone min(0.66 w, 0.32 h).
   - `'faces the camera, tipped 0.42 toward it'`.
   - `'curves up off the socket and over to the spot'`: e=0 is the socket, e=1 the spot, and at e=0.5 the centre stands at least 0.8 above the straight midpoint.
-  - `'rises in 1.5 s and sinks in 1.3 s at a steady pace'`.
+  - `'rises in 1.5 s and sinks in 1.3 s at an even pace'`.
   - `'re-places for a new screen shape'` (Review Focus 1): `spotFor` at aspect 1.6 and at 0.46 projects to each one's own spot.
 - [ ] **Step 2:** Run `npx vitest run tests/unit/scene/bob-spot.test.ts`. Expected: FAIL.
 - [ ] **Step 3: Implement:**
@@ -275,9 +271,7 @@
     - `world:showLight`, the open project's lamp.
   - `WorldModel` gains `turn(azimuth)`.
 
-- [ ] **Step 1: Write the failing tests** (the anchors, cells, gears, `pow` and dispose tests are kept; Funcial's lid test goes):
-  - `"marks Steady's streak blocks one after another and lights its trophy as it opens"`: three blocks marked at rest, all seven once open.
-  - `"parts Porfael's arcs and lights its relic as it opens"`.
+- [ ] **Step 1: Write the failing tests** (the anchors, cells, gears, `pow` and dispose tests are kept):
   - `'names a board per category below the power board, the spine and the CPU'`.
   - `'places each board at the tops it is posed with'`: closed tops, then open ones.
   - `"stands each object on its socket on its board, and in the spot when lifted"`: lift 1 puts the object's middle at `spot.centre` ±1e-6.
@@ -285,7 +279,7 @@
   - `"aims the beam from the spine at the project's board to the lifted object, and lights it with the lift"`.
   - `"dims the boards, the spine, the CPU and the sockets with the world's level"`.
 - [ ] **Step 2:** Run `npx vitest run tests/unit/bob/build-world.test.ts`. Expected: FAIL.
-- [ ] **Step 3: Implement.** Steady's and Porfael's objects are new, after the mock-up's `steady()` and `porfael()` (`.superpowers/holo-world-4-mockup/world.ts`); Funcial's lock chip goes. The objects are posed by `liftAt(socketPose, spot, ease(lift))`. The socket pose is: board top + `STACK.hover` + float, facing out, at `STACK.scale`. The Void hands `room` (its PMREM'd room) and `turn(azimuth)` each frame, the camera's azimuth round the axis.
+- [ ] **Step 3: Implement.** The objects are posed by `liftAt(socketPose, spot, ease(lift))`. The socket pose is: board top + `STACK.hover` + float, facing out, at `STACK.scale`. The Void hands `room` (its PMREM'd room) and `turn(azimuth)` each frame, the camera's azimuth round the axis.
 - [ ] **Step 4:** Run `npx vitest run tests/unit/bob/build-world.test.ts tests/unit/scene/bob-void.test.ts`, then `npx tsc --noEmit`. Expected: PASS, with no type errors left from Task 2.
 - [ ] **Step 5:** Commit: `engine: the world becomes the stack: boards, spine, the socketed CPU, sockets and the objects`.
 

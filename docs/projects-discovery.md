@@ -1,10 +1,10 @@
 # Project discovery (§7A)
 
-Status: **approved by Bob on 2026-10-20**: all three proposals as sketched. His answers are
+Status: **approved by Bob on 2026-10-20**: all proposals as sketched. His answers are
 recorded at the end. Project assets (A07 plates, A08 meshes) may now be planned within the credit
 budget.
 
-What this covers, for Funcial, Jontai Energy and Cookies Clicker:
+What this covers, for Jontai Energy and Cookies Clicker:
 - the facts: purpose, audience, stack, role, links, dates
 - 3–5 architecture layers, each `verified` (with the file it was seen in) or `inferred`
 - a proposed category, object, palette accent, motion signature and hover behaviour
@@ -14,66 +14,14 @@ What this covers, for Funcial, Jontai Energy and Cookies Clicker:
 
 | Project | Source read | State |
 |---|---|---|
-| Funcial | `C:\Users\bhcco\Downloads\Funcial` (bhccob/Funcial) | `HEAD` (clean working tree); screenshots from its local builds `dist/` and `site-dist/` of 2026-10-18 |
 | Jontai Energy | `C:\Users\bhcco\Documents\JE` (bhccob/JE) | `HEAD` only, exported with `git archive`; the uncommitted work is described separately and is not used |
 | Cookies Clicker | a fresh clone of bhccob/Cookies-Clicker, `CookieClicker13-main/` | `HEAD` (`284ae97`) |
 
 **Screenshots** are in [`docs/discovery/`](discovery/). Each project was served statically from a
-scratch folder and captured with playwright-core and the installed Edge: 1440×900 for websites,
-390×844 @2x for the phone app.
+scratch folder and captured with playwright-core and the installed Edge at 1440×900.
 
 **Rule for every row below:** a fact is in the table only if it was seen in the code, the UI or the
 git history. Anything else is `[FILL: …]`.
-
----
-
-## 01 · FUNCIAL
-
-### Facts
-
-| | |
-|---|---|
-| Title | **Funcial**. `package.json` `name: "funcial"`, the page title and the README. Renamed from "Funancial" on 2026-10-18 (`fee214c`). |
-| Purpose | A gamified personal finance tracker. It covers expenses, salary (with freezes), subscriptions, limits, goals, a stock/ETF portfolio with dividends and news, and a "Should I buy it?" check. All of it is wrapped in XP, levels, quests, streaks and badges, and it is local-first and encrypted on the device (README). |
-| Audience | At first "Just them" (the owner): the design spec says *"Personal tool"*. Later it went out to friends: version 0.8 is the "first release to friends", with an account so that a friend can move to a new phone (accounts spec, 2026-10-17). |
-| Stack | React 19, TypeScript, Vite 8, Tailwind CSS v4, React Router 8, Zustand, Zod, Dexie (IndexedDB) and Motion. On the phone: Capacitor 8 (Android), `@capacitor-community/sqlite` (SQLCipher) and native biometric unlock. Crypto: Web Crypto (AES-GCM, AES-KW, PBKDF2) and `hash-wasm` (Argon2id). Server: Vercel Functions and Upstash Redis. Tests: Vitest and Playwright (165 test files). **No AI:** the advisor was removed on 2026-10-16 (`ec0fb39`, "refactor: remove the AI advisor"). |
-| Role | Sole developer: all 337 commits are by Bob (`bob`, `bhccob`). |
-| Links | Live (download page, Bob approved linking it on 2026-10-18): https://funcial.vercel.app/get · Repo: https://github.com/bhccob/Funcial |
-| Dates | Repo created 2026-10-14; last push 2026-10-18. The release is APK 0.8. |
-
-### Architecture layers (test points)
-
-| TP | Label | Status | What the code does | Evidence |
-|---|---|---|---|---|
-| TP1 | **LOG** | verified | Expenses and income are entered and written as encrypted records. | `src/features/add/` (AddScreen, ExpenseForm, IncomeForm), `src/store/financeActions.ts`, `src/data/repository.ts` |
-| TP2 | **GAME LAYER** | verified | Every write is settled into XP, levels, quests, streaks, badges, challenges and a cosmetic shop. A logged expense pays 10 XP, for at most 5 a day. Coins have no money value. | `src/domain/game/{engine,ledger,levels,quests,streaks,badges,challenges,shop,rules}.ts` |
-| TP3 | **MONEY RULES** | verified | Budgets and limits have the levels ok, warn, over and way-over (the download page names the 80%, 100% and 120% warnings). Also here: salary with freezes, goals, income, recurrence, alerts, and the buy rules. | `src/domain/{budget,salary,goals,income,recurrence,alerts}.ts`, `src/domain/advisor/rules.ts` |
-| TP4 | **VAULT** | verified | Each record is encrypted with AES-GCM-256 and bound to its slot by AAD. The data key is wrapped by a device key (AES-KW) or by a PIN or passphrase (PBKDF2, 600,000 iterations). On Android the store is SQLCipher, with biometric unlock. The account copy is sealed with Argon2id (64 MiB, 3 passes): the server sees only an auth key, the wrapped key and sealed copies. | `src/data/{crypto,keys,keyring,sqliteStorage,accountCrypto}.ts`, `src/platform/android/biometric.ts` |
-| — | **RESULT** | verified (as the buy-meter verdict) | No layer is called "result". **Bob's choice: RESULT is the buy-meter verdict.** The buy meter reads the other layers (limits, available balance, emergency fund, goals) and gives a 0–100 meter. Its zones are skip (0–33), wait (34–66) and buy (67–100); guards cap it at wait. The verdict is buy, wait, cheaper or skip, each with a confidence. On focus, the fifth bead lights and the phone shows the meter. | `src/domain/advisor/meter.ts`, `rules.ts`; screenshot `funcial-app-verdict.webp` |
-
-### Screenshots
-
-| File | What it shows |
-|---|---|
-| `funcial-get-hero.webp` | The download page (live at funcial.vercel.app/get), first view |
-| `funcial-get-story.webp` | The download page's scroll story: the "02 · Budget" beat on the canvas phone (`site/get/screens.ts`) |
-| `funcial-app-welcome.webp` | The app's welcome screen (390×844) |
-| `funcial-app-home.webp` | Home with demo money: available to spend, the streak, coins and level ring, the spending donut |
-| `funcial-app-budget.webp` | Budget limits |
-| `funcial-app-buy.webp` | "Should I buy it?" ask form |
-| `funcial-app-verdict.webp` | A buy-meter answer: 55%, "Wait a few days", confidence low, with its facts |
-| `funcial-app-quests.webp` | Quests: level 6 "Bronze Saver", XP bar, streaks |
-
-### Proposal (given by the brief, refined)
-
-| | |
-|---|---|
-| Category | `01 — SECURE ELEMENT` (given; it fits: a secure element is the chip that keeps keys, and the VAULT layer is the heart of the app) |
-| Object | **A hard-drive platter with a glowing track and four pins (TP1–TP4), plus a lacquered abacus and a phone**, as in ref-04 and ref-05. The abacus beads are the same layers shown a second way. The phone plays the app's real screens: the four canvas screens of `site/get/screens.ts` (Home, Budget, Buy it?, Levels) are drawn on a canvas texture, as demo money, never AI. |
-| Material | Mirror-polished platter aluminium; purple lacquer with gold leaf for the abacus; black glass for the phone |
-| Palette | accent `#7c5cff` (the app's own XP violet, `--color-xp` in its `tokens.css`) · glow: the ref-04 track gold (exact value from `docs/art-direction.md`) |
-| Motion signature | **Continuous spin**: the platter turns slowly while a light pulse runs along the track from TP1 to TP4. On focus, the abacus beads slide up one by one. |
-| Hover | Lift and glow. The read arm swings in over the track, and one pulse runs the length of the track. |
 
 ---
 
@@ -182,18 +130,17 @@ committed and pushed. Then a REWARDS test point and new screenshots of the new l
 
 ## Uniqueness check
 
-| | Funcial | Jontai Energy | Cookies Clicker |
-|---|---|---|---|
-| Silhouette | a round mirror disc + an upright abacus + a phone | a flat rectangular 4 × 4 grid | an open stack of toothed wheels |
-| Material | mirror aluminium, purple lacquer, glass | glass, silicon cells, anodised aluminium | copper, ruby jewels, a dark bridge |
-| Accent | XP violet `#7c5cff` | solar green `#00a650` | caramel `#c69255` |
-| Motion | continuous spin + a track pulse | light sweep + single-axis tilt | a discrete 1 Hz tick |
-| Hover | the read arm swings in, a pulse runs | it tilts to the cursor, the cell charges | the crown presses, the train steps |
-| Test points | 4 + RESULT (the buy-meter verdict) | 4 | 5 |
+| | Jontai Energy | Cookies Clicker |
+|---|---|---|
+| Silhouette | a flat rectangular 4 × 4 grid | an open stack of toothed wheels |
+| Material | glass, silicon cells, anodised aluminium | copper, ruby jewels, a dark bridge |
+| Accent | solar green `#00a650` | caramel `#c69255` |
+| Motion | light sweep + single-axis tilt | a discrete 1 Hz tick |
+| Hover | it tilts to the cursor, the cell charges | the crown presses, the train steps |
+| Test points | 4 | 5 |
 
 Labels in Dutch, suggested for the NL route (the copy is approved later, in M6):
 - Categories: SECURE ELEMENT stays as it is, FRONTPANEEL, OSCILLATOR.
-- Funcial: LOG, GAMELAAG, GELDREGELS, KLUIS, RESULTAAT.
 - Jontai Energy: 16 PAGINA'S, DESIGNSYSTEEM, DRIE TALEN, OFFERTEPAD.
 - Cookies Clicker: KLIKLUS, 8 PRODUCENTEN, BOOSTS & EVENTS, OPSLAG, STATISTIEKEN.
 
@@ -224,25 +171,6 @@ export const categories: Category[] = [
 ];
 
 export const projects: Project[] = [
-  {
-    id: 'funcial',
-    title: 'FUNCIAL',
-    categoryId: 'secure-element',
-    order: 1,
-    object: { fallbackGeometry: 'platter-track+abacus+phone' }, // plates A04/A05 after approval
-    testPoints: [
-      { id: 'tp1', label: 'LOG', position: [-0.62, 0.02, 0.48] },
-      { id: 'tp2', label: 'GAME LAYER', position: [-0.31, 0.02, 0.71] },
-      { id: 'tp3', label: 'MONEY RULES', position: [0.05, 0.02, 0.78] },
-      { id: 'tp4', label: 'VAULT', position: [0.4, 0.02, 0.66] },
-      { id: 'result', label: 'RESULT', position: [0.7, 0.02, 0.38] }, // the buy-meter verdict (Bob, 2026-10-20)
-    ],
-    palette: { accent: '#7c5cff', glow: '/* art-direction: ref-04 track gold */' },
-    motion: 'slow platter spin + track pulse TP1→TP4; abacus beads slide up one by one on focus',
-    summary: 'A gamified personal finance app for Android that keeps every record encrypted on the phone.',
-    stack: ['React 19', 'TypeScript', 'Tailwind CSS v4', 'Zustand', 'Capacitor', 'SQLCipher', 'Web Crypto', 'Vercel Functions'],
-    links: { live: 'https://funcial.vercel.app/get', repo: 'https://github.com/bhccob/Funcial' },
-  },
   {
     id: 'jontai-energy',
     title: 'JONTAI ENERGY',
@@ -287,13 +215,11 @@ export const projects: Project[] = [
 
 ## Bob's answers
 
-Asked on 2026-10-20, after inline sketches of the three objects (the platter, abacus and phone;
-the 16-cell module; the clockwork movement), each with its motion signature animated.
+Asked on 2026-10-20, after inline sketches of the objects (the 16-cell module and the clockwork
+movement), each with its motion signature animated.
 
 | Question | Answer |
 |---|---|
-| Funcial: category, object and test points | **Approved as sketched**: `01 — SECURE ELEMENT`; platter + abacus + phone; TP1 LOG · TP2 GAME LAYER · TP3 MONEY RULES · TP4 VAULT; accent `#7c5cff` with the reference gold as glow |
-| Funcial: what RESULT means, or drop it | **RESULT is the buy-meter verdict** (skip, wait, cheaper or buy, from `advisor/meter.ts` + `rules.ts`) |
 | Jontai Energy: category, object and test points | **Approved as sketched**: `02 — FRONT PANEL`; the 16-cell solar module; 16 PAGES · DESIGN SYSTEM · THREE LANGUAGES · QUOTE PATH; accent `#00a650` (CONSENT not added) |
 | Jontai Energy: does the uncommitted Rewards work belong in it? | **Leave it out for now**; revisit once it is committed and pushed |
 | Cookies: category, object and test points | **Approved as sketched**: `03 — OSCILLATOR`; the clockwork movement; CLICK LOOP · 8 PRODUCERS · BOOSTS & EVENTS · SAVE · STATS; accent `#c69255` |

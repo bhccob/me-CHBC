@@ -56,17 +56,16 @@ The mock-ups are flat cut-outs of the site's own stills. They set the moves, the
 
 4. **Into the bead (storyboard picture 4).**
    - Scrolling on takes the camera through the bead's glass window. Inside, the project's objects move with the scroll, not by themselves:
-     - **Funcial:** the abacus builds itself rod by rod, its beads sliding into place, and the phone's screen lights up.
      - **Jontai Energy:** the solar module's cells light up one by one, and the panel tilts toward the light.
      - **Cookies Clicker:** the clockwork's gears fit together and start to turn.
-   - A few short labels say what it is: the project's own touch points, as `projects.ts` has them (for Funcial: Log, Game layer, Money rules, Vault, Result).
+   - A few short labels say what it is: the project's own touch points, as `projects.ts` has them (for Jontai Energy: Pages, Design system, Languages, Quote).
 
 5. **Out and on (picture 5).** The camera pulls back out through the window and the bead dims behind it. The light leads on, deeper and to the side, to the next project, where goal 3 repeats.
 
 6. **Which projects the light visits** (Way 2 on `more-projects.html`; see My calls).
-   - With up to five projects, the light visits them all, in the order of `projects.ts`. Today that is Funcial, Jontai Energy, then Cookies Clicker.
+   - With up to five projects, the light visits them all, in the order of `projects.ts`. Today that is Jontai Energy, then Cookies Clicker.
    - With more than five, it visits the five Bob picks. The rest are not on the way. They show in the look back (goal 7) as small lights beside the trail, and on the Werk page as now.
-   - Each visited project adds about two scroll stops: the arrival, and the inside. So the way from the top to the credits is about 15 stops with three projects and at most about 19 with five.
+   - Each visited project adds about two scroll stops: the arrival, and the inside. So the way from the top to the credits is about 13 stops with two projects and at most about 19 with five.
 
 7. **The look back (8A).**
    - After the last project, scrolling on pulls the camera back and up, and the whole way shows. The light's trail winds back into the distance, with every visited project's bead on it: the first far and small, the last close by, all awake. Projects not on the way are small lights beside the trail.
@@ -100,7 +99,7 @@ Before anything of this goes into the site's code, Bob sees and approves two thi
 - **a video** recorded from it.
 
 Together they show, at 1440×900 and on a phone:
-- the end of the fall flowing on to Funcial;
+- the end of the fall flowing on to the first project;
 - the light circling it and the veins waking;
 - into the bead and out again;
 - on to Jontai Energy and Cookies Clicker;

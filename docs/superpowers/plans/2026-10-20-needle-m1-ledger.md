@@ -69,7 +69,7 @@ Task 3: minor (deferred → final review): csp.mjs:16-17 HAS_SRC/JSON_LD regexes
 Task 3: minor (deferred → T4a): site_audit.py default/doc still 'dist' (lines 1,13,550); README says build 'prerenders every page' (true after T4a); 404 notice English half lacks lang=en; Duplicate CNAME copy (harmless, brief-mandated)
 Task 3: complete (commits 5ffe867..1bacc85, review clean)
 Task 4a: dispatched (base 1bacc85, implementer sonnet)
-Task 4a: implementer DONE_WITH_CONCERNS 159ad2c (356 tests; 18 pages prerendered; auditor 0 on 41 pages; proof 6 steps PASS; self-written copy to show Bob: Cookies role 'Development, with a classmate', Funcial/Cookies type, Funcial role, Lite meta description, title patterns; Lite placeholder has id=career; main swallows canvas pointer events → T6/T7)
+Task 4a: implementer DONE_WITH_CONCERNS 159ad2c (356 tests; 18 pages prerendered; auditor 0 on 41 pages; proof 6 steps PASS; self-written copy to show Bob: Cookies role 'Development, with a classmate', Cookies type, Lite meta description, title patterns; Lite placeholder has id=career; main swallows canvas pointer events → T6/T7)
 Task 4a: review dispatched (sonnet) on review-t4a-trimmed.diff
 Task 4a: review — spec mostly ✅; Needs fixes: 2 Important (Esc·back hint with no Esc handler; Cookies role 'Development' unbacked)
 Ruling 11: Cookies role becomes neutral 'With a classmate' / 'Samen met een klasgenoot' until Bob states his part — discovery leaves his part [FILL]; never claim unbacked work — if wrong: Bob supplies the real role later.
@@ -86,7 +86,7 @@ Task 4b: dispatched (base 67deb7c, implementer sonnet)
 Task 4b: implementer DONE_WITH_CONCERNS e16ba2b (417 tests; audit 0; 9 proof steps PASS; CSP blocks mailto: form action → no-JS no-key path uses plain mailto link; contactPayload adds optional subject; real Web3Forms untested); review dispatched (sonnet)
 Task 4b: review — Needs fixes: 1 Important (t.contact.title not rendered; contact h1 uses nav.contact)
 Ruling 14: Lite's work section also renders t.work intro, heldTitle/heldText and nextTitle/nextText — Bob asked that Lite carry ALL of today's copy, and these were on the old home Projects section — if wrong: three short lines to remove.
-Ruling 15: fix round includes reviewer Minor 3 (submit re-entry guard, AbortController timeout, focus to status after failure) and Minor 5 (pair <summary> matches; assert funcial defined) — cheap robustness on a visitor-facing form — none.
+Ruling 15: fix round includes reviewer Minor 3 (submit re-entry guard, AbortController timeout, focus to status after failure) and Minor 5 (pair <summary> matches; assert the first project is defined) — cheap robustness on a visitor-facing form — none.
 Task 4b: minor (deferred → final review): no-key JS-off contact intro says 'write it below' with no form (production needs PUBLIC_WEB3FORMS_KEY — Bob's pending action); looksAutomated 3s from mount can swallow a fast autofill send; ?sent=1 comment overstated; useRef<HTMLDivElement> on <section>; contactSubmit.ts relative import; :empty display toggle on role=alert; external-link new-tab cue; keyed build at 390px unproven; ContactForm state machine only e2e-tested
 Task 4b: fix round 1 dispatched (resume implementer) — base e16ba2b
 Task 4b: fix round 1 implementer DONE_WITH_CONCERNS 67f87ba (426 tests; audit 0; 9 proof steps PASS; work h2 now t.work.title; category-card labels countOne/countMany/view/rail not carried); re-review dispatched (sonnet)

@@ -182,7 +182,7 @@ export function chip(slug: string, width: number, depth: number): THREE.Mesh;
 // parts/trace.ts — flat gold trace following XZ points at the board's top
 export function trace(points: readonly [number, number][], y: number): THREE.Mesh;
 // Device.ts
-export const CHIP_SLUGS: readonly ['funcial', 'jontai-energy', 'cookies-clicker', 'next'];
+export const CHIP_SLUGS: readonly ['jontai-energy', 'cookies-clicker', 'next'];
 export interface DeviceTextures { screen?: THREE.Texture; spec?: THREE.Texture }
 export interface DeviceModel {
   group: THREE.Group;
@@ -201,8 +201,7 @@ export function buildDevice(textures?: DeviceTextures): DeviceModel;
   - two round buttons (cream) on the right
   - **power button:** a yellow sphere, radius 0.09, on the top-right edge. It is the ball mark.
 - **screen:** a 1.5 × 0.95 display module in board-deep, with an emissive plane where `textures.screen` goes.
-- **board:** a pcb-purple slab with gold traces and four chips:
-  - `funcial` 0.55 × 0.4
+- **board:** a pcb-purple slab with gold traces and three chips:
   - `jontai-energy` 0.55 × 0.34
   - `cookies-clicker` 0.45 × 0.4
   - `next`: an empty socket, an outline in dim lilac
@@ -375,7 +374,7 @@ git commit -m "Redesign: device scene renderer and render loop"
 **Copy (EN; NL in the same spirit, formal):**
 - **hello:** h1 "Bob Chung"; label "Student software engineer · Rotterdam"
 - **about:** "I build software, and I want to understand the hardware it runs on." The label reads "Born in Aruba · Chinese heritage · Rotterdam since eighteen".
-- **projects:** label "The board"; title "Projects"; one line, "Each chip is a project. Open one to see how it works." Chip names: Funcial, Jontai Energy, Cookies Clicker, Next socket.
+- **projects:** label "The board"; title "Projects"; one line, "Each chip is a project. Open one to see how it works." Chip names: Jontai Energy, Cookies Clicker, Next socket.
 - **offduty:** title "What keeps me charged"; "Running, the gym and gaming. Formerly powerlifting and table tennis."
 - **spec:** title "What I work with"; spec lines "Full-stack foundation", "Working with AI"
 - **Page meta:**
@@ -407,8 +406,8 @@ git commit -m "Redesign: bench layout, tokens and the device review page"
   - Expected: hello, about, projects, offduty, spec, hello; no console errors.
 - [ ] **Step 2: FPS.** Scroll the whole track over 6 s with `mouse.wheel` steps, counting `requestAnimationFrame` callbacks.
   - Expected: a median of ≥ 55 fps (report the number either way).
-- [ ] **Step 3: Chip hover.** At progress 0.5, move the mouse over the projected centre of the `funcial` chip.
-  - Expected: the HUD readout shows "Funcial".
+- [ ] **Step 3: Chip hover.** At progress 0.5, move the mouse over the projected centre of the `jontai-energy` chip.
+  - Expected: the HUD readout shows "Jontai Energy".
 - [ ] **Step 4: Resize.** At progress 0.5, resize to 900×1200.
   - Expected: canvas `width / height` equals the viewport ratio within 2%, and the section is still "projects".
 - [ ] **Step 5: Reduced motion and no WebGL.** Load once with `reducedMotion: 'reduce'`, and once with Edge launched with `--disable-3d-apis`.

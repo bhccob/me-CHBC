@@ -22,7 +22,7 @@ The pictures are in the main checkout's `.superpowers/travel-concepts/` (not tra
 - **The fall: F2 opening into F1** (`F6-fall-start-shaft.png`, `F6-fall-end-rings.png`). The fall starts inside the
   compass: the light drops down a deep round shaft whose walls are tightly stacked engraved gold rings, each catching the
   light as it passes, the compass's glow above. Lower down the shaft opens out, its rings spreading apart until they float
-  as separate orbit rings in open nebula; the last ring's curve becomes the orbit line that leads to Funcial, where the
+  as separate orbit rings in open nebula; the last ring's curve becomes the orbit line that leads to the first project, where the
   trips (B) begin.
 - **Slower, without pauses.** The fall takes more scroll, so each fact stays on screen longer for the same scroll. The
   light does not stop at the facts.

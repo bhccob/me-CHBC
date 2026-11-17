@@ -62,7 +62,7 @@ One continuous shot of about 4–6 seconds, longer only while the site really is
 
 The loader has no text. It plays on the first page load of a visit. Navigating inside the site never shows it again.
 
-**Direct arrival.** A visitor may arrive straight at `/about/china/` or `/projects/funcial/`, from a CV link or a search result. The loader still plays steps 1–4. Its final flight then goes directly to that place instead of the home view, so there is no detour through home. *My call.*
+**Direct arrival.** A visitor may arrive straight at `/about/china/` or `/projects/jontai-energy/`, from a CV link or a search result. The loader still plays steps 1–4. Its final flight then goes directly to that place instead of the home view, so there is no detour through home. *My call.*
 
 ### 2.2 Home: the compass over the chip, frames 04–05, prototype `ui-02`
 
@@ -132,11 +132,10 @@ The shot stays close and moving: never the whole object as a product view. Scrol
   - Far above, the underside of the glass compass forms the sky, and the long gold needle is silhouetted against it.
 - **The beads.** Each project is one **porthole bead** floating freely, far apart, at different depths, drifting gently. Each is a round deep-purple lacquer bead with a gold band and a gold-rimmed porthole.
   - The beads come in category order. Today:
-    - **01 · SECURE ELEMENT**: Funcial
     - **02 · FRONT PANEL**: Jontai Energy
     - **03 · OSCILLATOR**: Cookies Clicker
   - NL labels follow `docs/art-direction.md` (for example "BEVEILIGD ELEMENT").
-- **The project's real screen sits inside the porthole** on a curved glass display deep in the bead. The bead's glow lights it and the gold rim reflects in it (frames 10–12), so it reads as part of the bead. *Bob explicitly rejected flat screenshots placed on the bead.* The screens in frame 07 are placeholders.
+- **The project's real screen sits inside the porthole** on a curved glass display deep in the bead. The bead's glow lights it and the gold rim reflects in it (frames 11–12), so it reads as part of the bead. *Bob explicitly rejected flat screenshots placed on the bead.* The screens in frame 07 are placeholders.
 - **Scrolling** swings the needle overhead from bead to bead. The bead it points at drifts closer and lights up; the others dim.
 - **The label** sits in empty space on the left: a small mono category line ("01 — SECURE ELEMENT"), the project title in heavy gold, and a tiny hint. This style comes from ref-04 in Bob's pack.
 - **Click** the bead (or press Enter) to fly through its porthole into the project page.
@@ -144,18 +143,16 @@ The shot stays close and moving: never the whole object as a product view. Scrol
 - **One bead per project.** There are no filler beads.
 - **Where the void lives.** The void is the end of the home scroll at `/`, not a page of its own.
 
-### 2.6 Project pages: frames 13–15, prototypes `ui-06` and `ui-07`
+### 2.6 Project pages: frames 14–15, prototypes `ui-06` and `ui-07`
 
 URL: `/projects/<slug>/`. You arrive by flying through the porthole.
 
 - **The scene.** A dark-violet interior with a mirror floor. On the right, the project's screen stands on a large curved glass display: portrait for a phone app, landscape for a website or a game.
 - **The test points.** A glowing gold track runs across the floor with gold pins on it, one pin per test point: a real architectural layer of the project. Inside the chip, the track reads as one of its traces. When the page opens, the labels light up one by one along the track. The data comes from `docs/projects-discovery.md` and `src/data/projects.ts`:
-  - Funcial: LOG, GAME LAYER, MONEY RULES, VAULT, RESULT
   - Jontai Energy: 16 PAGES, DESIGN SYSTEM, THREE LANGUAGES, QUOTE PATH
   - Cookies Clicker: CLICK LOOP, 8 PRODUCERS, BOOSTS & EVENTS, SAVE, STATS
 - **On the left:** the category line, the title as 3D extruded type, one summary line, and buttons.
-  - **Look inside** opens a gallery of the project's real screenshots, with arrows, thumbnails and Esc to close. Today there are 8 for Funcial, 4 for Jontai and 2 for Cookies (`docs/discovery/`).
-  - **Download**, for Funcial only: funcial.vercel.app/get.
+  - **Look inside** opens a gallery of the project's real screenshots, with arrows, thumbnails and Esc to close. Today there are 4 for Jontai and 2 for Cookies (`docs/discovery/`).
   - **Code**: the GitHub repo.
 - **Esc or back** flies you back out to the same bead in the void.
   - This also applies after a direct arrival. It replaces milestone 1's "Esc goes home on a direct arrival" rule for project pages. *My call.*
@@ -214,7 +211,6 @@ If a screen needs more words than this, the visual has to say it instead.
 - NL (default, `/`) and EN (`/en/`), formal first-person copy.
 - Never invent facts; use `[FILL: …]` until Bob supplies them.
 - The real portrait only, and no faces in generated images.
-- "FUNCIAL" is spelled exactly so. No AI is claimed for Funcial.
 - Jontai Energy is never "client work". jontaienergy.com is his brother's build, not linked as Bob's, and the uncommitted Rewards work stays out.
 - Cookies Clicker was made with a classmate who is never named. Its role line stays neutral until Bob states his part.
 

@@ -570,7 +570,6 @@ async function projectsStep(browser, step) {
   const byId = Object.fromEntries(report.stops.map((s) => [s.id, s]));
   step.check(byId['cookies-clicker'].pieces === 1, 'the cookie floats in front of Cookies Clicker');
   step.check(byId['jontai-energy'].pieces === 1, 'the sun glows behind Jontai Energy');
-  step.check(!byId.steady && !byId.portle, 'no Steady or Portle stop, for now (Bob, 2026-11-07)');
 
   const reads = timeline.reads;
   await goToFrame(page, 372);
@@ -1426,10 +1425,6 @@ async function projectDirect(browser, step) {
   step.check(seen.pictures === project.pictures.length, `its pictures show (${seen.pictures})`);
   step.check(seen.covers, 'it fills the view');
   step.check(seen.href === '/#project-jontai-energy', `its close goes to its stop (${seen.href})`);
-  // A project taken off for now: its old address goes to the projects on the home page.
-  await page.goto(`${BASE}/projects/steady/`, { waitUntil: 'load' });
-  await page.waitForURL((url) => url.pathname === '/' && url.hash === '#projects', { timeout: 10_000 }).catch(() => {});
-  step.check(new URL(page.url()).hash === '#projects', `Steady's old page goes to the projects (${page.url()})`);
   await context.close();
   // That address at the review page, until the swap (Task 28): the hash lands at the stop.
   const opened = await openPage(browser, step);

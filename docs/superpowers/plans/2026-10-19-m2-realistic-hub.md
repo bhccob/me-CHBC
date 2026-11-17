@@ -72,7 +72,7 @@
 - Produces:
 
 ```ts
-export type FootprintId = 'funcial' | 'jontai-energy' | 'cookies-clicker' | 'bc-2006' | 'next' | 'connector';
+export type FootprintId = 'jontai-energy' | 'cookies-clicker' | 'bc-2006' | 'next' | 'connector';
 /** A rectangle in the board texture's UV space (0..1, origin top-left as in the image). */
 export interface UvRect { u0: number; v0: number; u1: number; v1: number }
 export const TEXTURE_FILES: { readonly pcb: string; readonly battery: string; readonly aluminium: string }; // '/textures/device/…'
@@ -83,7 +83,6 @@ export function loadDeviceTextures(loader?: THREE.TextureLoader): Promise<Device
 
 **Values:**
 - **Footprints:** measured on `pcb-b.png` (2688 × 1520) and written as UV rectangles. The empty footprints are:
-  - **U2** (top of the left column) = `funcial`
   - **U3** (middle) = `jontai-energy`
   - **U4** (bottom) = `cookies-clicker`
   - **U1** (the large centre one) = `bc-2006`
@@ -117,10 +116,10 @@ describe('device textures', () => {
       expect(overlap).toBe(false);
     }));
   });
-  it('puts the three project footprints in a left column, top to bottom', () => {
-    const { funcial, 'jontai-energy': je, 'cookies-clicker': ck, 'bc-2006': cpu } = FOOTPRINTS;
-    expect(funcial.v0).toBeLessThan(je.v0); expect(je.v0).toBeLessThan(ck.v0);
-    [funcial, je, ck].forEach((r) => expect(r.u1).toBeLessThan(cpu.u0));
+  it('puts the project footprints in a left column, top to bottom', () => {
+    const { 'jontai-energy': je, 'cookies-clicker': ck, 'bc-2006': cpu } = FOOTPRINTS;
+    expect(je.v0).toBeLessThan(ck.v0);
+    [je, ck].forEach((r) => expect(r.u1).toBeLessThan(cpu.u0));
   });
 });
 ```
@@ -247,7 +246,7 @@ describe('DragTurn', () => {
 - Produces:
 
 ```ts
-export const PROJECT_CHIPS: readonly ['funcial', 'jontai-energy', 'cookies-clicker', 'next'];
+export const PROJECT_CHIPS: readonly ['jontai-energy', 'cookies-clicker', 'next'];
 export interface HandheldModel {
   group: THREE.Group;
   layers: Record<HubLayerId, THREE.Object3D>;
@@ -280,7 +279,7 @@ export function buildHandheld(textures?: DeviceTextures, labels?: Readonly<Recor
 - **Board:**
   - A 3.0 × 1.69 × 0.04 slab with `pcb.webp` as `map` and as `bumpMap` (small scale).
   - **Chips** sit exactly on `FOOTPRINTS`, mapping UV to board local XZ with the image's top as −Z:
-    - The three project chips and BC-2006 are black epoxy blocks with a slight bevel and their names silkscreened in white Martian Mono: FUNCIAL, JONTAI ENERGY, COOKIES CLICKER, BC-2006. Labels come from `labels` if given.
+    - The project chips and BC-2006 are black epoxy blocks with a slight bevel and their names silkscreened in white Martian Mono: JONTAI ENERGY, COOKIES CLICKER, BC-2006. Labels come from `labels` if given.
     - BC-2006 is larger and has a faint gold pin ring.
   - **The next socket:** a low socket frame (a dark ring with gold contacts) and no chip.
   - **The ribbon cable:** a thin gold-brown flex strip from `FOOTPRINTS.connector` down to the battery connector. `applyPose` resizes it so it always spans the gap; it folds flat when closed.

@@ -4,12 +4,12 @@
 
 **Goal:** Past BOB from above, the scroll goes on:
 - The camera dives through the O and comes out under the glass sky.
-- All three project beads come into view. Each holds its own object sealed behind the porthole glass, beside its real screen.
+- Both project beads come into view. Each holds its own object sealed behind the porthole glass, beside its real screen.
 - One stop per project, the large needle points at that bead, which comes forward and moves.
 - A label in real text opens the project page. Esc or back returns to the same bead.
 
 **Architecture:**
-- The scroll's chapters become BOB's: HOME (the rise), DIVE, VOID_ENTRY (the overview) and one PROJECTS stop per project, six stops in all.
+- The scroll's chapters become BOB's: HOME (the rise), DIVE, VOID_ENTRY (the overview) and one PROJECTS stop per project, five stops in all.
 - One pure journey pose maps `frame.progress` to the camera shot, the needle's place, which bead is forward, and the void's light. The M2a rise pose is its first stretch.
 - The beads and their objects are one Blender-authored GLB. Code builds the void (ceiling, mist, dust, beam), puts the real screenshots on the beads' displays, runs each object's motion, and aims the needle.
 - The shot is written once per frame, before the Rig.
@@ -20,7 +20,7 @@
 
 **Preview it argues from:**
 - `.superpowers/brainstorm/bob-only-o-2026-10-22/bob-o-glow.blend`, frames 362–480, built by `tools/blender/run_o.py` with `tools/blender/bob_scroll.py`
-- frames `docs/design/bob-compass/d01`–`d03` and `b01`–`b03`
+- frames `docs/design/bob-compass/d01`–`d03` and `b02`–`b03`
 - the object meanings in `docs/projects-discovery.md`
 
 ## Global Constraints
@@ -28,7 +28,7 @@
 - **Language:** NL is the default at `/`, EN is at `/en/`, and the copy is formal. New copy: the bead label's hint "Klik om te openen" / "Click to open", and on a touch screen "Tik om te openen" / "Tap to open" (spec §2.4).
 - **Truth:**
   - Never invent facts.
-  - The bead screens are the real screenshots from `docs/discovery/`: Funcial `funcial-app-home.webp`, Jontai Energy `je-home.webp`, Cookies Clicker `cookies-playing.webp`.
+  - The bead screens are the real screenshots from `docs/discovery/`: Jontai Energy `je-home.webp`, Cookies Clicker `cookies-playing.webp`.
   - The project titles and category lines come from `src/data/projects.ts` and `src/data/categories.ts`.
   - Cookies Clicker was made with a classmate who is never named.
 - **Platform:**
@@ -41,7 +41,7 @@
 - **Motion:**
   - Reduced motion steps by stops with M2a's step fade (`src/scene/bob/stepFade.ts`).
   - Under reduced motion the objects do not move, and the flight into a porthole is a fade.
-- **Asset budgets:** `public/models/bob-beads.glb` ≤ 1 500 000 bytes, with its baked vein texture inside it. The three screenshots are each ≤ 150 KB as WebP, under `src/assets/beads/`.
+- **Asset budgets:** `public/models/bob-beads.glb` ≤ 1 500 000 bytes, with its baked vein texture inside it. The two screenshots are each ≤ 150 KB as WebP, under `src/assets/beads/`.
 - **Gates before every commit:**
   - `npx vitest run`
   - `npm run typecheck`
@@ -71,7 +71,7 @@
 5. **The keyboard.**
    - At a project stop, Tab reaches that bead's label link, and Enter opens it.
    - Esc returns.
-   - Arrow keys, Page Up/Down and Home/End step the six stops.
+   - Arrow keys, Page Up/Down and Home/End step the five stops.
    - Tests: Task 1 (`stops` count) and Task 13 (`keyboard`, `bead-open`).
 
 ---
@@ -83,24 +83,24 @@
 | `src/state/chapters.ts`, `src/state/machine.ts`, `src/state/routeSync.ts` | modify | BOB's chapters (HOME, DIVE, VOID_ENTRY, PROJECTS ×3) and phases; back to a project's stop |
 | `src/scene/bob/journey.ts` | create | pure: progress → stretch, the shot, the needle, the selected bead, the void's light |
 | `src/engine/bob/build/void.ts` | create | the void: ceiling and its traces, the ring, mist, dust, the beam; tiers |
-| `tools/blender/export_beads.py` and `tools/blender/bead_funcial.py`, `bead_jontai.py`, `bead_cookies.py` | create | the beads and their objects, exported to `public/models/bob-beads.glb` |
+| `tools/blender/export_beads.py` and `tools/blender/bead_jontai.py`, `bead_cookies.py` | create | the beads and their objects, exported to `public/models/bob-beads.glb` |
 | `src/engine/bob/build/beads.ts` | create | loads the beads GLB; screens, materials, selection, hover, motion |
 | `src/engine/bob/beadMotion.ts` | create | pure: each object's motion from time |
 | `src/engine/bob/build/compass.ts` | modify | `setNeedleWorld`: the needle leaves the armillary to lead the dive and point |
 | `src/scene/bob/Void.tsx`, `Home.tsx`, `Opening.tsx` | create/modify | load and mount the void; apply the journey; one shot writer before the Rig |
 | `src/ui/BeadLabel.tsx`, `src/i18n/en.ts`, `src/i18n/nl.ts` | create/modify | the selected bead's label: a real link |
-| `src/assets/beads/*.webp` | create | the three screenshots |
-| `tools/proof/needle.mjs`, `tools/proof/README.md` | modify | steps for six stops; `void-journey`, `bead-open`, `void-hold`, `void-fail` |
+| `src/assets/beads/*.webp` | create | the two screenshots |
+| `tools/proof/needle.mjs`, `tools/proof/README.md` | modify | steps for five stops; `void-journey`, `bead-open`, `void-hold`, `void-fail` |
 
 ---
 
 ### Task 0: Branch, ledger, the screenshots
 
 **Files:**
-- Create: `src/assets/beads/funcial.webp`, `jontai-energy.webp`, `cookies-clicker.webp`
+- Create: `src/assets/beads/jontai-energy.webp`, `cookies-clicker.webp`
 
 - [ ] **Step 1:** Create worktree branch `bob-m2b` from `redesign-bench` at `.claude/worktrees/bob-m2b`, and run `npm ci`.
-- [ ] **Step 2:** Copy `docs/discovery/funcial-app-home.webp`, `je-home.webp` and `cookies-playing.webp` to `src/assets/beads/` under the names above. Re-encode any over 150 KB with Blender's WebP writer at quality 82.
+- [ ] **Step 2:** Copy `docs/discovery/je-home.webp` and `cookies-playing.webp` to `src/assets/beads/` under the names above. Re-encode any over 150 KB with Blender's WebP writer at quality 82.
 - [ ] **Step 3:** Commit: `assets: the beads' real screenshots`.
 
 ### Task 1: BOB's chapters and phases
@@ -128,7 +128,7 @@
 - [ ] **Step 2:** Run the tests. Expected: FAIL.
 - [ ] **Step 3:** Implement. `grep -rn "DISSECT\|MORPH\|PART_IDS" src tests` must come back empty, except in comments that explain the history, and fix those comments.
 - [ ] **Step 4:** Run `npx vitest run`, `npm run typecheck` and `npm run build`. Expected: PASS. The harness's chapter-bound steps (`scroll`, `keyboard`, `reduced-motion`, `bridge`) are retimed in Task 13. List in the report what they will meet.
-- [ ] **Step 5:** Commit: `bob: the scroll's chapters are BOB's — rise, dive, overview, three projects`.
+- [ ] **Step 5:** Commit: `bob: the scroll's chapters are BOB's — rise, dive, overview, two projects`.
 
 ### Task 2: The journey pose (pure)
 
@@ -141,24 +141,24 @@
 - Consumes: `scrollPoseAt`, `riseAt`, `topShotFor` and `CameraShot` (with `up` and `sway`), and `HOME_CHAPTERS`.
 - Produces:
   - `type Stretch = 'rise' | 'dive' | 'overview' | 'project'`
-  - `interface JourneyAt { stretch: Stretch; local: number; project: number | null }`. `project` is 0, 1 or 2 at a project stretch, else null.
+  - `interface JourneyAt { stretch: Stretch; local: number; project: number | null }`. `project` is 0 or 1 at a project stretch, else null.
   - `journeyAt(progress: number): JourneyAt`:
-    - 0–1 is rise, 1–2 dive, 2–3 overview, and 3–6 projects 0–2. The scroll rests at chapter starts (`stops`), so the rests are: 0 the home, 1 BOB from above, 2 the overview (all three beads in view), 3 Funcial, 4 Jontai Energy, 5 Cookies Clicker. 6, the end of the last unit, is still Cookies.
-    - So the dive stretch (1–2) ends in the overview pose, and the overview stretch (2–3) is the glide from the overview to Funcial. A project stretch p (3 + p to 4 + p) is the glide from bead p to bead p + 1. The last one holds Cookies.
+    - 0–1 is rise, 1–2 dive, 2–3 overview, and 3–5 projects 0–1. The scroll rests at chapter starts (`stops`), so the rests are: 0 the home, 1 BOB from above, 2 the overview (both beads in view), 3 Jontai Energy, 4 Cookies Clicker. 5, the end of the last unit, is still Cookies.
+    - So the dive stretch (1–2) ends in the overview pose, and the overview stretch (2–3) is the glide from the overview to Jontai Energy. A project stretch p (3 + p to 4 + p) is the glide from bead p to bead p + 1. The last one holds Cookies.
     - The snap is 1e-6 at every stop, as `riseAt`'s is.
     - NaN reads as 0.
-  - `interface JourneyPose { at: JourneyAt; rise: ScrollPose; shot: CameraShot; needle: NeedleOverride | null; forward: readonly [number, number, number]; lit: readonly [number, number, number]; beam: number; mist: number }`:
+  - `interface JourneyPose { at: JourneyAt; rise: ScrollPose; shot: CameraShot; needle: NeedleOverride | null; forward: readonly [number, number]; lit: readonly [number, number]; beam: number; mist: number }`:
     - `forward[i]` (0..1) is how far bead i has drifted toward the camera.
     - `lit[i]` (0..1) is its light.
   - `interface NeedleOverride { position: readonly [number, number, number]; scale: number; aim: readonly [number, number, number] | null }`. These are three's world coordinates; `aim` is a world point the tip points at.
   - `journeyPoseAt(progress: number, aspect: number): JourneyPose`
-  - `BEADS` = the spec §7 site positions: Funcial (1.2, −6.9, −3.6), Jontai (−5.0, −5.7, −9.5), Cookies (5.4, −8.7, −13.0), radius 0.95, in category order.
+  - `BEADS` = the spec §7 site positions: Jontai (−5.0, −5.7, −9.5), Cookies (5.4, −8.7, −13.0), radius 0.95, in category order.
   - `CAMERA_PATH` = spec §7's "void's camera", converted to three coordinates, Blender (x, y, z) → three (x, z, −y):
     - **The dive stretch, 1–2,** keeps the preview's proportions: frames 362–442, with the camera's own times inside it.
       - BOB from above holds from progress 1 to 1.125 (frames 362–372).
       - The dive runs to 1.725 (frames 372–420): the camera at (0, h, 0) with h from 12.6 to −2.6, looking straight down, `up: [0, 0, −1]`. The horizontal field goes from the 50 mm lens (39.6°) to 32 mm (58.7°).
       - Coming out runs to 2 (frames 420–442): from looking down at (0, −2.6, 0) to standing at (0, −4.4, 5.5) looking at (0, −7.2, −9.0), with a 30 mm horizontal field (61.9°). That is the overview pose, at rest at progress 2.
-    - **The overview stretch, 2–3,** glides from the overview pose to Funcial's shot (frames 446–472).
+    - **The overview stretch, 2–3,** glides from the overview pose to Jontai Energy's shot.
     - **Each project** p stands at `BEADS[p] + forward + (−0.8, 1.0, 6.2)` looking at `BEADS[p] + forward`, with a 40 mm horizontal field (48.5°). `forward` is `(−0.4, 0.4, 1.4) × forward[p]`.
     - Between project stops the camera eases from one bead's shot to the next.
   - Horizontal fields become a vertical `fov` for the aspect, capped at `MAX_VFOV` with the stand-back rule of `shotFor`, so a phone sees the same width.
@@ -168,7 +168,7 @@
   - `journeyAt` names every stretch at the stops' midpoints and snaps within 1e-6.
   - The shot is continuous: sampled at 1/400 steps over 0..6 at 16:9 and 390/844, no step moves the camera more than 0.25 m or turns it more than 3°. It is exact at every stop.
   - At progress 3, 4 and 5, the bead p = progress − 3 has `forward[p] === 1` and `lit[p] === 1`, and the others have `forward` 0 and `lit` 0. `BeadsModel.setLit` maps 0 to 0.15 of a bead's light.
-  - At the overview's rest (progress 2), every bead has `lit` 0.5 and `forward` 0, so all three read equally. All three bead centres project inside the screen there, at 16:9 and at 390/844.
+  - At the overview's rest (progress 2), every bead has `lit` 0.5 and `forward` 0, so both read equally. Both bead centres project inside the screen there, at 16:9 and at 390/844.
   - At each project stop on 16:9 and on 390/844, the selected bead's centre projects inside |ndc| < 0.5.
   - The needle override:
     - null on the rise
@@ -223,32 +223,32 @@
 - Test: `tests/unit/bob/beads-glb.test.ts`, which reads the GLB's JSON with `readGlbJson` (`src/engine/bob/glb.ts`)
 
 **Interfaces:**
-- Produces the GLB's nodes, per bead `<id>` in `funcial`, `jontai-energy`, `cookies-clicker`:
+- Produces the GLB's nodes, per bead `<id>` in `jontai-energy`, `cookies-clicker`:
   - `bead_<id>`: the root, at the origin. Code places it.
   - `bead_<id>_body`: the sphere, radius 0.95, UV-mapped for the baked veins.
   - `bead_<id>_halo`: a gold band round the outline.
   - `bead_<id>_rim`: the porthole's gold rim. The porthole is about 0.62 of the radius, facing +z.
   - `bead_<id>_glass`: the porthole's curved glass.
-  - `bead_<id>_display`: the small black glass display beside the object slot, with its screen area UV 0..1. Its landscape or portrait shape follows §2.4: a phone for Funcial, landscape for Jontai, phone-sized for Cookies.
-  - `bead_<id>_object`: an empty, filled by Tasks 5–7.
+  - `bead_<id>_display`: the small black glass display beside the object slot, with its screen area UV 0..1. Its landscape or portrait shape follows §2.4: landscape for Jontai, phone-sized for Cookies.
+  - `bead_<id>_object`: an empty, filled by Tasks 5–6.
 - Materials, named: `bead:lacquer` (with the baked vein texture as its emissive and metal map, 1024², embedded), `bead:gold`, `bead:glass`, `bead:display`.
 - The body is open behind the porthole so the inside shows: a hollow cavity, lit by its own dim warm light (`bead_<id>_inner`, a point light).
 
 - [ ] **Step 1: Write the failing test**
   - The GLB exists and is ≤ 1 500 000 bytes.
-  - Every node above is present for all three beads.
+  - Every node above is present for both beads.
   - The four materials are present, and the lacquer has an embedded image.
   - The body's bounding radius is 0.95 ± 0.01.
 - [ ] **Step 2:** Run it. Expected: FAIL.
 - [ ] **Step 3:** Write `export_beads.py`.
   - It runs as `blender -b --factory-startup --python tools/blender/export_beads.py -- public/models/bob-beads.glb`.
-  - It models the beads from `bob_scroll.py`'s bead section (lines ~81–176), bakes the procedural veins to the 1024² image, adds the cavity, the inner light and the display, and imports the object scripts (empty until Tasks 5–7).
+  - It models the beads from `bob_scroll.py`'s bead section (lines ~81–176), bakes the procedural veins to the 1024² image, adds the cavity, the inner light and the display, and imports the object scripts (empty until Tasks 5–6).
   - It exports glTF binary with `export_yup`.
   - Its header says how to run it and what each node is.
 - [ ] **Step 4:** Run the export, then the test. Expected: PASS. Also render one bead still (EEVEE, the preview's lighting) to the scratchpad and put it in the report.
 - [ ] **Step 5:** Commit: `blender: the beads — lacquer and gold, the porthole and its cavity, a display for the screen`.
 
-### Tasks 5–7: The three objects (one task each, in this order: Funcial, Jontai Energy, Cookies Clicker)
+### Tasks 5–6: The two objects (one task each, in this order: Jontai Energy, Cookies Clicker)
 
 **Files:**
 - Create: `tools/blender/bead_<id>.py` (called by `export_beads.py`)
@@ -257,12 +257,6 @@
 
 **Interfaces:**
 - Each object is modelled inside `bead_<id>_object`, fitting the cavity (within a 0.5 radius of the porthole's axis, behind the glass). Its parts are named so code can move them:
-  - **Funcial** (spec §2.4, discovery row 72):
-    - `funcial_platter`: a mirror aluminium disc. It turns about its axis.
-    - `funcial_track`: its glowing track, UV running 0..1 from TP1 to TP4 for the pulse.
-    - `funcial_pin_1` … `funcial_pin_4`
-    - `funcial_abacus`, with rods and beads `funcial_bead_1` … `funcial_bead_n` that slide up their rods
-    - `funcial_phone`: the display, which is `bead_funcial_display`
   - **Jontai Energy** (discovery row 131):
     - `jontai_module`, holding `jontai_cell_1` … `jontai_cell_16` in a 4 × 4 grid, in page order left to right, top to bottom, with silver busbars, a satin frame and a white backsheet at the edge
     - `jontai_box`: the junction box, with three leads `jontai_lead_1` … `3`
@@ -276,11 +270,11 @@
     - `cookies_barrel`
     - `cookies_dial`, with sub-dials
     - The materials are copper and caramel, with ruby jewels.
-- Budget: the GLB stays ≤ 1 500 000 bytes after all three. Keep the geometry low (bevels as normals, not as polygons).
+- Budget: the GLB stays ≤ 1 500 000 bytes after both. Keep the geometry low (bevels as normals, not as polygons).
 
 - [ ] **Step 1: Write the failing test.** The object's named parts are present under `bead_<id>_object`, the cell and wheel counts are exactly 16 and 8, and the GLB is within budget.
 - [ ] **Step 2:** Run it. Expected: FAIL.
-- [ ] **Step 3:** Model it in `bead_<id>.py`, re-export, and render a still of the bead with its object beside the concept frame `b01`/`b02`/`b03` for the report.
+- [ ] **Step 3:** Model it in `bead_<id>.py`, re-export, and render a still of the bead with its object beside the concept frame `b02`/`b03` for the report.
 - [ ] **Step 4:** Run the test. Expected: PASS.
 - [ ] **Step 5:** Commit: `blender: <title>'s object in its bead`.
 
@@ -291,7 +285,7 @@
 - Test: `tests/unit/bob/build-beads.test.ts`, `tests/unit/bob/bead-motion.test.ts`
 
 **Interfaces:**
-- Consumes: the GLB (Tasks 4–7) and the screenshots (Task 0).
+- Consumes: the GLB (Tasks 4–6) and the screenshots (Task 0).
 - Produces: `loadBeads(gltf: GLTF, tier: QualityTier, screens: Record<ProjectId, THREE.Texture>): BeadsModel`, where `BeadsModel` has:
   - `group`
   - `beads`: per id, `{ root, body }`, for raycasting
@@ -302,12 +296,11 @@
   - `dispose()`
 - The screens are drawn on the displays as an emissive map, so they are lit as part of the bead. The glass is a cheap transmissive look on high and plain transparent below it.
 - `beadMotion.ts` is pure, and every function reads a time that is not finite as 0:
-  - `funcialMotion(t)` → `{ platter: number /* rad */, pulse: number /* 0..1 along the track */, abacus: number[] /* each bead's slide, 0..1 */ }`. The platter turns once every 40 s, the pulse runs TP1 → TP4 every 3 s, and the abacus beads slide up one after another over 2 s when selected.
   - `jontaiMotion(t)` → `{ sweep: number /* 0..1 */, cells: number[] /* 16 charges */, tilt: number /* rad */ }`. The light sweeps every 6 s, the cells charge in page order behind the sweep, and the tilt follows the sweep, up to 4°, 0.5 s behind.
   - `cookiesMotion(t)` → `{ beat: number /* whole beats */, wheels: number[] /* 8 angles */, balance: number /* rad */ }`. It ticks at 1 Hz with a stop-start step (`floor(t)` plus a 0.12 s ease), and wheel k turns 360°/(12·(k+1)) per beat.
 
 - [ ] **Step 1: Write the failing tests**
-  - **Motion:** `funcialMotion(0).platter === 0`, and `funcialMotion(40).platter` is 2π. The pulse wraps. `cookiesMotion(0.5).beat === 0` and `cookiesMotion(1.2).beat === 1`, and the wheels move only within 0.12 s of a beat. Jontai's cells charge in order 0..15 at any t.
+  - **Motion:** `cookiesMotion(0.5).beat === 0` and `cookiesMotion(1.2).beat === 1`, and the wheels move only within 0.12 s of a beat. Jontai's cells charge in order 0..15 at any t.
   - **Beads:** `loadBeads` on a fake glTF with the Task 4 nodes:
     - The screens land on the displays.
     - `setLit(id, 0)` dims a bead to 0.15 of its light.
@@ -375,7 +368,7 @@ The M2a final review's recommendation: at home, `frame.shot` is computed from `j
   - `TUNNEL_HOLD` (exported from `journey.ts`): the progress at which the dive's camera stands at Bob's frame d01 (Ruling 27, 2026-10-23): the preview's frame 400 in the dive's own unit, 1.475, the camera 3.1 above the opening looking straight down the tunnel, its lit wall a ring round the frame and the void below it still hidden. It is solved from the journey's frame mapping, not written as a literal; its test pins the camera at `cam_pose(400)` and the well's foot ring where d01 has it. *(It was first planned halfway down the tunnel, at y −0.6, about 1.6: from inside the well no lens of the site's sees the wall glow.)*
   - `diveHoldFor(voidState): number`, the most the scroll's target may reach before the void is ready: `TUNNEL_HOLD` while idle or loading, 6 when ready, and 1.0 when failed, so the scroll holds at BOB from above and `.home-nav` shows, as with 3D off.
 - Behaviour:
-  - **Loading:** once the home has landed, `Void` loads `bob-beads.glb` and the three screenshots, and builds `buildVoid` and `loadBeads`.
+  - **Loading:** once the home has landed, `Void` loads `bob-beads.glb` and the two screenshots, and builds `buildVoid` and `loadBeads`.
   - **Applying the pose:** each frame it applies `journeyPoseAt`: the void's light, the beads' forward, lit and motion (time runs only for the selected or hovered bead), and `setNeedleWorld`.
   - **Hover:** a raycast of the pointer against the beads' bodies, on pointer devices.
   - **Clicking:** a click on the selected bead opens its project (Task 12).
@@ -430,7 +423,7 @@ The M2a final review's recommendation: at home, `frame.shot` is computed from `j
 **Files:**
 - Modify: `tools/proof/needle.mjs`, `tools/proof/README.md`
 
-- [ ] **Step 1:** Retime the steps bound to the old chapters for six stops: `scroll` (it reaches DIVE, not DISSECT), `keyboard` (End goes to 6), `reduced-motion` (its stops are 0..6) and `bridge`. Each keeps its intent.
+- [ ] **Step 1:** Retime the steps bound to the old chapters for five stops: `scroll` (it reaches DIVE, not DISSECT), `keyboard` (End goes to 5), `reduced-motion` (its stops are 0..5) and `bridge`. Each keeps its intent.
 - [ ] **Step 2:** Add four steps, each at 1440×900 and 390×844 (touch):
   1. **`void-journey`:**
      - Step through every stop down and back, waiting for rest.
@@ -447,7 +440,7 @@ The M2a final review's recommendation: at home, `frame.shot` is computed from `j
 
   Every step ends with `errors: []` (beyond the designed one) and `csp: []`.
 - [ ] **Step 3:** Run the full harness on `PORT=4421`. Expected: every step passes. Report each line.
-- [ ] **Step 4:** Commit: `proof: six stops, the void's journey, opening a bead, the hold and the failure`.
+- [ ] **Step 4:** Commit: `proof: five stops, the void's journey, opening a bead, the hold and the failure`.
 
 ### Task 14: The proof for Bob
 
@@ -457,12 +450,12 @@ The M2a final review's recommendation: at home, `frame.shot` is computed from `j
   1. the home
   2. a slow scroll through the rise, the dive and the overview
   3. each bead's stop
-  4. opening Funcial
+  4. opening Jontai Energy
   5. Esc back
   6. the scroll back home
 - [ ] **Step 2: Write the page.** It holds:
   - the recording, beside the preview video `m2b-dive.mp4`
-  - the stills at both sizes, beside `d01`–`d03` and `b01`–`b03`
+  - the stills at both sizes, beside `d01`–`d03` and `b02`–`b03`
   - each object's motion, as a short clip or three stills
   - honest notes, measured against the frames
   - the checks in plain numbers, every one from the run's `results.json`

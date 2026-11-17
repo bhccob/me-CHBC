@@ -183,7 +183,7 @@ it('gives every travel its line, five projects too (Way 2)', () => {
   - **Add `engraved`** (1440x900 and 390x844 touch): from BOB from above, wheel notches (swipes) through the fall: the bridge's `journey.engraved.throat` is above 0.9 at way frame 32 and 0 at every sample where a fact shows; `hall` above 0.9 at fact 02's peak; each trip's level 1 at its travel's middle and 0 inside its bead; in the look back every trip 0.32 at most; the scroll from fact 01's peak to fact 05's is twice what it was (`placeOfFrame(241) - placeOfFrame(81)` = 3.21 units); stills at way frame 32, 121 and the second trip's middle gated at the home's luma (0.11).
   - **Update** `resize`: turned mid-trip, `journey.engraved.trips[k]` is still 1 for the trip in view and no console error.
   - **Update** `stills`: add way frames 32 and 121 to the gated places.
-- [ ] **Step 2: Run the whole harness against the build.** `npm run build`, the preview on 4421, then `PLAYWRIGHT_CORE=C:/Users/bhcco/Downloads/Funcial/node_modules/playwright-core BASE=http://127.0.0.1:4421 node tools/proof/needle.mjs`. Expected: every step PASS (a step that fails on `ERR_NO_BUFFER_SPACE` is re-run alone).
+- [ ] **Step 2: Run the whole harness against the build.** `npm run build`, the preview on 4421, then `PLAYWRIGHT_CORE=<path to a local node_modules/playwright-core> BASE=http://127.0.0.1:4421 node tools/proof/needle.mjs`. Expected: every step PASS (a step that fails on `ERR_NO_BUFFER_SPACE` is re-run alone).
 - [ ] **Step 3: Commit.** `proof: the engraved way by real input: the throat, the hall, the trips' lines and the slower fall`
 
 ### Task 6: The gates, the recording and Bob's review

@@ -139,10 +139,10 @@ Frames 1–60 (the way in) and the ring's layout, glow and needle stand.
 - [ ] **Step 3: Change the page.**
   - **The scroll's length:**
     - the way: 4 viewport heights;
-    - the ring: 2 viewport heights, Funcial → Jontai Energy → Cookies Clicker, mapping linearly to `cam` 0° → 240°;
+    - the ring: 2 viewport heights, Jontai Energy → Cookies Clicker, mapping linearly to `cam` 0° → 240°;
     - the end sheet: 1 viewport height.
   - **The glide.** The shown ring frame eases to the scroll's target with τ 0.45 s, as the way does. When no scroll input has arrived for 150 ms and the eased value is still, scroll the page smoothly to the nearest project's position over about 0.6 s.
-  - **Drag** changes the target angle freely through 360° (0.25° per CSS px). On release it settles on the nearest project, and the page's scroll position moves to that project's place. From Cookies Clicker, dragging on to 360° comes round to Funcial, and the scroll position moves to the ring's start.
+  - **Drag** changes the target angle freely through 360° (0.25° per CSS px). On release it settles on the nearest project, and the page's scroll position moves to that project's place. From Cookies Clicker, dragging on to 360° comes round to Jontai Energy, and the scroll position moves to the ring's start.
   - **The end sheet:** the end page's still, as a full-viewport layer translated up from 100 % to 0 % by the eased scroll through the end section. At 0 % the mode is `end`.
   - **Labels:** fact labels go on the side away from `side`, and the bead labels show at rest as now.
   - **Reduced motion:** steps by 150 ms fades, as before, for the ring's projects and the sheet.
@@ -157,8 +157,7 @@ Frames 1–60 (the way in) and the ring's layout, glow and needle stand.
 - [ ] **Step 1: Set the video check's duration range to 25–45 s.** Run it. Expected: PASS on the old files, which is fine. The new files must pass too.
 - [ ] **Step 2: Capture the videos from the page,** as the first videos were, with the same hook approach:
   - way frames 1–300;
-  - a 1 s hold on Funcial;
-  - an eased glide to Jontai Energy over 1.5 s, then a 1.5 s hold;
+  - a 1 s hold on Jontai Energy;
   - an eased glide to Cookies Clicker over 1.5 s, then a 1.5 s hold;
   - the end sheet sliding up over 1.5 s;
   - a 2 s hold on the end page.

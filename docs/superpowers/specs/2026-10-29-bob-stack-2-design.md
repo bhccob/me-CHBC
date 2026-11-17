@@ -94,9 +94,8 @@ should be bigger and spaced a little further from each other".
   5. **Pinned all the way down:** "Terug naar de stack" with its "Esc" bottom left, gold and large; a thin line bottom
      right for how far down. Escape and the browser's Back leave too; ← → go to the other projects.
 - Each part below the top fades up as it is reached.
-- **The pictures** (made from each project's own code on this computer, see below): Steady three screens; Jontai Energy
-  its homepage; Cookies Clicker the game being played; Porfael none yet, so its page goes from its words to the next
-  project.
+- **The pictures** (made from each project's own code on this computer, see below): Jontai Energy its homepage;
+  Cookies Clicker the game being played. A project with none goes from its words to the next project.
 - **Replaces:** the side panel and the touch-point columns of an open project on the home.
 
 ### 3. Gold rings round the stack: the gyroscope
@@ -155,7 +154,7 @@ How it was settled: two ways (one band; three nested bands); he: "2 · Ringen".
 - **Words over words:** the Q&A's answer over a mark's name, the fact over the light, a project's words over its picture.
 - **Stuck:** in the Q&A, or in an open project, on any device.
 - **A ring or a star across the thing in focus:** the board at its stop, the open project, the answer.
-- **A picture that shows anyone's real data.** Steady's screens hold only stand-in details (see below).
+- **A picture that shows anyone's real data.**
 - **The old orb anywhere in the fall.**
 
 ## Constraints
@@ -189,9 +188,6 @@ How it was settled: two ways (one band; three nested bands); he: "2 · Ringen".
     Energy's homepage").
 - **The pictures** go into `src/assets/projects/` at the sizes the page uses (WebP, a phone screen 1170 × 2532 and a
   website 1440 × 900 at most), with alt text in both languages:
-  - **Steady:** run from a copy of its last commit on the web, with stand-in details only: the name "Sam" (the app's
-    own example), one "Vitamin D" reminder, no health conditions and no contacts. The welcome, the home with the streak
-    and the gentle reminders screens.
   - **Jontai Energy:** its last committed static site (the "Power Your Future" homepage), the cookie banner answered
     "Essential Only". Its newer uncommitted night design is left alone.
   - **Cookies Clicker:** the game from Bob's public repo, played a while.
@@ -233,7 +229,7 @@ light-dive step checks the new light; a check that the B letters light on the sc
    tussen, of wil je iets anders vragen? Stuur me een bericht." In English: "This is the end of the site. Is your question
    not among them, or would you like to ask something else? Send me a message."
 
-Still open from before, not blocking: Porfael's tools and link; the boards' print in Dutch only or per language.
+Still open from before, not blocking: the boards' print in Dutch only or per language.
 
 ## Build notes (2026-10-29)
 

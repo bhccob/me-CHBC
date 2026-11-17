@@ -133,10 +133,8 @@ One curving path. The camera never stops; it slows to about a fifth of its speed
 |---|---|---|---|---|
 | Cookies Clicker | 1, .6, .24 | 2025, School project | A browser game built with a classmate around one satisfying loop: click, earn, reinvest. | The cookie floats in front; it is painted out of the screenshot |
 | Jontai Energy | 1, .78, .42 | 2026, Concept website | A concept redesign for a store in Aruba, where the home page plays as one Aruban day. | Sun glow behind the screen |
-| Steady | .98, .86, .66 | 2026, Android app | A calm, private medication reminder for people working through hard things. | Three phones at three depths |
-| Portle | .58, .5, 1 | 2026, Web app, early access | A private archive for your portfolio, your investment theses and the friends you trust with them. | Its ring floats off the screen |
 
-Bob's rule: only Cookies Clicker is 2025, the rest are 2026. Within 2026 the order follows when each repo was created on GitHub: Jontai Energy 2026-01-19, Steady 2026-10-25, Portle 2026-10-28. The classmate on Cookies Clicker is never named.
+Bob's rule: only Cookies Clicker is 2025, the rest are 2026. Within 2026 the order follows when each repo was created on GitHub: Jontai Energy 2026-01-19. The classmate on Cookies Clicker is never named.
 
 ### 5.7 Out of the portal
 You shoot out of the far end into a void: a black mirror floor with a faint gold dot grid, a thin gold horizon and stars. The camera banks round in a wide U-turn and looks back. The whole tunnel hangs over its own reflection as a glowing wire tube. Then it breaks up, wire by wire, into gold sparks that fly off and become the stars. This keeps the dissolve Bob liked from the current site.
@@ -174,7 +172,7 @@ Interaction:
 ## 6a. Sound on the site
 Bob has shaped this over three rounds on 2026-11-06. He was not a fan of a musical version, and liked the rush through the portal and the way into the end page. After hearing a hum and wind across the whole site he asked for four things: the portal to "only have one sound instead of the japanse theme", "a sfx where the machine is forming", sound in the Q&A that makes more sense for this site, and "the portal break need a sfx too". So the site now sounds like the machine, not like music. He said yes to this version on 2026-11-06. All of it is made in code in the browser, so there are no audio files to download.
 
-- **The machine's hum:** one steady electrical note, not a chord. It starts on entering and fills out as the machine gets built.
+- **The machine's hum:** one constant electrical note, not a chord. It starts on entering and fills out as the machine gets built.
 - **The machine forming:** a sound for each part, at the point in the scroll where it moves. A click and spark as the board wakes. The code layer drops and lands, then keys tap as it types itself. The controller lands, then two button clicks. Four armour walls slam, the lid seats and the lock clicks. The gear ring spins up, the drives click in, the legs slide, and it stands up with a whirr and a heavy thump and hiss. A motor runs only while parts are moving and the visitor is scrolling. Scrolling back plays them softer.
 - **The stack:** a pneumatic hiss as the layers lift, four clunks as they close.
 - **The portal opening:** the shield slides away, the iris's teeth ratchet with the scroll, a rising sweep, and a deep clunk as it opens.

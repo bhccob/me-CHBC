@@ -71,7 +71,7 @@ describe('handleOf', () => {
   });
 
   it("gives not found, with no scene, for a page's route matched under another spelling (the client router ignores case)", () => {
-    for (const pathname of ['/en/Projects/Steady/', '/EN/projects/steady/', '/Projects/Steady/', '/en/projects/FUNCIAL/', '/Lite/']) {
+    for (const pathname of ['/en/Projects/Jontai-Energy/', '/EN/projects/jontai-energy/', '/Projects/Jontai-Energy/', '/en/projects/COOKIES-CLICKER/', '/Lite/']) {
       const handle = /lite/i.test(pathname) ? HANDLES.lite : HANDLES.project;
       expect(handleOf([root, { handle, pathname }]), pathname).toBe(HANDLES['not-found']);
     }

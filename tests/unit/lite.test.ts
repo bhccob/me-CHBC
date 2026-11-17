@@ -156,9 +156,7 @@ describe('the Lite page', () => {
         expect(html).not.toMatch(/ style="/);
       });
 
-      it('lists no Steady or Portle for now, claims no AI, and never calls Jontai Energy client work', () => {
-        expect(text).not.toMatch(/Steady|Portle/);
-        expect(text).not.toMatch(/Funancial/);
+      it('claims no AI and never calls Jontai Energy client work', () => {
         for (const project of projects.all()) {
           const copy = project.copy(name);
           expect(`${copy.summary} ${copy.metaDescription}`, project.id).not.toMatch(/\bAI\b/);

@@ -432,7 +432,7 @@ export async function createDigital2(renderer, { W, H, dpr, pageTexture, hudPare
       const dt = lastT === null || fixed ? 0 : Math.min(0.1, time - lastT);
       lastT = time;
       // ================================================================ the push (scroll), on one physical curve
-      // Contact at r 0.3; pushed from rest under a steady force until r 0.62 (it speeds up); let go; it falls on.
+      // Contact at r 0.3; pushed from rest under a constant force until r 0.62 (it speeds up); let go; it falls on.
       const pu = page.material.uniforms;
       pu.uTex.value = pageTexture(); pu.uTime.value = time;
       const R0 = 0.34, R1 = 0.62, D1 = PH_ * 0.34, v1 = (2 * D1) / (R1 - R0), G = PH_ * 7;

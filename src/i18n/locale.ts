@@ -15,7 +15,7 @@ export function localeFromPath(pathname: string): Locale {
 
 /**
  * The locale-neutral route of a URL path, the form `PAGES` and `Translator.pathFor`
- * use: `/en/projects/steady/` and `/projects/steady/` are both `/projects/steady/`. It always ends in `/`.
+ * use: `/en/projects/jontai-energy/` and `/projects/jontai-energy/` are both `/projects/jontai-energy/`. It always ends in `/`.
  */
 export function routeFromPath(pathname: string): string {
   const locale = prefixed(pathname);

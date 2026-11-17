@@ -8,7 +8,7 @@ const config = JSON.parse(readFileSync(fileURLToPath(new URL('../../lighthouserc
   ci: { collect: { url: string[] } };
 };
 
-// The go-live checks (2026-10-29) found Lighthouse stopping on /projects/funcial/, a 404 since Funcial left the site, which
+// The go-live checks (2026-10-29) found Lighthouse stopping on a page the site no longer builds, a 404, which
 // fails the deploy before it publishes anything.
 describe("the deploy's Lighthouse pages", () => {
   it('are pages the site builds', () => {

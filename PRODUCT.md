@@ -71,7 +71,7 @@ A student who builds, from software and games toward security and machines, and 
 
 - **Cookies Clicker (2025):** a browser game built as a **school project** with a classmate, who is never named. Repo: https://github.com/bhccob/Cookies-Clicker.
 - **Jontai Energy (2026):** a **concept** website for a store in Aruba, built as a personal project. It is **not client work** and must never be described as such. Repo: https://github.com/bhccob/JE.
-- **Off the site for now (Bob, 2026-11-07):** Steady (an Android medication reminder) and Portle (a web app in early access). Their old pages go to the projects on the home page; their data is in the history at `35003bf`. Locked (his Android gym log) waits for its pictures.
+- Locked (his Android gym log) waits for its pictures.
 - **Personal facts:**
   - Born 27-04-2006 (the site calculates his age).
   - Born and raised in Aruba, moved to the Netherlands at 18, lives in Rotterdam.

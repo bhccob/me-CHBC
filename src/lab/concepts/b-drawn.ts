@@ -12,7 +12,7 @@ import type { BuildContext, Look, World } from './types';
 /**
  * LAB ONLY (throwaway). B · Drawn, then built. Bob's machine, built part by part as on the live site. Each new part
  * arrives as a gold line drawing of itself; then a gold scan line, the brain's own motif, passes up through it and leaves
- * it solid behind. One steady three-quarter view, one dark ground: the page reads like one drawing sheet becoming real.
+ * it solid behind. One fixed three-quarter view, one dark ground: the page reads like one drawing sheet becoming real.
  */
 
 interface Group {

@@ -15,8 +15,7 @@ planning" and "Reuse" sections. The Astro site stays intact on `main` and
 - **Tools:** no Higgsfield CLI, ffmpeg or Blender. The Higgsfield tools are
   connected and replace the brief's CLI steps with the same models
   (`gpt_image_2_5`, `seedance_2_5`).
-- **Projects:** Funcial (verified layers: LOG, GAME LAYER, MONEY RULES, VAULT;
-  RESULT only partly real), Jontai Energy (committed state only; the live site
+- **Projects:** Jontai Energy (committed state only; the live site
   is his brother's build and is not linked as Bob's), Cookies Clicker (the
   GitHub repo; the local clone is stale).
 - **Bio facts:** born and raised in Aruba, Chinese heritage, moved to the

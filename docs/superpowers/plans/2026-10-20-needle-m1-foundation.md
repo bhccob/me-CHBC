@@ -23,8 +23,6 @@
 - NL is the default locale at `/`; EN lives at `/en/`. Every page exists in both, and every route path ends in `/`.
 - Copy: formal, first person.
   - Use `[FILL: …]` for any biography not already in `src/i18n/{en,nl}.ts`.
-  - "FUNCIAL"/"Funcial" is spelled exactly so.
-  - Never list AI in Funcial's stack.
   - Never call Jontai Energy client work.
 - CSP is a `<meta http-equiv="Content-Security-Policy">` with sha256 hashes, no `'unsafe-inline'` scripts, no `'unsafe-eval'`, no `'wasm-unsafe-eval'`, `worker-src 'none'`.
 - Banned imports in `src/`: drei `Text`, `Text3D`, `Environment`, `useGLTF`; `three/addons/postprocessing/*`; `lenis`; anything troika.
@@ -172,15 +170,15 @@
   - `react-router.config.ts` (`prerender: pagePaths()`)
   - `package.json`: `build` gains `&& node tools/build/postbuild.mjs`
   - `.github/workflows/deploy.yml`: audit `dist/client`, upload `dist/client`
-  - `lighthouserc.json`: `staticDistDir: ./dist/client`; URLs `/`, `/en/`, `/about/china/`, `/projects/funcial/`, `/lite/`, `/contact/`
+  - `lighthouserc.json`: `staticDistDir: ./dist/client`; URLs `/`, `/en/`, `/about/china/`, `/projects/jontai-energy/`, `/lite/`, `/contact/`
   - `README.md`: the build/preview/deploy section
 
 **Interfaces:**
 - Produces:
   - `src/data/pages.ts`:
-    - `export type PageId = 'home' | 'about-china' | 'about-netherlands' | 'about-aruba' | 'project-funcial' | 'project-jontai-energy' | 'project-cookies-clicker' | 'lite' | 'contact'`
-    - `export const PAGES: Record<PageId, string>` = `/`, `/about/china/`, `/about/netherlands/`, `/about/aruba/`, `/projects/funcial/`, `/projects/jontai-energy/`, `/projects/cookies-clicker/`, `/lite/`, `/contact/`. These are locale-neutral routes for `Translator.pathFor`.
-    - `export function pagePaths(): string[]`: every page in NL and EN; 18 paths, each ending `/`.
+    - `export type PageId = 'home' | 'about-china' | 'about-netherlands' | 'about-aruba' | 'project-jontai-energy' | 'project-cookies-clicker' | 'lite' | 'contact'`
+    - `export const PAGES: Record<PageId, string>` = `/`, `/about/china/`, `/about/netherlands/`, `/about/aruba/`, `/projects/jontai-energy/`, `/projects/cookies-clicker/`, `/lite/`, `/contact/`. These are locale-neutral routes for `Translator.pathFor`.
+    - `export function pagePaths(): string[]`: every page in NL and EN; 16 paths, each ending `/`.
   - `src/data/redirects.ts` `export const redirects: readonly { from: string; to: string; locale: Locale }[]`, containing:
     - `/projects/web-development/` → `/projects/jontai-energy/`
     - `/projects/web-development/jontai-energy/` → `/projects/jontai-energy/`
@@ -245,13 +243,9 @@
   - `src/i18n/{en,nl}.ts`: add a `needle` block, typed in `en.ts`
   - `src/data/categories.ts`: replace the old web/game shelves with the approved void categories from `docs/projects-discovery.md` ("Proposed `src/data/projects.ts` block"):
     - `secure-element` (1, `SECURE ELEMENT`), `front-panel` (2, `FRONT PANEL`), `oscillator` (3, `OSCILLATOR`)
-    - Labels are per locale. Category and test-point labels are translated in NL, in the style of `docs/art-direction.md` § Copy budget (`BEVEILIGD ELEMENT`; `LOG · SPELLAAG · GELDREGELS · KLUIS · UITKOMST`). Translate the other two projects' labels the same way.
+    - Labels are per locale. Category and test-point labels are translated in NL, in the style of `docs/art-direction.md` § Copy budget (`BEVEILIGD ELEMENT`). Translate each project's labels the same way.
   - `src/data/projects.ts`: adopt the approved block's fields on each entry: `categoryId`, `order`, `object.fallbackGeometry`, `testPoints` (labels and placeholder positions exactly as approved), `palette`, `motion` and `links { live?, repo? }`.
     - Keep the existing per-locale copy (`type`, `role`, `summary`, …) for the pages and Lite.
-    - Add Funcial:
-      - stack and summary from the approved block
-      - EN/NL copy from `tracks.ts` and the `compass` i18n block
-      - no screenshot: make `image` optional
     - Cookies Clicker:
       - add `Bootstrap 5` to its stack
       - never name the classmate (Bob has not decided)
@@ -259,14 +253,13 @@
     - Jontai Energy:
       - no `live` link (jontaienergy.com is not Bob's build)
       - nothing from the uncommitted Rewards work
-    - Order: funcial, jontai-energy, cookies-clicker.
+    - Order: jontai-energy, cookies-clicker.
     - The glow values marked "art-direction" in the doc take the art-direction track gold `#efb53d`. Cookies' glow takes `#ff8a3d`, marked provisional in a comment.
   - Delete `src/data/tracks.ts` and `tests/unit/tracks-data.test.ts` once their copy is merged into `projects.ts`. Add `tests/unit/projects.test.ts`:
-    - three projects
+    - two projects
     - unique ids
     - each `categoryId` exists in `categories`
     - 4–5 test points each
-    - Funcial's labels are exactly `LOG, GAME LAYER, MONEY RULES, VAULT, RESULT`
     - no stack contains `AI` or `Claude`
   - `src/app/routes.ts`: replace the probe routes with the real pages
   - `PRODUCT.md`: one line saying hidden-interaction easter eggs (a `0/N` counter) are allowed and are not a game
@@ -318,7 +311,7 @@
   - Each route module exports `meta` built with `head()`, and `handle = { scene: 'home' | 'country' | 'project' | null }`.
   - The home page renders:
     - `h1` "BOB CHUNG", the tagline and the scroll cue
-    - a `<nav aria-label>` listing the three countries and three projects as links
+    - a `<nav aria-label>` listing the three countries and the projects as links
     - The nav is visible when 3D is off, and visually hidden but focusable when 3D is on, so the page stays crawlable and keyboard-reachable.
   - Country and project pages render all their text as DOM:
     - country: `h1` = the country name, three beats
@@ -430,7 +423,7 @@
     - `stops(c)` begins `[0, 1, 12, 14, 15, 16, 17, 18]`
   - `route-sync.test.ts`:
     - `/en/about/aruba/` → COUNTRY_PAGE aruba
-    - `/projects/funcial/` → PROJECT_FOCUS funcial
+    - `/projects/jontai-energy/` → PROJECT_FOCUS jontai-energy
     - `/lite/` → null
     - `pathForPhase({kind:'COUNTRY_PAGE',dir:'china'},'en') === '/en/about/china/'`
     - `backTarget(true) === 'home'`

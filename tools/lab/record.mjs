@@ -131,7 +131,7 @@ if (MODE === 'keys') {
 }
 
 if (MODE === 'record') {
-  // A visitor's way through: the hero, a steady scroll down into the brain's shaft, a pause, and back up.
+  // A visitor's way through: the hero, an even scroll down into the brain's shaft, a pause, and back up.
   await sleep(3200);
   await page.mouse.move(VIEW.width * 0.62, VIEW.height * 0.5);
   const end = await page.evaluate(() => window.__lab.scrollFor(1e9));

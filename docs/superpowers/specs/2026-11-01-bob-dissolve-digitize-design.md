@@ -142,7 +142,7 @@ framing, and the order of the work.
 ## Build notes (2026-11-01)
 
 - **The boards stay; only the camera turns.** The design above turned every other board half round with its stop so each
-  floor looked as before; the full proof run showed that put Steady's and Portle's names off the top of the whole
+  floor looked as before; the full proof run showed that put the first floor's project names off the top of the whole
   machine's view. Built instead as the half-turn flipbook Bob approved showed it: the camera goes half round to each
   floor and the boards keep their facings, so the first and third floors are seen from behind the stack, and the whole
   machine's view is as it was. On a phone the floor's frame is a little wider (0.94 of the screen, was 1), so a project

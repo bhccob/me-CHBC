@@ -58,7 +58,7 @@ CSS custom properties use these names; the scene reads the same values through t
 | `--nebula-hi` | `#401f57` | ref-02, brightest wisps (top 2 %) | haze highlights; nothing in the atmosphere is brighter |
 | `--field-violet` | `#b47ed4` | ref-03, magnetic field lines | the only bright purple: field lines, platter rim light (emissive) |
 | `--pcb` | `#190624` | ref-01, solder mask | loader board |
-| `--lacquer` / `--lacquer-hi` | `#120418` / `#735488` | ref-05, abacus beads (median / lit side) | Funcial abacus |
+| `--lacquer` / `--lacquer-hi` | `#120418` / `#735488` | ref-05, abacus beads (median / lit side) | abacus beads |
 | `--platter-tint` / `--platter-hi` | `#644087` / `#ebb9e0` | ref-04, spindle and platter (median / specular) | look-dev check for the platter's reflections, not an albedo (§3) |
 
 **Brass, gold and type**
@@ -70,7 +70,7 @@ CSS custom properties use these names; the scene reads the same values through t
 | `--brass` | `#936233` | ref-03, compass body lit | brass albedo |
 | `--brass-hi` | `#b58854` | ref-02, rim and engraving highlights (top 8 %) | brass F0 / specular colour |
 | `--gold-ink` | `#e4be7f` | ref-02, the BOB CHUNG letterforms | name, tagline, gold leaf in engravings (11.5:1 on `--void`) |
-| `--gold-title` | `#f9dc87` | ref-04, the FUNCIAL title | heavy project titles (15.0:1) |
+| `--gold-title` | `#f9dc87` | ref-04, the reference title | heavy project titles (15.0:1) |
 | `--ink` | `#fcedc0` | ref-04, TP caption text | labels and reading text (17.3:1) |
 | `--ink-dim` | `#8c8879` | ref-02, the FOLLOW THE NEEDLE letterforms | secondary text, hints (5.7:1, passes AA for small text) |
 | `--string-red` | `#7a2126` | ref-02, red sighting strings | the two silk strings only |
@@ -166,7 +166,7 @@ All `MeshPhysicalMaterial` unless noted. Engraving, dial text, degree ticks, 東
 | **Glass crystal** | tint `--ink` at 4 % | — | high: drei `MeshTransmissionMaterial`, thickness 0.02, ior 1.5, roughness 0.02, chromatic aberration 0.02, samples 4, resolution 512, backside off. Medium: `MeshPhysicalMaterial` transmission 1, no MTM. Low and mobile: a fresnel-only additive shell (6 % face-on, 40 % at grazing) | the most expensive material on screen; its cost is checked in every FPS run |
 | **PCB purple** (loader board, ref-01) | solder mask `--pcb` `#190624` | 0 / 0.45 | clearcoat 0.6, clearcoat roughness 0.25; raised traces in the normal map | pads and the probe tip: ENIG gold, `--gold-ink`, metalness 1, roughness 0.25 |
 | **Chip package** | `#140c16` (ref-01 dominant) | 0 / 0.7 | the BC-2006 mark is laser-etched: a roughness 0.4 + albedo +8 % mask set from Martian Mono outlines | amber spill under it = emissive `--amber-spill` card, HDR 2 |
-| **Abacus lacquer** (Funcial, M5) | `--lacquer` `#120418`, lit side `--lacquer-hi` | 0 / 0.3 | clearcoat 1, clearcoat roughness 0.1; gold fleck mask | lit beads switch to emissive `--gold-glow` |
+| **Abacus lacquer** (M5) | `--lacquer` `#120418`, lit side `--lacquer-hi` | 0 / 0.3 | clearcoat 1, clearcoat roughness 0.1; gold fleck mask | lit beads switch to emissive `--gold-glow` |
 
 ---
 
@@ -178,7 +178,7 @@ All three families are SIL Open Font License 1.1, self-hosted from fontsource (`
 | --- | --- | --- | --- | --- | --- |
 | Name (BOB CHUNG) | **Montserrat** (`@fontsource-variable/montserrat` 5.3.0), Bob's pick on 2026-10-20 | 300 (variable, so 300–400 can be tuned on screen) | 0.32em | `clamp(28px, 4.2vw, 64px)` cap height ≈ 0.7 × size | `--gold-ink` |
 | Tagline | Montserrat | 400 | 0.36em | 11–13 px | `--gold-ink` at 75 % |
-| Heavy titles (FUNCIAL, country names on their pages; the country pages are superseded by the 2026-10-21 BOB design) | **Unbounded** (`@fontsource-variable/unbounded`, already a dependency) | 700–800 | 0.02em | `clamp(40px, 6vw, 96px)` | `--gold-title` |
+| Heavy titles (project titles, country names on their pages; the country pages are superseded by the 2026-10-21 BOB design) | **Unbounded** (`@fontsource-variable/unbounded`, already a dependency) | 700–800 | 0.02em | `clamp(40px, 6vw, 96px)` | `--gold-title` |
 | Technical labels (`01 — SECURE ELEMENT`, TP pins, HUD, `%`, `0/N`) | **Martian Mono** (`@fontsource-variable/martian-mono`, already a dependency) | 300–400, width axis 100 | 0.12–0.2em, uppercase | 11 px minimum (10 px only on the engraved chip) | `--ink` or `--ink-dim` |
 | Reading text (country pages, superseded by the 2026-10-21 BOB design; Lite) | Montserrat | 400 | 0 | 17–19 px, line height 1.55 | `--ink` |
 
@@ -321,14 +321,9 @@ The beats were written from Bob's own notes on 2026-10-20 and put into formal NL
 
 | Screen | NL | EN |
 | --- | --- | --- |
-| In space (Funcial) | `01 — BEVEILIGD ELEMENT` · FUNCIAL | `01 — SECURE ELEMENT` · FUNCIAL |
-| In space (others) | `02 — [FILL: from docs/projects-discovery.md]` · JONTAI ENERGY; `03 — [FILL]` · [FILL: Cookie Clicker or Cookies Clicker, Bob confirms] | the same |
-| Focus: one line (Funcial) | Een financiële tracker met spelelementen, lokaal en versleuteld op je telefoon. | A finance tracker with game elements, local-first and encrypted on your phone. |
-| Focus: test points (Funcial) | LOG · SPELLAAG · GELDREGELS · KLUIS · UITKOMST | LOG · GAME LAYER · MONEY RULES · VAULT · RESULT |
-| Focus: stack tags (Funcial) | React · TypeScript · Tailwind · Capacitor · SQLCipher | the same |
-| Focus: links | Downloaden (funcial.vercel.app/get) · Code (github.com/bhccob/Funcial, public) | Download · Code |
+| In space | `02 — [FILL: from docs/projects-discovery.md]` · JONTAI ENERGY; `03 — [FILL]` · [FILL: Cookie Clicker or Cookies Clicker, Bob confirms] | the same |
 
-Category labels, objects and test points for Jontai Energy and Cookies Clicker come from the discovery proposal (`docs/projects-discovery.md`), which Bob approves first. RESULT is only partly real in Funcial's code (the buy-meter verdict), so it waits for that approval as well. Funcial's stack never lists AI.
+Category labels, objects and test points for Jontai Energy and Cookies Clicker come from the discovery proposal (`docs/projects-discovery.md`), which Bob approves first.
 
 Bob decided on 2026-10-20 that technical labels (test points, HUD categories, section labels) are translated in NL. The category names from the discovery proposal get an NL form too.
 

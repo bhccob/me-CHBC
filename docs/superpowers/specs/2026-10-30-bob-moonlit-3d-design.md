@@ -58,7 +58,7 @@ already draws from, plus new ones:
 A headless script, `tools/blender/storm_plates.py`, renders them reproducibly (Cycles, an equirectangular camera with
 the sky's longitude and latitude ranges; the volume, moons and glow as the B render's,
 `.superpowers/r7/blender/concept_home.py` run with `moon`) and a small script turns them into WebP in `src/assets/storm/`. Why not
-live: a phone cannot march clouds this detailed at a steady frame rate, and the plates match the render Bob picked.
+live: a phone cannot march clouds this detailed at a constant frame rate, and the plates match the render Bob picked.
 Depth comes from what the storm already has: the sky at infinity, three flats at 34, 14 and 6.5 m that drift at their
 own pace and shift against each other as the camera sways, and the glass's mirror. If Bob wants live clouds later,
 that is its own round.
