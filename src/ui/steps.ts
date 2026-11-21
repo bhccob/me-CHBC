@@ -11,10 +11,10 @@ const WALL_UP = 1.22;
 /** after landing, the page rests this long before the next step can start (ms) */
 const DWELL = 90;
 /** a step that lands on a block holds it this long before the next push counts (ms), so a fast scroller cannot fly
-    past it: a study block a full second, a side of the about-me piece only a moment, so the turns flow */
-const HOLD_BLOCK = 1000, HOLD_SIDE = 350;
+    past it: a study block 0.7 s, a side of the about-me piece only a moment, so the turns flow */
+const HOLD_BLOCK = 700, HOLD_SIDE = 350;
 /** one step of the flight from block to block, from the last about-me side to Directions (ms, for one block's distance) */
-const FLY = 620;
+const FLY = 400;
 /** Directions to the wall and back: the other five fly in and the wall assembles around Directions (ms) */
 const ASSEMBLE = 1700;
 /** the longest glide between two sides of the about-me piece (ms) */
@@ -72,7 +72,7 @@ function tick(now: number) {
   if (queued) { const d = queued; queued = 0; stepFrom(d, stops()); }
 }
 /** carry the page to `to`. the time depends on the stretch: a short glide between two about-me sides, a level flight
-    of about 0.6 s from block to block, 1.7 s for the wall to assemble, and otherwise by distance (at most 1.3 s).
+    of about 0.4 s from block to block, 1.7 s for the wall to assemble, and otherwise by distance (at most 1.3 s).
     `hold`: a landing on a block holds it (the menu's jumps do not) */
 export function glideTo(to: number, hold = true) {
   stopGlide(); holdUntil = 0;

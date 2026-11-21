@@ -7,6 +7,8 @@ export const FW = 1200, FH = 400;
 export const CN = PIECES.map((p) => p.cn), BIGNAME = PIECES.map((p) => p.big);
 export const CNFONT = "'Noto Serif SC','Songti SC','SimSun',serif", DFONT = "'Bricolage Grotesque',Arial,sans-serif";
 const INK = "#0c0b15", BONE = "#efe8d6", DIM = "#8d88a3", ME_GOLD = "#f2cf7a";
+/** the combination piece's code: the three studies, in the order its dials land on them */
+const KEY = (["software", "design", "mechatronics"] as const).map((id) => PIECES.find((p) => p.id === id)!);
 
 type Ctx = CanvasRenderingContext2D;
 /** c: the face's canvas, t: time in seconds, col: the piece's colour, u: 0..1 progress of the name animation (Me only) */
@@ -93,22 +95,28 @@ const RAW: FaceDraw[] = [
     c.fillStyle = ME_GOLD; c.fillRect(ex - 24, ey - 4, 48, 40); c.strokeStyle = col; c.lineWidth = 8; c.strokeRect(ex - 32, ey - 12, 64, 16);
     c.fillStyle = col; c.font = "800 30px monospace"; c.textBaseline = "middle"; c.textAlign = "left"; c.fillText("θ1 " + (a1 * 57.3).toFixed(0) + "°", 440, 360);
   },
-  function internship(c, t, col) { /* cybersecurity: a password being cracked, and a padlock that opens when it is */
+  function combination(c, t, col) { /* the conclusion: a combination lock whose code is the three studies. the dials land on them one by one, and with all three in, it opens */
     faceBase(c, col);
-    const cyc = (t * 0.32) % 1.5, k = Math.min(8, Math.floor(cyc * 8)), open = k >= 8, PASS = "R7#kQ2!x";
+    const cyc = (t * 0.32) % 1.5, k = Math.min(3, Math.floor(cyc * 3)), open = k >= 3;
     const lx = 205, ly = 240, lift = open ? -38 : 0;
     c.strokeStyle = BONE; c.lineWidth = 24; c.lineCap = "round"; c.beginPath();
     c.moveTo(lx - 58, ly - 60 + lift); c.lineTo(lx - 58, ly - 110 + lift); c.arc(lx, ly - 110 + lift, 58, Math.PI, 0); c.lineTo(lx + 58, open ? ly - 110 + lift : ly - 60); c.stroke(); c.lineCap = "butt";
     c.fillStyle = open ? "#5fd6ab" : col; rr(c, lx - 100, ly - 64, 200, 150, 18); c.fill();
     c.fillStyle = INK; c.beginPath(); c.arc(lx, ly, 20, 0, 6.283); c.fill(); c.fillRect(lx - 8, ly, 16, 44);
     c.textBaseline = "middle"; c.textAlign = "center";
-    for (let i = 0; i < 8; i++) {
-      const x = 410 + i * 90, got = i < k;
-      c.lineWidth = 4; c.strokeStyle = got ? BONE : col; c.strokeRect(x, 150, 74, 90);
-      c.font = "800 52px monospace"; c.fillStyle = got ? BONE : col; c.globalAlpha = got ? 1 : 0.75;
-      c.fillText(got ? PASS.charAt(i) : String.fromCharCode(33 + Math.floor(rnd(i * 7 + Math.floor(t * 14)) * 90)), x + 37, 197); c.globalAlpha = 1;
+    for (let i = 0; i < 3; i++) {
+      const x = 410 + i * 252, got = i < k, p = KEY[i];
+      c.lineWidth = 4; c.strokeStyle = got ? p.color : col; c.strokeRect(x, 124, 200, 120);
+      if (got) { /* landed: the study's Chinese name, in its own colour, and its name under it */
+        c.fillStyle = p.color; c.font = "900 64px " + CNFONT; c.fillText(p.cn, x + 100, 166);
+        fitFont(c, p.short.toUpperCase(), 700, 26, "monospace", 184); c.fillText(p.short.toUpperCase(), x + 100, 220);
+      } else { /* still spinning */
+        const s = i * 7 + Math.floor(t * 14), ch = (n: number) => String.fromCharCode(33 + Math.floor(rnd(n) * 90));
+        c.font = "800 52px monospace"; c.fillStyle = col; c.globalAlpha = 0.75; c.fillText(ch(s) + ch(s + 3), x + 100, 186); c.globalAlpha = 1;
+      }
+      if (i < 2) { c.fillStyle = DIM; c.font = "800 44px monospace"; c.fillText("+", x + 226, 186); }
     }
-    c.fillStyle = DIM; c.fillRect(410, 266, 704, 10); c.fillStyle = open ? "#5fd6ab" : col; c.fillRect(410, 266, 704 * k / 8, 10);
+    c.fillStyle = DIM; c.fillRect(410, 266, 704, 10); c.fillStyle = open ? "#5fd6ab" : col; c.fillRect(410, 266, 704 * k / 3, 10);
     c.textAlign = "left"; c.font = "800 40px monospace"; c.fillStyle = open ? "#5fd6ab" : col; c.fillText(open ? "ACCESS GRANTED" : "ACCESS DENIED", 410, 322);
   },
   function directions(c, t, col) { /* one starting point, several paths. each lights in turn; the last, in gold, is the long-term goal */
