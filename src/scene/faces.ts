@@ -1,6 +1,6 @@
 /* the 2D drawings on the pieces: one live drawing per face, the name bands on the long sides, the end caps */
 import * as THREE from "three";
-import { PIECES, DIRECTIONS } from "../content";
+import { PIECES, DIRECTIONS, ME_SIDES } from "../content";
 import { clamp, ss, lerp, rnd, rr } from "../util";
 
 export const FW = 1200, FH = 400;
@@ -15,41 +15,6 @@ export type FaceDraw = (c: Ctx, t: number, col: string, u: number) => void;
 function faceBase(c: Ctx, col: string) {
   c.fillStyle = INK; c.fillRect(0, 0, FW, FH);
   c.strokeStyle = col; c.globalAlpha = 0.55; c.lineWidth = 3; c.strokeRect(14, 14, FW - 28, FH - 28); c.globalAlpha = 1;
-}
-
-/** a player running a level, jumping for coins towards a flag. drawn on a 1200 × 400 area */
-function gameScene(c: Ctx, t: number, col: string) {
-  const gy = 330, pl = [[170, 250, 200], [480, 190, 200], [790, 250, 200]];
-  let i: number;
-  c.fillStyle = BONE; c.fillRect(30, gy, FW - 60, 6);
-  for (i = 0; i < pl.length; i++) {
-    c.fillStyle = col; c.fillRect(pl[i][0], pl[i][1], pl[i][2], 20);
-    c.globalAlpha = 0.22; c.fillRect(pl[i][0], pl[i][1] + 20, pl[i][2], gy - pl[i][1] - 20); c.globalAlpha = 1;
-    const bob = Math.sin(t * 4 + i) * 6, taken = ((t * 0.22) % 1) * 1000 + 60 > pl[i][0] + pl[i][2] / 2;
-    if (!taken) { c.fillStyle = ME_GOLD; c.beginPath(); c.arc(pl[i][0] + pl[i][2] / 2, pl[i][1] - 46 + bob, 17, 0, 6.283); c.fill(); c.fillStyle = INK; c.fillRect(pl[i][0] + pl[i][2] / 2 - 3, pl[i][1] - 56 + bob, 6, 20); }
-  }
-  c.fillStyle = BONE; c.fillRect(1090, 150, 8, 180); c.fillStyle = col; c.beginPath(); c.moveTo(1098, 150); c.lineTo(1160, 178); c.lineTo(1098, 206); c.closePath(); c.fill();
-  const u = (t * 0.22) % 1, px = 60 + u * 1000, py = gy - 64 - Math.abs(Math.sin(u * Math.PI * 4)) * 190;
-  c.fillStyle = BONE; c.fillRect(px, py, 64, 64); c.fillStyle = INK; c.fillRect(px + 38, py + 14, 10, 14); c.fillRect(px + 50, py + 14, 10, 14);
-  c.fillStyle = col; c.font = "800 34px monospace"; c.textBaseline = "middle"; c.textAlign = "left"; c.fillText("SCORE " + String(Math.floor(u * 3.99) * 100).padStart(4, "0"), 44, 60);
-  for (i = 0; i < 3; i++) { c.fillStyle = "#ff6a55"; c.fillRect(330 + i * 38, 46, 26, 26); }
-}
-
-/** one phone screen with a list, a tab bar and a finger tapping down the list. tab: which of its three tabs is lit */
-function phone(c: Ctx, col: string, x: number, y: number, tab: number, tap: number) {
-  const w = 190, h = 284;
-  let k: number;
-  c.globalAlpha = 1;
-  c.lineWidth = 6; c.strokeStyle = col; rr(c, x, y, w, h, 24); c.stroke();
-  c.fillStyle = col; rr(c, x + 14, y + 16, w - 28, 40, 10); c.fill();
-  for (k = 0; k < 3; k++) {
-    const ry = y + 72 + k * 56, hot = k === Math.floor(tap * 3);
-    if (hot) { c.globalAlpha = 0.3; c.fillStyle = col; rr(c, x + 10, ry - 6, w - 20, 50, 10); c.fill(); c.globalAlpha = 1; }
-    c.fillStyle = col; c.beginPath(); c.arc(x + 36, ry + 19, 15, 0, 6.283); c.fill();
-    c.fillStyle = BONE; c.fillRect(x + 62, ry + 6, 96, 9); c.globalAlpha = 0.55; c.fillRect(x + 62, ry + 24, 64, 8); c.globalAlpha = 1;
-    if (hot) { c.strokeStyle = BONE; c.lineWidth = 4; c.beginPath(); c.arc(x + w - 34, ry + 19, 10 + ((tap * 3) % 1) * 14, 0, 6.283); c.stroke(); }
-  }
-  for (k = 0; k < 3; k++) { c.fillStyle = k === tab ? col : DIM; c.beginPath(); c.arc(x + w / 2 + (k - 1) * 40, y + h - 26, 9, 0, 6.283); c.fill(); }
 }
 
 /* one drawing per piece, in the order of PIECES in content.ts */
@@ -77,11 +42,38 @@ const RAW: FaceDraw[] = [
     }
     if (!cur && Math.sin(t * 9) > 0) { c.fillStyle = col; c.fillRect(100 + cw, 112 + 5 * 48 - 20, 14, 40); }
   },
-  function development(c, t, col) { /* games and apps: the level being played on the left, a phone being tapped on the right */
+  function design(c, t, col) { /* product design: a curve drawn with the pen tool, a screen being laid out, type and colour */
     faceBase(c, col);
-    c.save(); c.translate(26, 118); c.scale(0.66, 0.66); gameScene(c, t, col); c.restore();
-    phone(c, col, 930, 96, Math.floor(t * 0.6) % 3, (t * 0.6) % 1);
+    /* the pen: a curve is drawn out from its first anchor, the handles of the anchor it is heading for showing */
+    const u = (t * 0.32) % 1.25, draw = clamp(u / 0.85, 0, 1), P0 = [70, 330], C1 = [90, 120], C2 = [330, 360], P1 = [360, 150];
+    const bz = (k: number, a: number, b: number, cc: number, d: number) => { const m = 1 - k; return m * m * m * a + 3 * m * m * k * b + 3 * m * k * k * cc + k * k * k * d; };
+    c.lineCap = "round"; c.strokeStyle = BONE; c.lineWidth = 7; c.beginPath(); c.moveTo(P0[0], P0[1]);
+    for (let k = 0; k <= 40; k++) { const q = draw * k / 40; c.lineTo(bz(q, P0[0], C1[0], C2[0], P1[0]), bz(q, P0[1], C1[1], C2[1], P1[1])); }
+    c.stroke();
+    c.strokeStyle = col; c.lineWidth = 2.5; c.globalAlpha = 0.8;
+    c.beginPath(); c.moveTo(P0[0], P0[1]); c.lineTo(C1[0], C1[1]); c.moveTo(P1[0], P1[1]); c.lineTo(C2[0], C2[1]); c.stroke(); c.globalAlpha = 1;
+    c.fillStyle = col; [C1, C2].forEach((h) => { c.beginPath(); c.arc(h[0], h[1], 9, 0, 6.283); c.fill(); });
+    c.fillStyle = INK; c.strokeStyle = BONE; c.lineWidth = 4; [P0, P1].forEach((h) => { c.fillRect(h[0] - 11, h[1] - 11, 22, 22); c.strokeRect(h[0] - 11, h[1] - 11, 22, 22); });
+    const px = bz(draw, P0[0], C1[0], C2[0], P1[0]), py = bz(draw, P0[1], C1[1], C2[1], P1[1]);
+    c.fillStyle = col; c.beginPath(); c.moveTo(px, py); c.lineTo(px + 14, py + 38); c.lineTo(px + 26, py + 26); c.closePath(); c.fill(); /* the pen's nib */
+    c.lineCap = "butt";
+    /* the screen: its parts snap into place one after another, then it starts again */
+    const sx = 450, sy = 104, sw = 330, sh = 262, cyc = (t * 0.28) % 1;
+    c.strokeStyle = col; c.lineWidth = 5; rr(c, sx, sy, sw, sh, 22); c.stroke();
+    c.globalAlpha = 0.25; c.strokeStyle = col; c.lineWidth = 1.5; for (let g = 1; g < 6; g++) { c.beginPath(); c.moveTo(sx + g * sw / 6, sy + 10); c.lineTo(sx + g * sw / 6, sy + sh - 10); c.stroke(); } c.globalAlpha = 1;
+    const parts: [number, number, number, number, string][] = [[24, 22, 282, 34, col], [24, 72, 180, 92, "rgba(239,232,214,.22)"], [218, 72, 88, 40, ME_GOLD], [218, 124, 88, 40, "#5fd6ab"], [24, 182, 220, 14, BONE], [24, 206, 150, 12, DIM], [240, 196, 66, 40, col]];
+    parts.forEach((pt, k) => {
+      const on = ss(k * 0.08, k * 0.08 + 0.07, cyc) * (1 - ss(0.9, 0.98, cyc)); if (on <= 0) return;
+      c.globalAlpha = on; c.fillStyle = pt[4]; rr(c, sx + pt[0], sy + pt[1] + (1 - on) * 26, pt[2], pt[3], 6); c.fill();
+    });
     c.globalAlpha = 1;
+    /* the pointer drags the last part in */
+    const dk = parts.length - 1, dOn = ss(dk * 0.08 - 0.06, dk * 0.08 + 0.07, cyc), ax = sx + 240 + 40 + (1 - dOn) * 120, ay = sy + 216 + (1 - dOn) * 50;
+    if (cyc < 0.9) { c.fillStyle = BONE; c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.moveTo(ax, ay); c.lineTo(ax, ay + 44); c.lineTo(ax + 12, ay + 33); c.lineTo(ax + 22, ay + 52); c.lineTo(ax + 30, ay + 48); c.lineTo(ax + 20, ay + 29); c.lineTo(ax + 36, ay + 29); c.closePath(); c.fill(); c.stroke(); }
+    /* type and colour */
+    c.fillStyle = BONE; c.textBaseline = "alphabetic"; c.textAlign = "left"; c.font = "800 128px " + DFONT; c.fillText("Aa", 845, 262);
+    const sw4 = [col, ME_GOLD, BONE, "#5fd6ab"], pick = Math.floor(t * 0.8) % 4;
+    sw4.forEach((cl, k) => { const cx = 870 + k * 74, cy = 320; c.fillStyle = cl; c.beginPath(); c.arc(cx, cy, 24, 0, 6.283); c.fill(); if (k === pick) { c.strokeStyle = BONE; c.lineWidth = 4; c.beginPath(); c.arc(cx, cy, 34, 0, 6.283); c.stroke(); } });
   },
   function mechatronics(c, t, col) { /* gears turning and a robot arm carrying a block back and forth */
     faceBase(c, col);
@@ -204,6 +196,34 @@ function faceTag(c: Ctx, i: number, col: string) {
 
 /** DRAW[piece](canvas, time, colour, nameProgress) */
 export const DRAW: FaceDraw[] = RAW.map((f, i) => (c, t, col, u) => { f(c, t, col, u); faceTag(c, i, i === 5 ? ME_GOLD : col); });
+
+/** sides 2 to 4 of the Me piece. `flip`: the back side is drawn upside down, so it reads the right way up once the
+    piece has turned it to the front */
+export function drawMeSide(cv: HTMLCanvasElement, k: number, flip: boolean) {
+  const c = cv.getContext("2d")!, S = ME_SIDES[k], W = FW, H = FH;
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+  if (flip) { c.translate(W, H); c.rotate(Math.PI); }
+  c.fillStyle = INK; c.fillRect(0, 0, W, H);
+  c.strokeStyle = ME_GOLD; c.globalAlpha = 0.55; c.lineWidth = 3; c.strokeRect(14, 14, W - 28, H - 28); c.globalAlpha = 1;
+  c.textBaseline = "middle"; c.textAlign = "left";
+  const ls = (c as unknown as { letterSpacing?: string });
+  c.fillStyle = ME_GOLD; c.font = "900 40px " + CNFONT; c.fillText(CN[5], 52, 74);
+  c.font = "500 26px monospace"; ls.letterSpacing = "5px"; c.fillText(S.label.toUpperCase(), 110, 76);
+  c.textAlign = "right"; c.fillStyle = DIM; c.fillText((k + 1) + " / 4", W - 52, 76); c.textAlign = "left"; ls.letterSpacing = "0px";
+  if (S.stats) {
+    S.stats.forEach((st, n) => {
+      const x = 52 + n * 560; c.fillStyle = BONE; fitFont(c, st[0], 800, 170, DFONT, 500); c.fillText(st[0], x, 216);
+      c.fillStyle = ME_GOLD; c.font = "500 28px monospace"; ls.letterSpacing = "4px"; c.fillText(st[1].toUpperCase(), x + 4, 326); ls.letterSpacing = "0px";
+    });
+  } else if ((S.big || "").length <= 3) { /* a short value, like 4+: very large on the left, its words beside it */
+    c.fillStyle = BONE; c.font = "800 230px " + DFONT; const bw = c.measureText(S.big || "").width; c.fillText(S.big || "", 44, 236);
+    if (S.small) { c.fillStyle = "#b9b3c9"; c.font = "500 58px " + DFONT; c.fillText(S.small, 44 + bw + 50, 250); }
+  } else {
+    c.fillStyle = BONE; fitFont(c, S.big || "", 800, 150, DFONT, W - 110); c.fillText(S.big || "", 48, 200);
+    if (S.small) { c.fillStyle = "#b9b3c9"; c.font = "500 46px " + DFONT; c.fillText(S.small, 52, 314); }
+  }
+  c.restore();
+}
 
 /** long sides: the Chinese name and the study in big capitals */
 export function drawBand(cv: HTMLCanvasElement, i: number, col: string) {

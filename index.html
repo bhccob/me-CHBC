@@ -58,7 +58,6 @@
     <h1 class="t1" id="h-hero">{{hero.heading}}</h1>
     <p class="lead">{{hero.lead}}</p>
   </section>
-  {{panels}}
 
   <form class="msg" id="msgForm" novalidate aria-label="Send a message">
     <label for="mName">Your name</label><input id="mName" name="name" autocomplete="name" maxlength="80" tabindex="-1">
@@ -73,6 +72,8 @@
   <button type="button" class="mback" id="mClose" hidden>{{form.back}}</button>
   <div class="hint" id="hint" aria-hidden="true">Scroll</div>
 </div>
+
+<div class="chapters" id="chapters">{{panels}}</div>
 
 <div id="track"></div>
 

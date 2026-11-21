@@ -1,8 +1,8 @@
 /* builds the 3D scene and runs the render loop: one continuous camera move from piece to piece, then the wall, then the lock */
 import * as THREE from "three";
-import { PIECES, ME_SLIPS, END, FORM } from "../content";
+import { PIECES, END, FORM } from "../content";
 import { clamp, ss, lerp, step, $ } from "../util";
-import { ORDER, START, DUR, CH, HERO_END, ME_A, ME_L, readScroll, type Scroll } from "../timeline";
+import { ORDER, START, DUR, CH, HERO_END, ME_TURNS, readScroll, type Scroll } from "../timeline";
 import { arrive, seal, wind, clack, isSoundOn } from "../audio";
 import { createPanels } from "../ui/panels";
 import { createRig, CAM_Z, PI } from "./rig";
@@ -25,12 +25,12 @@ export interface StageHooks {
 export function startStage(hooks: StageHooks) {
   const rig = createRig($<HTMLCanvasElement>("gl"));
   const { renderer, scene, camera, view } = rig;
-  const { pieces, slats, slatGroup, aura, meCard, meCardTall, drawMeCard, drawNames } = buildPieces(rig, hooks.task);
-  hooks.task("Slips and glow built");
+  const { pieces, meSides, aura, drawNames } = buildPieces(rig, hooks.task);
+  hooks.task("Sides and glow built");
   const env = buildEnvironment(rig);
   hooks.task("Space built");
   const ui = createPanels();
-  const workEl = $("work"), endEl = $("end"), bigBack = $("bigBack"), endText = $("endText"), meLine = $("meLine"), meNum = $("meNum");
+  const workEl = $("work"), endEl = $("end"), bigBack = $("bigBack"), endText = $("endText");
 
   /* where each piece floats. FIELD: a trail leading away into the fog, each piece far beyond the one before, so you only
      ever see the one you have reached. HEROPOS: around the camera in the first view, Me nearest */
@@ -65,8 +65,11 @@ export function startStage(hooks: StageHooks) {
   let reduce = motion.matches;
   motion.addEventListener?.("change", () => { reduce = motion.matches; });
 
-  let p = 0, mx = 0, my = 0, smx = 0, smy = 0, meName = 1, lastName = 1, meIdx = 0, meShiftX = 0, meShiftY = 0, panelTop = 1e4, panelAt = -99, lineOnPage = true, arriveArmed = true, prevDc = 0, lastT = -1, frameNo = 0, counted = false;
-  const corner = new THREE.Vector3(), mePanel = meLine.parentElement as HTMLElement;
+  let p = 0, mx = 0, my = 0, smx = 0, smy = 0, meName = 1, lastName = 1, arriveArmed = true, prevDc = 0, lastT = -1, frameNo = 0, counted = false, sidesOn = false;
+  /* the Me piece turns about its own long axis, a quarter turn per stop */
+  const LONG = new THREE.Vector3(1, 0, 0), turnQ = new THREE.Quaternion();
+  /** the Me piece no longer opens into slips: it turns instead. kept at 0 so the glow and size behave as before the slips opened */
+  const meOpen = 0;
   let bbOp = "", bbTr = "", ftOp = "", inWork = false;
   window.addEventListener("pointermove", (e) => { mx = e.clientX / window.innerWidth * 2 - 1; my = e.clientY / window.innerHeight * 2 - 1; });
 
@@ -133,7 +136,7 @@ export function startStage(hooks: StageHooks) {
     /* one continuous camera move along the trail: it reaches a piece, pushes in, eases back a little, then travels on
        through the fog until the next piece appears. you never see the six together until they come back for the wall
        and, at the very end, the lock */
-    let i: number, t: number, active = -1, activeAmt = 0, meOpen = 0, meTl = 0, curT = 0.5, curC = 0;
+    let i: number, t: number, active = -1, activeAmt = 0, meTurn = 0, meLive = false, curT = 0.5, curC = 0;
     const hero = p < HERO_END, h = ss(0.006, HERO_END, p); // h: 0 = among the pieces, 1 = pulled back
     const textOn = 1 - ss(0, 0.15, dc); // chapter text never sits on top of the wall or the pages after it
     for (let c = 0; c < 6; c++) {
@@ -145,11 +148,11 @@ export function startStage(hooks: StageHooks) {
       slide[i] = (me ? ss(0, 0.1, t) : ss(0, 0.25, t)) * (1 - (me ? ss(0.91, 0.96, t) : ss(0.74, 0.9, t))); // how far it has turned its face to you
       done[i] = me ? ss(0.9, 0.95, t) : ss(0.7, 0.9, t);
       if (me) {
-        /* the Me chapter: the piece arrives by 0.12, the name is built 0.13 to 0.29, the piece opens 0.31 to 0.37,
-           the six lines run from ME_A for ME_L of the chapter, it closes 0.84 to 0.89 and the camera leaves from 0.91 */
+        /* the Me chapter: the piece arrives by 0.12, the name is built 0.13 to 0.29, then the piece turns a quarter at a
+           time (ME_TURNS) to show its other three sides. the last turn brings the name back round as the camera leaves */
         meName = clamp((t - 0.13) / 0.16, 0, 1);
-        meOpen = ss(0.31, 0.37, t) * (1 - ss(0.84, 0.89, t));
-        meTl = clamp((t - ME_A) / ME_L, 0, 1) * 6;
+        meTurn = ME_TURNS.reduce((a, w) => a + ss(w[0], w[1], t), 0);
+        meLive = live;
         ui.show("p" + i, ss(0.18, 0.23, t) * (1 - ss(0.86, 0.9, t)) * textOn);
       } else ui.show("p" + i, ss(0.34, 0.44, t) * (1 - ss(0.62, 0.72, t)) * textOn);
       if (live) {
@@ -165,9 +168,9 @@ export function startStage(hooks: StageHooks) {
     /* text */
     ui.show("hero", 1 - ss(0.008, 0.03, p));
     ui.hint(1 - ss(0.004, 0.02, p));
-    ui.grid(close * 0.4 + ep * 0.2); ui.scrim(dc > 0 ? 0 : close);
+    ui.grid(close * 0.4 + ep * 0.2); ui.scrim(0); // the chapter words are behind the 3D now, and need no dark band over it
     ui.bar(S.maxY > 0 ? clamp(y / S.maxY, 0, 1) : 0);
-    ui.callout(active >= 0 && dc <= 0 ? ss(0.75, 0.98, activeAmt) : 0);
+    ui.callout(0); // the chapter number now sits in the eyebrow above each title, where the callout used to be
     if (ep > 0.5) ui.chap("Contact");
     else if (dop > 0) ui.chap("Selected work");
     else if (dc > 0.5) ui.chap("Six pieces");
@@ -198,7 +201,8 @@ export function startStage(hooks: StageHooks) {
     if (active >= 0) {
       vL.copy(focusV);
       vP.copy(vL).multiplyScalar(baseScale).add(home); // where it floats when the camera is back
-      if (wide) vK.set((halfW * 0.17 * side - pass * 2.6 * side) * loose, 1.3 + ((curC % 3) - 1) * 0.4 * loose + pass * 0.6, 0); else vK.set(-pass * 1.1 * side * loose, 1.1 + pass * 0.4, 0);
+      /* on the seam between the two lines of the chapter title, a little off-centre, still drifting as you pass */
+      if (wide) vK.set((halfW * 0.07 * side - pass * 2.6 * side) * loose, ((curC % 3) - 1) * 0.12 * loose + pass * 0.5, 0); else vK.set(-pass * 1.1 * side * loose, pass * 0.4, 0);
       vP.lerp(vK, activeAmt); // where it should be now: off-centre and still moving
       lockPos.copy(vP).addScaledVector(vL, -lockScale);
     }
@@ -226,6 +230,9 @@ export function startStage(hooks: StageHooks) {
     prevFt = ft;
     wallMetrics(F, S.workTop, y, vh);
     const kx = wide ? 1 : 0.42;
+    /* the Me piece shows its written sides only during its own chapter. in the wall and the lock it has its name bands again */
+    const wantSides = meLive && dc <= 0 && !form.open;
+    if (wantSides !== sidesOn) { sidesOn = wantSides; pieces[ME].mesh.material = sidesOn ? meSides.mats : meSides.plain; }
 
     for (i = 0; i < 6; i++) {
       const pc = pieces[i], face = slide[i], still = 1 - ss(0.4, 0.9, zoom[i]);
@@ -236,6 +243,7 @@ export function startStage(hooks: StageHooks) {
       eul.set(tt * 0.08 + i * 1.3, tt * 0.06 + i * 2.1, i * 0.7); P.quat.setFromEuler(eul);
       P.sc = lockScale; P.vis = true;
       if (face > 0) P.quat.slerp(i === active ? tq : presQ, face); // turns most of the way towards you, never quite square
+      if (i === ME && meTurn % 4 > 0) { turnQ.setFromAxisAngle(LONG, (meTurn % 4) * Math.PI / 2); P.quat.multiply(turnQ); } // the Me piece rolls to its next side
       if (hero) { /* first view: the pieces hang all around the camera. on the first scroll they scatter, each to its place far down the trail */
         vK.set(HEROPOS[i].x * kx + Math.sin(tt * 0.2 + i) * 0.4, HEROPOS[i].y + Math.cos(tt * 0.17 + i * 2) * 0.4, HEROPOS[i].z);
         P.pos.lerpVectors(vK, P.pos, h); P.sc = lerp(1.3 * fullScale, P.sc, h);
@@ -252,6 +260,7 @@ export function startStage(hooks: StageHooks) {
       pc.mesh.visible = P.vis;
       pc.mesh.position.copy(P.pos); pc.mesh.quaternion.copy(P.quat); pc.mesh.scale.setScalar(P.sc);
       pc.face.emissiveIntensity = P.glow * 1.15; // the drawn face is the brightest side
+      if (i === ME) for (const k of [2, 3, 5]) (meSides.mats[k] as THREE.MeshStandardMaterial).emissiveIntensity = pc.face.emissiveIntensity; // its written sides are as bright as the front
     }
 
     /* the aura follows the Me piece. it fades while the piece is part of the flat wall, and flares when the lock closes */
@@ -265,72 +274,6 @@ export function startStage(hooks: StageHooks) {
       if (aura.light) aura.light.intensity = (1.7 + 0.3 * pulse + 3.5 * flare + 1.4 * meOpen) * (1 - wallAmt) * PI;
       for (i = 0; i < 3; i++) { const sa = tt * 0.9 + i * 2.094; aura.sparks[i].position.set(Math.cos(sa) * 4.1, Math.sin(sa) * 1.9 * (1 + 0.6 * meOpen), Math.sin(sa + 1) * 1.6); aura.sparks[i].visible = wallAmt < 0.5; }
     }
-    /* the Me piece splits into slips; the slip for the current line steps forward */
-    const meOn = meOpen > 0.001 && dc <= 0 && m5.visible;
-    slatGroup.visible = meOn;
-    if (meOn) {
-      m5.visible = false; slatGroup.position.copy(m5.position); slatGroup.quaternion.copy(m5.quaternion); slatGroup.scale.copy(m5.scale);
-      /* the slip being read grows into the card, a taller block with the whole line written on it. it starts at the
-         slip's own height and stands out exactly as far as the slip did. the low wide card is used wherever it can
-         be read (a computer, a tablet). a phone is too narrow for it and gets the tall one, which takes only as much
-         height as its line needs */
-      const cardIdx = clamp(Math.floor(meTl), 0, 5), cfr = meTl - cardIdx;
-      const cardOp = meOpen * (cardIdx > 0 ? ss(0, 0.14, cfr) : 1) * (cardIdx < 5 ? 1 - ss(0.86, 1, cfr) : 1);
-      const tall = !wide && window.innerWidth < 700, card = tall ? meCardTall : meCard;
-      (tall ? meCard : meCardTall).mesh.visible = false;
-      if (cardOp > 0.01 && card.shown !== cardIdx) drawMeCard(card, cardIdx);
-      const cardH = lerp(1 / 3 / card.h, card.frac, cardOp); // as a share of the card's full height
-      card.mesh.visible = cardOp > 0.02; card.em.opacity = 0.7 * meOpen;
-      card.mesh.position.set(0, ((5 - cardIdx) - 2.5) / 3 * (1 + 0.38 * meOpen) + 0.12 * meOpen, meOpen * 0.6); card.mesh.scale.set(1, cardH, 1);
-      card.tex.repeat.y = cardH; card.tex.offset.y = (1 - cardH) / 2; // the writing is uncovered like a shutter opening, never squashed
-      /* how far the slips above and below must move to make room for it. the tall card stands nearer the camera over
-         a greater height, so it looks bigger than it is and needs a little more */
-      const room = (card.h * cardH - 1 / 3) / 2 + (tall ? 0.08 * card.h * cardH * cardOp : 0);
-      for (i = 0; i < 6; i++) {
-        const sl = slats[i], ln = sl.line, act = ss(ln - 0.15, ln + 0.15, meTl) * (ln < 5 ? 1 - ss(ln + 0.85, ln + 1.15, meTl) : 1), wave = reduce ? 0 : Math.sin(time * 0.8 + ln * 0.9);
-        const part = (ln < cardIdx ? 1 : ln > cardIdx ? -1 : 0) * room; // the slips above and below move apart to make room for the card
-        sl.mesh.position.set(0, sl.y * (1 + 0.38 * meOpen) + 0.12 * meOpen + part, meOpen * (0.6 * act + 0.16 * wave * (1 - act)));
-        sl.mesh.rotation.x = meOpen * (1 - act) * 0.07 * wave;
-        sl.mesh.visible = !(ln === cardIdx && cardOp > 0.02);
-        sl.lm.opacity = ss(0.25, 0.7, meOpen); sl.lm.color.setScalar(0.36 + 0.64 * act); sl.em.opacity = 0.7 * meOpen;
-      }
-      const idx = clamp(Math.floor(meTl), 0, 5);
-      if (idx !== meIdx) { meIdx = idx; meLine.textContent = ME_SLIPS[idx][1]; meNum.textContent = "Line " + (idx + 1) + " of 6"; }
-      /* the line being read is always fully on screen. the open piece is big: left alone, the first line's card rises
-         under the menu and off the top, on a squarer window a card runs off the side or behind the heading, and on a
-         phone the piece is wider than the screen. so the four corners of what is being read (the card, or the slip
-         it grows from) are checked against the free area: under the menu, above the heading, inside the
-         page margins. the piece shrinks only if it is too wide to fit, and moves by just as much as is needed */
-      let wantX = 0, wantY = 0;
-      const rs = slats[5 - cardIdx].mesh, onCard = card.mesh.visible;
-      if (onCard || !wide) {
-        if (frameNo - panelAt > 30) { panelAt = frameNo; panelTop = mePanel.getBoundingClientRect().top; }
-        const vw = window.innerWidth, gut = wide ? Math.min(72, Math.max(18, vw * 0.045)) : 6;
-        const top = halfH * (1 - 2 * (Math.min(26, Math.max(14, vh * 0.024)) + 58) / vh), bottom = halfH * (1 - 2 * (panelTop - 10) / vh);
-        const right = halfW * (1 - 2 * gut / vw), left = -right;
-        /* what is being read, in the piece's own units: centre height, half height, how far it stands out, its own scale */
-        const cy = onCard ? card.mesh.position.y : rs.position.y, hh = onCard ? card.h / 2 * cardH : 1 / 6, cz = onCard ? card.mesh.position.z : rs.position.z, sx = 1;
-        let x0 = 0, x1 = 0, y0 = 0, y1 = 0, fSum = 0;
-        const measure = (s: number) => {
-          x0 = y0 = 1e9; x1 = y1 = -1e9; fSum = 0;
-          for (let e = 0; e < 4; e++) {
-            corner.set((e & 1 ? 3 : -3) * sx, cy + (e & 2 ? hh : -hh), cz + sx).multiplyScalar(s).applyQuaternion(slatGroup.quaternion).add(slatGroup.position);
-            const f = CAM_Z / Math.max(1, CAM_Z - corner.z); fSum += f; // nearer the camera looks bigger
-            x0 = Math.min(x0, corner.x * f); x1 = Math.max(x1, corner.x * f); y0 = Math.min(y0, corner.y * f); y1 = Math.max(y1, corner.y * f);
-          }
-        };
-        measure(slatGroup.scale.x);
-        if (x1 - x0 > right - left) { const k = (right - left) / (x1 - x0); slatGroup.scale.multiplyScalar(k); aura.group.scale.multiplyScalar(k); measure(slatGroup.scale.x); }
-        if (y1 > top) wantY = top - y1; else if (y0 < bottom) wantY = Math.min(bottom - y0, top - y1);
-        if (x1 > right) wantX = Math.max(right - x1, left - x0); else if (x0 < left) wantX = left - x0;
-        wantX /= fSum / 4; wantY /= fSum / 4;
-      }
-      const ease = reduce ? 1 : step(0.14, dt);
-      meShiftX += (wantX - meShiftX) * ease; meShiftY += (wantY - meShiftY) * ease;
-      slatGroup.position.x += meShiftX; slatGroup.position.y += meShiftY; aura.group.position.x += meShiftX; aura.group.position.y += meShiftY;
-    } else meShiftX = meShiftY = 0;
-    /* the words are on the card, on every screen, so the sentence under the heading is not shown twice */
-    if (lineOnPage) { lineOnPage = false; meLine.style.display = "none"; }
     /* a face is only redrawn when it is the one on screen and it has changed */
     if (ft <= 0.02) {
       if (active >= 0 && activeAmt > 0.5 && !reduce && dc <= 0) {
@@ -343,7 +286,8 @@ export function startStage(hooks: StageHooks) {
     const envAmt = Math.max(1 - dc, dop >= 1 ? ss(0.1, 0.6, ep) : 0) * (1 - 0.5 * ft), flow = p * 170 + tt * 0.5;
     env.group.visible = envAmt > 0.01;
     if (env.group.visible) {
-      env.floor.material.opacity = (0.3 + 0.5 * flare) * envAmt; env.floor.position.z = (flow * 0.6) % 2.5;
+      env.floor.material.opacity = (0.3 + 0.5 * flare) * envAmt * (dc > 0 ? 1 : 1 - 0.85 * close); // the floor steps back while a chapter title is read over it
+      env.floor.position.z = (flow * 0.6) % 2.5;
       const settled = reduce ? 30 : since; // reduced motion: the blocks are simply there, already still
       for (i = 0; i < env.frags.length; i++) {
         const fg = env.frags[i];
