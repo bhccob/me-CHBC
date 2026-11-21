@@ -24,6 +24,8 @@ export interface PieceRig {
   cap: THREE.MeshStandardMaterial;
   face: THREE.MeshStandardMaterial;
   edges: THREE.LineBasicMaterial;
+  /** the second, gold outline (the Me piece only) */
+  outline: THREE.LineBasicMaterial | null;
   bcv: HTMLCanvasElement; ccv: HTMLCanvasElement; btex: THREE.CanvasTexture; ctex: THREE.CanvasTexture;
   /** the drawn face */
   ctx: CanvasRenderingContext2D; tex: THREE.CanvasTexture;
@@ -56,12 +58,13 @@ export function buildPieces(rig: Rig, built: (label: string) => void) {
     const mesh = new THREE.Mesh(geo, [cap, cap, band, band, face, band]);
     const edges = new THREE.LineBasicMaterial({ color: new THREE.Color(ecol), transparent: true, opacity: 0.85 });
     mesh.add(new THREE.LineSegments(edgeGeo, edges)); rig.scene.add(mesh);
-    if (isMe) { const e2 = new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({ color: new THREE.Color(ecol), transparent: true, opacity: 0.45 })); e2.scale.setScalar(1.035); mesh.add(e2); }
+    const outline = isMe ? new THREE.LineBasicMaterial({ color: new THREE.Color(ecol), transparent: true, opacity: 0.45 }) : null;
+    if (outline) { const e2 = new THREE.LineSegments(edgeGeo, outline); e2.scale.setScalar(1.035); mesh.add(e2); }
     const X = new THREE.Vector3(P[1][0], P[1][1], P[1][2]), Z = new THREE.Vector3(P[2][0], P[2][1], P[2][2]), Y = new THREE.Vector3().crossVectors(Z, X);
     const aQuat = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
     DRAW[i](ctx, 1.5, col, 1); tex.needsUpdate = true;
     built("Piece " + (i + 1) + " of 6 built");
-    return { mesh, plain, band, cap, face, edges, bcv, ccv, btex, ctex, ctx, tex, col, ecol, aPos: new THREE.Vector3(P[0][0], P[0][1], P[0][2]), axis: X, aQuat };
+    return { mesh, plain, band, cap, face, edges, outline, bcv, ccv, btex, ctex, ctx, tex, col, ecol, aPos: new THREE.Vector3(P[0][0], P[0][1], P[0][2]), axis: X, aQuat };
   });
 
   /* the Me piece's written sides. BoxGeometry's material order is +x, -x, +y (top), -y (bottom), +z (front), -z (back).

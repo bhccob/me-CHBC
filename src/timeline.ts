@@ -44,7 +44,9 @@ export function readScroll(workEl: HTMLElement, endEl: HTMLElement, s: Scroll): 
   s.vh = vh; s.y = y; s.workTop = workTop; s.endTop = endTop;
   s.maxY = document.documentElement.scrollHeight - vh;
   s.target = clamp(y / Math.max(1, workTop - (2 + HOLD) * vh), 0, 1);
-  s.dc = clamp((y - (workTop - (2 + HOLD) * vh)) / (0.95 * vh), 0, 1);
+  /* the wall assembles across the whole step from Directions (about 3.28 screens above the work list) to the wall's
+     stop (1.22): it starts a quarter screen after Directions and is whole just before the stop, so there is no pause */
+  s.dc = clamp((y - (workTop - 3.0 * vh)) / (1.6 * vh), 0, 1);
   s.dop = clamp((y - (workTop - vh)) / vh, 0, 1);
   s.ep = clamp((y + vh - endTop) / vh, 0, 1);
   s.A = clamp((y - (endTop - 0.6 * vh)) / (1.6 * vh), 0, 1);

@@ -9,11 +9,14 @@ export function createPanels() {
   /* styles are only written when they change, so a still page costs nothing */
   const put = (key: string, el: HTMLElement, prop: "opacity" | "transform", v: string) => { if (last[key] !== v) { last[key] = v; el.style[prop] = v; } };
   return {
-    /** a panel fades and rises in. it is never taken out of the page, so screen readers can always read it */
-    show(k: string, v: number) {
+    /** a panel fades and rises in. it is never taken out of the page, so screen readers can always read it.
+        `sc` scales it about the screen centre (the seam a block sits on), and `journey` (0..1) trades the rise for that
+        depth while the camera flies from block to block */
+    show(k: string, v: number, sc = 1, journey = 0) {
       const el = panels[k]; if (!el) return;
       if (v < 0.004) { put(k + "o", el, "opacity", "0"); return; }
-      put(k + "o", el, "opacity", v.toFixed(3)); put(k + "t", el, "transform", "translateY(" + ((1 - v) * 26).toFixed(1) + "px)");
+      put(k + "o", el, "opacity", v.toFixed(3));
+      put(k + "t", el, "transform", "translateY(" + ((1 - v) * 26 * (1 - journey)).toFixed(1) + "px)" + (sc !== 1 ? " scale(" + sc.toFixed(4) + ")" : ""));
     },
     hint: (v: number) => put("hint", hint, "opacity", v.toFixed(3)),
     grid: (v: number) => put("grid", grid, "opacity", v.toFixed(3)),
