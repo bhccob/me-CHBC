@@ -1,5 +1,7 @@
 // Makes the icons from Bob's logo, and the share image from tools/share.html.
-// The logo is two files he drew: public/favicon.svg (bold lines, for small sizes) and public/icon.svg (fine lines, for large sizes).
+// The logo is the chbc kit's Bézier mark (Documents/LOGO/CHBC-LOGO): public/favicon.svg (the favicon cut, for small sizes)
+// and public/icon.svg (the app icon, for large sizes), both a paper mark on an ink tile. The kit's own PNG and ICO files are
+// committed as they are; this script only remakes them if you change the SVGs.
 // Run `npm run icons` while `npm run dev` is running (the share image is a picture of a page on the dev server).
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -11,7 +13,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pub = (f) => path.join(root, "public", f);
 
 /* phone home screen: the large logo on a full square of its own background (the phone rounds the corners itself) */
-await sharp(pub("icon.svg"), { density: 300 }).resize(180, 180).flatten({ background: "#0c0519" }).png().toFile(pub("apple-touch-icon.png"));
+await sharp(pub("icon.svg"), { density: 300 }).resize(180, 180).flatten({ background: "#434842" }).png().toFile(pub("apple-touch-icon.png"));
 console.log("apple-touch-icon.png written");
 
 /* favicon.ico, for browsers and search engines that still ask for it: the bold logo at 48 px, as a PNG inside an ICO file */
