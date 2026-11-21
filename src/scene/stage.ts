@@ -2,7 +2,7 @@
 import * as THREE from "three";
 import { PIECES, END, FORM } from "../content";
 import { clamp, ss, lerp, step, $ } from "../util";
-import { ORDER, START, DUR, CH, HERO_END, ME_TURNS, readScroll, type Scroll } from "../timeline";
+import { ORDER, START, DUR, CH, HERO_END, ME_STOPS, ME_TURNS, readScroll, type Scroll } from "../timeline";
 import { arrive, seal, wind, clack, isSoundOn } from "../audio";
 import { createPanels } from "../ui/panels";
 import { createRig, CAM_Z, PI } from "./rig";
@@ -56,8 +56,50 @@ export function startStage(hooks: StageHooks) {
   const F = makeFrame();
   const S = {} as Scroll;
   const fragOut = { x: 0, y: 0, z: 0, k: 0, spin: 0 };
-  /** how fast the camera catches up with the scroll, per frame at 60 fps. the prototype used 0.085, which felt loose */
-  const FOLLOW = 0.22;
+  /** how fast the camera catches up with the scroll, per frame at 60 fps. the prototype used 0.085, which felt loose.
+      the turns of the about-me piece follow a little closer still, so each turn keeps up with its short glide */
+  const FOLLOW = 0.22, FOLLOW_TURNS = 0.32;
+
+  /* the flight from block to block, from the last side of the about-me piece to Directions. the blocks stand still, one
+     behind the other, SPACING apart, and a virtual camera flies straight forward through them. blocks, floor and
+     fragments are drawn relative to it, so the real camera and all the layout around it stay as they are */
+  const SPACING = 70;
+  /** where the journey starts (as scroll progress): the last side of the about-me piece. the floor and the fragments drift
+      with the scroll until here, as they always have; from here on only the flying camera moves them */
+  const FLIGHT_P = START[0] + DUR[0] * ME_STOPS[3];
+  /* each block comes in from its own side, a little turned, and drifts a little off-centre as it is passed:
+     [in x, in y, tilt x, tilt y, tilt z, out x, out y], by station (About me, the four studies, Directions) */
+  const DIR = [
+    [0, 0, 0, 0, 0, -0.6, 0.5],
+    [0.9, 0.35, 0.1, -0.3, 0.06, 0.7, -0.4], // software: from upper right
+    [-0.4, -0.6, -0.12, 0.25, -0.05, -0.8, 0.3], // design: from lower left
+    [-0.9, 0.3, 0.08, 0.3, 0.05, 0.5, 0.6], // mechatronics: from the left
+    [0.45, -0.55, -0.1, -0.25, -0.06, -0.6, -0.5], // intern: from lower right
+    [0.85, 0.4, 0.1, -0.28, 0.05, 0, 0], // directions: from upper right
+  ];
+  const jPos = new THREE.Vector3(), jQ = new THREE.Quaternion(), jE = new THREE.Euler(), dirQ = new THREE.Quaternion();
+  /* a block dissolves as the camera passes through it. only then are its materials see-through: at full strength they
+     are opaque, exactly as before, so the fog still shows a far block as a solid block */
+  const fadeMats = pieces.map((pc, i) => [...new Set<THREE.Material>([pc.cap, pc.band, pc.face, ...(i === ME ? [...meSides.mats, aura.sparks[0].material as THREE.Material] : [])])]);
+  const faded = [false, false, false, false, false, false], fadeOf = [1, 1, 1, 1, 1, 1];
+  function setFade(i: number, f: number) {
+    const on = f < 0.999;
+    if (on !== faded[i]) { faded[i] = on; for (const m of fadeMats[i]) { m.transparent = on; m.opacity = 1; m.needsUpdate = true; } }
+    if (on) for (const m of fadeMats[i]) m.opacity = f;
+  }
+  /* see-through and opaque need different shaders. both are built for every piece on the first frame, so the first
+     flight through a block never stalls */
+  let warm = false;
+  function warmUp() {
+    warm = true;
+    const me = pieces[ME].mesh, was = me.material, all = new Set<THREE.Material>();
+    for (const ms of fadeMats) for (const m of ms) all.add(m);
+    for (const see of [true, false]) {
+      all.forEach((m) => { m.transparent = see; m.needsUpdate = true; });
+      for (const mats of [meSides.mats, meSides.plain]) { me.material = mats; renderer.compile(scene, camera); }
+    }
+    me.material = was;
+  }
   /** the camera is only flying past a piece when it trails the scroll by more than this (as a share of the whole
       journey). a step to a piece trails by about 0.01 when the piece fills the view, a jump across the page by 0.035 or more */
   const PASSING = 0.028;
@@ -123,7 +165,9 @@ export function startStage(hooks: StageHooks) {
     let dc = S.dc, dop = S.dop, ep = S.ep, A = S.A;
     /* the camera follows the scroll closely: it catches up in well under a tenth of a second, so the page feels
        direct. the steps (src/ui/steps.ts) already ease the scroll, so little smoothing is needed here */
-    p = reduce || F.first ? target : p + (target - p) * step(FOLLOW, dt);
+    const meT = (p - START[0]) / DUR[0];
+    p = reduce || F.first ? target : p + (target - p) * step(meT > 0.2 && meT < 0.82 ? FOLLOW_TURNS : FOLLOW, dt);
+    if (!warm) warmUp();
     if (!counted) { counted = true; hooks.task("First frame drawn"); }
     if (form.open) { A = 1; dc = 1; dop = 1; ep = 1; } // the page cannot move under the form
     ending.live = (A > 0.97 && ending.finalT > 0) || form.open;
@@ -140,6 +184,14 @@ export function startStage(hooks: StageHooks) {
     let i: number, t: number, active = -1, activeAmt = 0, meTurn = 0, meLive = false, curT = 0.5, curC = 0;
     const hero = p < HERO_END, h = ss(0.006, HERO_END, p); // h: 0 = among the pieces, 1 = pulled back
     const textOn = 1 - ss(0, 0.15, dc); // chapter text never sits on top of the wall or the pages after it
+    /* the journey, u: -1 before the about-me chapter (and below 0 until its last side), 0 at its last side, c at block
+       c's stop (1 software … 5 Directions), 5.5 once the chapters are over. it is 0.5 where two chapters meet */
+    let u = p < START[0] ? -1 : 5.5;
+    for (let c = 0; c < 6; c++) if (p >= START[c] && p < START[c] + DUR[c]) { const tc = (p - START[c]) / DUR[c]; u = c ? c - 0.5 + tc : (tc - ME_STOPS[3]) / (2 * (1 - ME_STOPS[3])); }
+    /* journey: how much the flight places the blocks (the rest of the way, today's poses). the camera stops at Directions */
+    const onWay = dop < 1 ? 1 : 0, journey = ss(0, 0.14, u) * onWay, uc = clamp(u, 0, 5);
+    /* the fog opens on the way, so the next block shows far back as a block, and stays open while the wall assembles */
+    const fogOpen = ss(0, 0.2, u) * (1 - ss(0.6, 1, dc)) * onWay;
     for (let c = 0; c < 6; c++) {
       i = ORDER[c]; t = clamp((p - START[c]) / DUR[c], 0, 1);
       const live = p >= START[c] && p < START[c] + DUR[c], me = i === ME;
@@ -154,8 +206,15 @@ export function startStage(hooks: StageHooks) {
         meName = clamp((t - 0.13) / 0.16, 0, 1);
         meTurn = ME_TURNS.reduce((a, w) => a + ss(w[0], w[1], t), 0);
         meLive = live;
-        ui.show("p" + i, ss(0.18, 0.23, t) * (1 - ss(0.86, 0.9, t)) * textOn);
-      } else ui.show("p" + i, ss(0.34, 0.44, t) * (1 - ss(0.62, 0.72, t)) * textOn);
+        /* as the camera leaves the piece, its title grows and fades, without dropping */
+        ui.show("p" + i, ss(0.18, 0.23, t) * (1 - ss(0.86, 0.9, t)) * (1 - ss(0.818, 0.87, t)) * textOn, 1 + 0.22 * ss(0.814, 0.88, t), ss(0.8, 0.814, t));
+      } else {
+        /* on the flight a title comes up a little small while its block is still ahead, and grows and fades as the camera
+           flies past it. Directions is not flown through: its title only fades. two titles are never on screen together */
+        const x = u - c, op = ss(-0.27, -0.1, x) * (1 - ss(0.04, 0.16, x)) * textOn;
+        const sc = x < 0 ? 1 - 0.1 * ss(0.08, 0.27, -x) : c < 5 ? 1 + 0.22 * ss(0.03, 0.16, x) : 1;
+        ui.show("p" + i, lerp(ss(0.34, 0.44, t) * (1 - ss(0.62, 0.72, t)) * textOn, op, journey), lerp(1, sc, journey), journey);
+      }
       if (live) {
         active = i; activeAmt = zc; curT = t; curC = c;
         focusV.copy(FIELD[i]); if (c < 5) focusV.lerp(FIELD[ORDER[c + 1]], go); // the point the camera is looking at
@@ -253,9 +312,35 @@ export function startStage(hooks: StageHooks) {
         if (ie < 1) { farV.set(vK.x * 1.7, vK.y * 1.7, vK.z - 38); vK.lerpVectors(farV, vK, ie); }
         P.pos.lerpVectors(vK, P.pos, h); P.sc = lerp(1.3 * fullScale, P.sc, h);
       }
+      /* the flight. each block stands at its station in its reading pose, SPACING behind the one before; the camera
+         flies to it. once the wall starts, only Directions is still placed this way (the wall takes it from there) */
+      const c = CH[i] - 1;
+      let fade = 1;
+      if (journey > 0 && (dc <= 0 || c === 5)) {
+        const x = u - c, s = c ? clamp(x + 0.5, 0, 1) : Math.min(1, ME_STOPS[3] + Math.max(0, x) * 2 * (1 - ME_STOPS[3]));
+        const sd = c % 2 ? -1 : 1, H = c ? 1 : 0.4, fp = s - 0.5, D = DIR[c], g = wide ? 1 : 0.45;
+        if (wide) jPos.set((halfW * 0.07 * sd - fp * 2.6 * sd) * H, ((c % 3) - 1) * 0.12 * H + fp * 0.5, 0); else jPos.set(-fp * 1.1 * sd * H, fp * 0.4, 0);
+        jPos.z = SPACING * (uc - c); // its place in the world (z = -SPACING * c), seen from the camera at CAM_Z - SPACING * uc
+        jE.set(0.16 * sd * H, sd * (-0.44 + 0.66 * s) * H, 0.08 * sd * H); jQ.setFromEuler(jE).premultiply(presQ);
+        if (c === 0 && meTurn % 4 > 0) jQ.multiply(turnQ); // the about-me piece keeps its turn
+        const dd = CAM_Z - jPos.z; // how far it is from the camera: CAM_Z at its own stop
+        if (dd > CAM_Z) { // still ahead: off to its own side, on a straight line into its place, slightly turned
+          const k = (dd - CAM_Z) * 0.2 * g, kk = Math.min(1, (dd - CAM_Z) / SPACING);
+          jPos.x += D[0] * k; jPos.y += D[1] * k; jE.set(D[2] * kk, D[3] * kk, D[4] * kk); jQ.premultiply(dirQ.setFromEuler(jE));
+        } else { const k = (CAM_Z - dd) * 0.12 * g; jPos.x += D[5] * k; jPos.y += D[6] * k; } // being passed: a little off-centre
+        const jSc = (wide ? Math.min(1.8, halfW * 0.155) : halfW * 0.26) * (c ? 1 : 1.18);
+        P.pos.lerp(jPos, journey); P.quat.slerp(jQ, journey); P.sc = lerp(P.sc, jSc, journey);
+        /* full strength until the camera is 13 units from it, gone at 3.5, before the camera reaches its front face */
+        fade = lerp(1, ss(3.5, 13, dd), journey);
+        if (journey > 0.5 && (jPos.z > CAM_Z - 3.5 || jPos.z < -72)) P.vis = false; // flown through, or too deep in the fog to be more than a dark shape
+      }
+      if (c < 5 && u >= 5.05 && u < 5.5 && dc <= 0) P.vis = false; // at Directions, the blocks already passed are gone until the wall calls them
+      else if (c < 5 && journey > 0 && dc > 0) fade = ss(0, 0.12, dc); // and when it does, they come in out of the open fog instead of appearing at once
+      fadeOf[i] = fade; setFade(i, fade);
       P.glow = 0.5 + 0.7 * ss(0.5, 1, zoom[i]) + 0.3 * done[i]; // a piece you have met stays brighter
       const focus = i === active || dc > 0 ? 1 : 1 - 0.65 * close; // the others fall back while one is shown
-      P.glow *= focus; pc.band.emissiveIntensity = pc.cap.emissiveIntensity = 0.75 * focus; pc.edges.opacity = 0.85 * focus;
+      P.glow *= focus; pc.band.emissiveIntensity = pc.cap.emissiveIntensity = 0.75 * focus; pc.edges.opacity = 0.85 * focus * fade;
+      if (pc.outline) pc.outline.opacity = 0.45 * fade;
       if (dop >= 1) {
         placeInLock(i, pc, P, F);
         /* the finished lock lights up under the pointer, to show it can be pressed (a press takes it apart) */
@@ -269,15 +354,19 @@ export function startStage(hooks: StageHooks) {
     }
 
     /* the aura follows the Me piece. it fades while the piece is part of the flat wall, and flares when the lock closes */
-    const m5 = pieces[ME].mesh;
+    const m5 = pieces[ME].mesh, auraOn = m5.visible, meFade = fadeOf[ME];
     const wallAmt = dop < 1 ? ss(0.3, 0.9, dc) : 0, flare = ending.finalT > 0 && since < 6 ? Math.exp(-since * 1.3) : 0, pulse = reduce ? 0 : Math.sin(time * 1.6);
-    aura.group.visible = m5.visible;
-    if (aura.group.visible) {
+    /* the group itself stays in the scene while the piece is hidden, with its light at no strength: a light that comes and
+       goes makes every material rebuild its shader, which would stall the camera the first time it flies past the piece */
+    for (const sh of aura.shells) sh.visible = auraOn;
+    for (const sp of aura.sparks) sp.visible = auraOn && wallAmt < 0.5;
+    if (aura.light) aura.light.intensity = 0;
+    if (auraOn) {
       aura.group.position.copy(m5.position); aura.group.quaternion.copy(m5.quaternion); aura.group.scale.copy(m5.scale);
-      const ga = (1 + 0.2 * pulse + 1.2 * flare + 0.4 * meOpen) * (1 - wallAmt) * (1 - ft);
+      const ga = (1 + 0.2 * pulse + 1.2 * flare + 0.4 * meOpen) * (1 - wallAmt) * (1 - ft) * meFade; // and it dissolves with the piece
       for (i = 0; i < aura.shells.length; i++) { const sh = aura.shells[i]; sh.material.opacity = 0.085 * ga; sh.scale.set(5.2, 5.2 * (1 + 0.4 * meOpen), 1); sh.position.y = 0.12 * meOpen; } // the light swells as the slips open
-      if (aura.light) aura.light.intensity = (1.7 + 0.3 * pulse + 3.5 * flare + 1.4 * meOpen) * (1 - wallAmt) * PI;
-      for (i = 0; i < 3; i++) { const sa = tt * 0.9 + i * 2.094; aura.sparks[i].position.set(Math.cos(sa) * 4.1, Math.sin(sa) * 1.9 * (1 + 0.6 * meOpen), Math.sin(sa + 1) * 1.6); aura.sparks[i].visible = wallAmt < 0.5; }
+      if (aura.light) aura.light.intensity = (1.7 + 0.3 * pulse + 3.5 * flare + 1.4 * meOpen) * (1 - wallAmt) * PI * meFade;
+      for (i = 0; i < 3; i++) { const sa = tt * 0.9 + i * 2.094; aura.sparks[i].position.set(Math.cos(sa) * 4.1, Math.sin(sa) * 1.9 * (1 + 0.6 * meOpen), Math.sin(sa + 1) * 1.6); }
     }
     /* a face is only redrawn when it is the one on screen and it has changed */
     if (ft <= 0.02) {
@@ -289,14 +378,16 @@ export function startStage(hooks: StageHooks) {
     /* the space around it: the floor and the floating blocks that stream past as you scroll.
        hidden while the work list is on screen, back for the last page */
     const envAmt = Math.max(1 - dc, dop >= 1 ? ss(0.1, 0.6, ep) : 0) * (1 - 0.5 * ft), flow = p * 170 + tt * 0.5;
+    /* on the flight the floor and the fragments stream past at the camera's own speed */
+    const drift = Math.min(p, FLIGHT_P) * 170 + tt * 0.5, fly = SPACING * uc;
     env.group.visible = envAmt > 0.01;
     if (env.group.visible) {
       env.floor.material.opacity = (0.3 + 0.5 * flare) * envAmt * (dc > 0 ? 1 : 1 - 0.85 * close); // the floor steps back while a chapter title is read over it
-      env.floor.position.z = (flow * 0.6) % 2.5;
+      env.floor.position.z = (drift * 0.6 + fly) % 2.5; // 2.5 is one cell of the grid, so it runs on seamlessly
       const settled = reduce ? 30 : since; // reduced motion: the blocks are simply there, already still
       for (i = 0; i < env.frags.length; i++) {
         const fg = env.frags[i];
-        let fx = fg.x, fy = fg.y, fz = ((fg.z + flow) % 90 + 90) % 90 - 70, fk = envAmt, spin = 0;
+        let fx = fg.x, fy = fg.y, fz = ((fg.z + drift + fly) % 90 + 90) % 90 - 70, fk = envAmt * ss(-70, -56, fz), spin = 0; // they come in out of the far end of their run, so none pops in
         /* on the last page the fragments are hidden. when the final piece is rammed home and the lock shakes, they
            burst out of it in every direction, slow down as if there were no gravity, and stay floating around it */
         if (dop >= 1) {
@@ -329,6 +420,7 @@ export function startStage(hooks: StageHooks) {
     const sh = reduce || time - ending.shakeT > 1.2 ? 0 : ending.shakeAmp * Math.exp(-(time - ending.shakeT) * 7);
     camera.position.set(smx * 1.5 * steady + Math.sin(time * 71) * sh, -smy * 1.0 * steady + Math.cos(time * 83) * sh, CAM_Z); camera.lookAt(0, 0, 0);
     env.dust.rotation.y = p * 1.2 + tt * 0.01; env.dust.position.y = p * 6;
+    const fog = scene.fog as THREE.Fog; fog.near = lerp(22, 26, fogOpen); fog.far = lerp(48, 100, fogOpen);
     renderer.render(scene, camera);
   }
   requestAnimationFrame(frame);

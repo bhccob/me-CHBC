@@ -6,10 +6,19 @@
 import { START, DUR, ME_STOPS, HOLD } from "../timeline";
 import { clamp, $ } from "../util";
 
-/** the wall stands whole from 1.45 to 1 screens above the work list. its stop is in the middle of that */
+/** the wall stands whole from 1.4 to 1 screens above the work list. its stop is just inside that */
 const WALL_UP = 1.22;
 /** after landing, the page rests this long before the next step can start (ms) */
 const DWELL = 90;
+/** a step that lands on a block holds it this long before the next push counts (ms), so a fast scroller cannot fly
+    past it: a study block a full second, a side of the about-me piece only a moment, so the turns flow */
+const HOLD_BLOCK = 1000, HOLD_SIDE = 350;
+/** one step of the flight from block to block, from the last about-me side to Directions (ms, for one block's distance) */
+const FLY = 620;
+/** Directions to the wall and back: the other five fly in and the wall assembles around Directions (ms) */
+const ASSEMBLE = 1700;
+/** the longest glide between two sides of the about-me piece (ms) */
+const TURN = 430;
 
 const root = document.documentElement;
 const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -18,7 +27,8 @@ let work: HTMLElement;
 /* the loader, the message form and a project page each hold the page still themselves */
 const blocked = () => root.classList.contains("loading") || root.classList.contains("formopen") || root.classList.contains("popopen") || root.classList.contains("nogl");
 
-/** every stop, as a scroll position, top to bottom. the last one is the top of the work list, where free scrolling begins */
+/** every stop, as a scroll position, top to bottom: the top, the four about-me sides (1-4), the five study blocks (5-9),
+    the wall (10), and the top of the work list (11), where free scrolling begins */
 function stops(): number[] {
   const vh = window.innerHeight, workTop = work.offsetTop, span = Math.max(1, workTop - (2 + HOLD) * vh);
   const out = [0];
@@ -32,10 +42,18 @@ const above = (st: number[], y: number) => { for (const s of st) if (s > y + 2) 
 const nearest = (st: number[], y: number) => st.reduce((a, s) => (Math.abs(s - y) < Math.abs(a - y) ? s : a), st[0]);
 
 /* ---- the glide: the page is carried to a place, quick off the mark and easing into the stop ---- */
-let gliding = false, gFrom = 0, gTo = 0, gT0 = 0, gDur = 0, gSet = 0, gDir = 0, landedAt = 0, raf = 0;
+let gliding = false, gFrom = 0, gTo = 0, gT0 = 0, gDur = 0, gSet = 0, gDir = 0, gHold = 0, gInOut = false, landedAt = 0, raf = 0;
 /* a second push that comes while the page is already more than half way: it is not dropped, it starts the moment
    the page lands. only one is remembered, so a spin of the wheel still moves one stop */
 let queued = 0;
+/* while a block holds, the wheel, the keys and a finger cannot move the page (the scrollbar and the menu still can) */
+let holdUntil = 0;
+const holding = () => performance.now() < holdUntil;
+/** how long a landing on `to` holds: only the about-me sides and the five blocks hold */
+function holdAt(st: number[], to: number) {
+  const k = st.findIndex((s) => Math.abs(s - to) < 2);
+  return k >= 5 && k <= 9 ? HOLD_BLOCK : k >= 1 && k <= 4 ? HOLD_SIDE : 0;
+}
 
 function stopGlide() { queued = 0; if (gliding) { gliding = false; cancelAnimationFrame(raf); } }
 const halfWay = () => gliding && performance.now() - gT0 > gDur * 0.5;
@@ -44,22 +62,34 @@ function tick(now: number) {
   /* something else moved the page (the scrollbar, the browser): let go at once, and tidy up when it has stopped */
   if (now - gT0 > 220 && Math.abs(window.scrollY - gSet) > 8) { gliding = false; settleSoon(); return; }
   const u = clamp((now - gT0) / gDur, 0, 1);
-  gSet = gFrom + (gTo - gFrom) * (1 - Math.pow(1 - u, 2.6));
+  /* the flight between blocks is gentle at both ends: one smooth start, one smooth stop. everything else is quick off
+     the mark and eases into the stop */
+  gSet = gFrom + (gTo - gFrom) * (gInOut ? 0.5 * u + 0.25 - 0.25 * Math.cos(Math.PI * u) : 1 - Math.pow(1 - u, 2.6));
   window.scrollTo(0, gSet);
   if (u < 1) { raf = requestAnimationFrame(tick); return; }
   gliding = false; landedAt = now;
+  if (gHold) { holdUntil = now + gHold; queued = 0; return; } // the block has its moment: a push made on the way is dropped
   if (queued) { const d = queued; queued = 0; stepFrom(d, stops()); }
 }
-/** carry the page to `to`. the time depends on the distance: a little under half a second between two about-me lines,
-    about three quarters of a second between two blocks, never more than `cap` */
-export function glideTo(to: number, cap = 1300) {
-  stopGlide();
-  const from = window.scrollY;
+/** carry the page to `to`. the time depends on the stretch: a short glide between two about-me sides, a level flight
+    of about 0.6 s from block to block, 1.7 s for the wall to assemble, and otherwise by distance (at most 1.3 s).
+    `hold`: a landing on a block holds it (the menu's jumps do not) */
+export function glideTo(to: number, hold = true) {
+  stopGlide(); holdUntil = 0;
+  const from = window.scrollY, vh = Math.max(1, window.innerHeight);
   to = clamp(to, 0, Math.max(0, root.scrollHeight - window.innerHeight));
   if (Math.abs(to - from) < 1) return;
-  if (calm.matches) { window.scrollTo(0, to); landedAt = performance.now(); return; }
+  const st = stops();
+  /* only a step to another stop holds. falling back to the stop the page was already at does not */
+  gHold = hold && nearest(st, from) !== nearest(st, to) ? holdAt(st, to) : 0;
+  if (calm.matches) { window.scrollTo(0, to); landedAt = performance.now(); if (gHold) holdUntil = landedAt + gHold; return; }
   gFrom = gSet = from; gTo = to; gDir = Math.sign(to - from); gT0 = performance.now();
-  gDur = Math.min(cap, 220 + 430 * Math.pow(Math.abs(to - from) / Math.max(1, window.innerHeight), 0.6));
+  const lo = Math.min(from, to), hi = Math.max(from, to), dist = hi - lo, inside = (a: number, b: number) => lo >= st[a] - 2 && hi <= st[b] + 2;
+  gInOut = false;
+  gDur = Math.min(1300, 220 + 430 * Math.pow(dist / vh, 0.6));
+  if (inside(4, 9)) { gInOut = true; gDur = FLY * Math.min(1.2, 0.5 + 0.5 * dist / Math.max(1, st[6] - st[5])); }
+  else if (inside(9, 10)) { gInOut = true; gDur = ASSEMBLE; }
+  else if (inside(1, 4)) gDur = Math.min(gDur, TURN);
   gliding = true; raf = requestAnimationFrame(tick);
 }
 /** one step up (-1) or down (1) from where the page is now */
@@ -99,8 +129,8 @@ export function initSteps() {
        tail of the last push, not a new one: a new push comes after a pause, turns round, or is clearly stronger.
        a mouse wheel sends large clicks that do not fade, and each one counts */
     const now = performance.now(), abs = Math.abs(dy), fresh = now - wT > 180 || dir !== wDir || abs > wAbs * 1.4 + 4 || (abs >= 50 && abs >= wAbs - 1);
-    wT = now; wDir = dir; wAbs = abs;
-    if (!fresh) return;
+    wT = now; wDir = dir; wAbs = abs; // kept up to date through a hold too, so a trackpad's tail is still the old push when the hold ends
+    if (holding() || !fresh) return;
     if (gliding) { if (dir !== gDir) stepFrom(dir, st); else if (halfWay()) queued = dir; return; } // on the way: turning back is done at once, a second push forward waits for the landing
     if (now - landedAt < DWELL) return;
     stepFrom(dir, st);
@@ -119,6 +149,7 @@ export function initSteps() {
     const st = stops();
     if (!inSteps(st, dir)) { stopGlide(); return; }
     e.preventDefault();
+    if (holding()) return;
     if (gliding && dir === gDir) { if (halfWay() && !e.repeat) queued = dir; return; }
     if (!gliding && performance.now() - landedAt < DWELL) return;
     stepFrom(dir, st);
@@ -143,6 +174,7 @@ export function initSteps() {
     const cy = e.touches[0].clientY, now = performance.now(), d = tY0 - cy;
     if (now > tLastT) tVel = tVel * 0.4 + (tLastY - cy) / (now - tLastT) * 0.6;
     tLastY = cy; tLastT = now;
+    if (holding() && !dragging) { tY0 = cy; return; } // the block holds: a drag that goes on past the hold starts from here, with no jump
     if (!dragging && Math.abs(d) < 8) return;
     dragging = true;
     window.scrollTo(0, clamp(tScroll0 + d * 1.25, tLo, tHi));
