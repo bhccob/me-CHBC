@@ -144,7 +144,7 @@ export function createLoader(onEnter: (withSound: boolean) => void) {
   /* the three fonts */
   let fontsLeft = 3, fontsIn: () => void = () => {};
   const fonts = new Promise<void>((res) => { fontsIn = res; });
-  ([['800 1em "Bricolage Grotesque"', "A", "Display font loaded"], ['500 1em "IBM Plex Mono"', "A", "Label font loaded"], ['900 1em "Noto Serif SC"', "软件设计机电实习方向我鲁班锁作品合", "Chinese font loaded"]] as const).forEach((f) => {
+  ([['800 1em "Bricolage Grotesque"', "A", "Display font loaded"], ['500 1em "IBM Plex Mono"', "A", "Label font loaded"], ['900 1em "Noto Serif SC"', "软件设计机电组合方向我鲁班锁作品", "Chinese font loaded"]] as const).forEach((f) => {
     let fin = false;
     const end = () => { if (fin) return; fin = true; task(f[2]); if (--fontsLeft <= 0) fontsIn(); };
     if (document.fonts?.load) { try { document.fonts.load(f[0], f[1]).then(end, end); } catch { end(); } setTimeout(end, 4000); } else end();

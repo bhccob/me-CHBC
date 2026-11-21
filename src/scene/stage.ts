@@ -74,7 +74,7 @@ export function startStage(hooks: StageHooks) {
     [0.9, 0.35, 0.1, -0.3, 0.06, 0.7, -0.4], // software: from upper right
     [-0.4, -0.6, -0.12, 0.25, -0.05, -0.8, 0.3], // design: from lower left
     [-0.9, 0.3, 0.08, 0.3, 0.05, 0.5, 0.6], // mechatronics: from the left
-    [0.45, -0.55, -0.1, -0.25, -0.06, -0.6, -0.5], // intern: from lower right
+    [0.45, -0.55, -0.1, -0.25, -0.06, -0.6, -0.5], // the combination: from lower right
     [0.85, 0.4, 0.1, -0.28, 0.05, 0, 0], // directions: from upper right
   ];
   const jPos = new THREE.Vector3(), jQ = new THREE.Quaternion(), jE = new THREE.Euler(), dirQ = new THREE.Quaternion();

@@ -4,7 +4,7 @@
    After adding a new Chinese character anywhere, run `npm run fonts` once.
    ------------------------------------------------------------------------------------------ */
 
-export type PieceId = "software" | "design" | "mechatronics" | "internship" | "directions" | "me";
+export type PieceId = "software" | "design" | "mechatronics" | "combination" | "directions" | "me";
 
 export interface Piece {
   id: PieceId;
@@ -21,19 +21,19 @@ export interface Piece {
   role: string;
   /** the chapter title, very large, in two lines: the piece floats on the seam between them. the second line is in the piece's colour */
   title: [string, string];
-  /** one short line in 2D under the title. keep it to one or two sentences */
+  /** the line in 2D under the title. two or three short sentences at most */
   desc?: string;
   /** one small line under that, in capitals. a few words at most */
   tools?: string;
 }
 
-/* The six pieces, in the order you meet them after "Me": software, design, mechatronics, internship, directions.
+/* The six pieces, in the order you meet them after "Me": software, design, mechatronics, the combination, directions.
    Keep "me" last in this list and keep six entries: the 3D scene counts on it. */
 export const PIECES: Piece[] = [
   {
     id: "software", name: "Software engineering", short: "Software", cn: "软件", big: "SOFTWARE ENGINEERING", color: "#e0b85a",
     role: "Graduated", title: ["SOFTWARE", "ENGINEERING"],
-    desc: "The technical foundation for mechatronics: how to build and troubleshoot machines and electronics. And no sector scales like technology.",
+    desc: "Write it once, run it for millions: nothing else scales like software. Every industry already runs on it, and AI is software too.",
     tools: "Full-stack · multiple languages",
   },
   {
@@ -44,12 +44,12 @@ export const PIECES: Piece[] = [
   {
     id: "mechatronics", name: "Mechatronics", short: "Mechatronics", cn: "机电", big: "MECHATRONICS", color: "#6cc4ff",
     role: "Next study", title: ["MECHA-", "TRONICS"],
-    desc: "AI writes more of the code every year. Machines that move in the real world are far harder to replace. I want to build both.",
+    desc: "Coders who never touch hardware will be the first replaced by AI. When a robot breaks, most teams need two people to fix it. I’ll be both.",
   },
   {
-    id: "internship", name: "Cybersecurity intern", short: "Internship", cn: "实习", big: "CYBERSECURITY INTERN", color: "#ff6a55",
-    role: "Internship", title: ["CYBERSECURITY", "INTERN"],
-    desc: "You can\u2019t keep a lock shut until you know how it opens. Attacks are cheap, automated and constant, and people still want a person responsible for security.",
+    id: "combination", name: "The combination", short: "Combination", cn: "组合", big: "THE COMBINATION", color: "#ff6a55",
+    role: "Conclusion", title: ["THE", "COMBINATION"],
+    desc: "Specialising is betting your career on one field surviving AI. I hold three. Wherever the work goes, I’m already there.",
   },
   {
     id: "directions", name: "Directions", short: "Directions", cn: "方向", big: "DIRECTIONS", color: "#5fd6ab",
@@ -146,7 +146,7 @@ export const SITE = {
   url: "https://bhccob.com",
   /* the browser tab and what a shared link shows. Wording by Claude, Bob may edit. */
   title: "Bob Chung · bhccob",
-  description: "Bob Chung (bhccob): software engineering, product design, mechatronics and a cybersecurity internship, as the six pieces of a Lu Ban lock.",
+  description: "Bob Chung (bhccob): software engineering, product design and mechatronics, and why the combination works, as the six pieces of a Lu Ban lock.",
 };
 
 /* the loader: a boot log with the name being cracked above it. `eyebrow` rewrites itself into HERO.eyebrow on the way in */
