@@ -17,6 +17,13 @@ THREE.ColorManagement.enabled = false;
   else console.warn("The Lock: three.js changed its light fall-off code; point lights will look different. See src/scene/rig.ts.");
 })();
 
+/* fog fades things out instead of painting them the background colour. the chapter titles sit behind the canvas now, and
+   a block lost in the fog would otherwise cut a dark hole in the letters */
+(() => {
+  const line = "gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );";
+  if (THREE.ShaderChunk.fog_fragment.includes(line)) THREE.ShaderChunk.fog_fragment = THREE.ShaderChunk.fog_fragment.replace(line, line + "\n\tgl_FragColor.a *= 1.0 - fogFactor;");
+})();
+
 export const PI = Math.PI;
 export const CAM_Z = 18, TAN = Math.tan(20 * Math.PI / 180);
 

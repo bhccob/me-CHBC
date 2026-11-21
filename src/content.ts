@@ -4,7 +4,7 @@
    After adding a new Chinese character anywhere, run `npm run fonts` once.
    ------------------------------------------------------------------------------------------ */
 
-export type PieceId = "software" | "development" | "mechatronics" | "internship" | "directions" | "me";
+export type PieceId = "software" | "design" | "mechatronics" | "internship" | "directions" | "me";
 
 export interface Piece {
   id: PieceId;
@@ -17,63 +17,49 @@ export interface Piece {
   /** the name in capitals on the long sides of the piece */
   big: string;
   color: string;
-  /** the words after the chapter number, e.g. "02 / 06 · The foundation" */
+  /** the words after the chapter number, e.g. "02 / 06 · Graduated" */
   role: string;
-  heading: string;
-  /** one line under the heading. left out on purpose (Bob, 2026-11-16: less clutter). add it and it shows again */
-  tagline?: string;
-  /** the short blocks under the heading: [title, text]. one block gets the full width, two sit side by side */
-  facts?: [string, string][];
-  /** one small line under the blocks: [label, what]. Keep it to a few words, it is meant to stay small */
-  tools?: [string, string][];
+  /** the chapter title, very large, in two lines: the piece floats on the seam between them. the second line is in the piece's colour */
+  title: [string, string];
+  /** one short line in 2D under the title. keep it to one or two sentences */
+  desc?: string;
+  /** one small line under that, in capitals. a few words at most */
+  tools?: string;
 }
 
-/* The six pieces, in the order you meet them after "Me": software, development, mechatronics, internship, directions.
+/* The six pieces, in the order you meet them after "Me": software, design, mechatronics, internship, directions.
    Keep "me" last in this list and keep six entries: the 3D scene counts on it. */
 export const PIECES: Piece[] = [
   {
     id: "software", name: "Software engineering", short: "Software", cn: "软件", big: "SOFTWARE ENGINEERING", color: "#e0b85a",
-    role: "The foundation", heading: "Software engineering",
-    facts: [
-      ["Why I chose it", "Ideas are cheap. Most people with a good one wait for someone else to build it. I chose software so I never have to wait: I can take an idea from nothing to a working product myself."],
-    ],
-    tools: [["Stack", "Full-stack · multiple programming languages"]],
+    role: "Graduated", title: ["SOFTWARE", "ENGINEERING"],
+    desc: "The technical foundation for mechatronics: how to build and troubleshoot machines and electronics. And no sector scales like technology.",
+    tools: "Full-stack · multiple languages",
   },
   {
-    id: "development", name: "Development", short: "Development", cn: "开发", big: "DEVELOPMENT", color: "#a488ff",
-    role: "Games and apps · part of software engineering", heading: "Development",
-    facts: [
-      ["Why I chose it", "Games are where I started, and they are an honest test: nobody plays a boring game to be polite. Apps are the same. People open them every day or delete them. I want users who tell me the truth straight away."],
-    ],
-    tools: [["Games", "Godot · Roblox Studio"], ["Apps", "Expo · React Native · TypeScript"]], // the apps line is what Locked and Lumo are built with
+    id: "design", name: "Product design", short: "Design", cn: "设计", big: "PRODUCT DESIGN", color: "#a488ff",
+    role: "On every project", title: ["PRODUCT", "DESIGN"],
+    desc: "From concept and name to logo and interface, I design every project myself, so it looks as considered as it works.",
   },
   {
     id: "mechatronics", name: "Mechatronics", short: "Mechatronics", cn: "机电", big: "MECHATRONICS", color: "#6cc4ff",
-    role: "Next study", heading: "Mechatronics",
-    facts: [
-      ["Why I chose it", "Software alone is getting easier to replace, and AI already writes much of it. Machines that move in the real world are far harder to fake. Whoever can build both the code and the hardware stays needed. That is who I am becoming."],
-    ],
+    role: "Next study", title: ["MECHA-", "TRONICS"],
+    desc: "AI writes more of the code every year. Machines that move in the real world are far harder to replace. I want to build both.",
   },
   {
-    /* one internship so far. when there is a second, make the two blocks one per internship:
-       facts: [["Cybersecurity", "..."], ["The second one", "..."]] and change `role` to "Two so far" */
-    id: "internship", name: "Internship", short: "Internship", cn: "实习", big: "INTERNSHIP", color: "#ff6a55",
-    role: "Cybersecurity", heading: "Internship",
-    facts: [
-      ["Why I chose it", "You cannot keep a lock shut until you know how it gets opened. Attacks are now cheap, automated and constant, and most companies are less secure than they think. AI can raise the alarm, but people still want a person responsible for what matters."],
-    ],
+    id: "internship", name: "Cybersecurity intern", short: "Internship", cn: "实习", big: "CYBERSECURITY INTERN", color: "#ff6a55",
+    role: "Internship", title: ["CYBERSECURITY", "INTERN"],
+    desc: "You can\u2019t keep a lock shut until you know how it opens. Attacks are cheap, automated and constant, and people still want a person responsible for security.",
   },
   {
     id: "directions", name: "Directions", short: "Directions", cn: "方向", big: "DIRECTIONS", color: "#5fd6ab",
-    role: "Still open", heading: "Directions",
-    facts: [
-      ["Where it can lead", "A future-proof, well-paid career in tech. A broad base keeps me adaptable to any change, so I can master a new field quickly."],
-      ["Long term", "Building my own company."],
-    ],
+    role: "Where it leads", title: ["DIRECTIONS", "STILL OPEN"],
+    desc: "A broad base keeps me adaptable, so I can master whatever field comes next. Long term: building my own company.",
   },
   {
-    id: "me", name: "Me", short: "Me", cn: "我", big: "BOB CHUNG", color: "#efe8d6",
-    role: "The piece that holds the rest", heading: "About me",
+    id: "me", name: "About me", short: "Me", cn: "我", big: "BOB CHUNG", color: "#efe8d6",
+    role: "The piece that holds the rest", title: ["ABOUT", "ME"],
+    desc: "Scroll turns the piece",
   },
 ];
 
@@ -81,14 +67,14 @@ export const PIECES: Piece[] = [
    The last one is drawn in gold: the long-term goal. Seven fit best. */
 export const DIRECTIONS = ["SYSTEMS BUILDER", "CREATIVE TECHNOLOGIST", "CONTROL SYSTEMS ENGINEER", "CYBERSECURITY", "DATA ENGINEER", "ROBOTICS", "FOUNDER"];
 
-/* The Me piece opens into six slips: [the word on the slip, the full sentence beside it] */
-export const ME_SLIPS: [string, string][] = [
-  ["NAME", "Chun Ho Bob Chung. Online I use bhccob, which is Bob around my Chinese initials in reverse, or the short form CHBC."],
-  ["AGE", "Born in 2006. Twenty years old."],
-  ["STUDENT", "Software engineering graduate, continuing into mechatronics."],
-  ["PERSONALITY", "INTP-T. Curious and analytical. I take ideas apart to see how they work, think in systems and keep testing a plan until it holds up."],
-  ["HOBBIES", "Lifting weights and running for balance. Former national champion in my category in both powerlifting and table tennis, which I also played abroad. Swimming diplomas A to F."],
-  ["FUN FACT", "I speak more than four languages."],
+/* The Me piece has four long sides and the scroll turns it, one side per stop. Side 1 is the name being built (drawn
+   in faces.ts). Sides 2 to 4 come from here. `big` is large, `small` sits under it. With two `stats` the side is split in two */
+export interface MeSide { label: string; big?: string; small?: string; stats?: [string, string][] }
+export const ME_SIDES: MeSide[] = [
+  { label: "Name", big: "bhccob", small: "Chun Ho Bob Chung · hcc is Chung Chun Ho, backwards" },
+  { label: "Basics", stats: [["2006", "Born"], ["INTP-T", "Personality"]] },
+  { label: "Sport", big: "National champion", small: "Powerlifting · Table tennis" },
+  { label: "Languages", big: "4+", small: "Languages spoken" },
 ];
 
 export interface Project {
@@ -117,7 +103,7 @@ export interface Project {
    Each row opens a full-screen page about the project. Keep the text short. */
 export const PROJECTS: Project[] = [
   {
-    name: "Jontai Energy", kind: "Website", brand: "#3fbf7f", uses: ["software", "me"],
+    name: "Jontai Energy", kind: "Website", brand: "#3fbf7f", uses: ["software", "design", "me"],
     role: "Direction, design and build",
     url: "https://jontai-energy.vercel.app/",
     link: "the website",
@@ -126,7 +112,7 @@ export const PROJECTS: Project[] = [
     desc: "A full website redesign for a solar energy company in Aruba.",
   },
   {
-    name: "Locked", kind: "Mobile app", brand: "#8a5cf6", uses: ["software", "development"],
+    name: "Locked", kind: "Mobile app", brand: "#8a5cf6", uses: ["software", "design"],
     role: "Concept, name, design and build",
     url: "https://lockedlifts.com/",
     link: "the app",
@@ -135,7 +121,7 @@ export const PROJECTS: Project[] = [
     desc: "A gym tracker that logs a lift in seconds and suggests the weight for the next one.",
   },
   {
-    name: "Lumo", kind: "Mobile app", brand: "#8fd96a", uses: ["software", "development"],
+    name: "Lumo", kind: "Mobile app", brand: "#8fd96a", uses: ["software", "design"],
     role: "Concept, name, design and build",
     url: "https://lumogrocery.com/",
     link: "the app",
@@ -160,7 +146,7 @@ export const SITE = {
   url: "https://bhccob.com",
   /* the browser tab and what a shared link shows. Wording by Claude, Bob may edit. */
   title: "Bob Chung · bhccob",
-  description: "Bob Chung (bhccob): software engineering, game and app development, mechatronics and a cybersecurity internship, as the six pieces of a Lu Ban lock.",
+  description: "Bob Chung (bhccob): software engineering, product design, mechatronics and a cybersecurity internship, as the six pieces of a Lu Ban lock.",
 };
 
 export const LOADER = { cn: "鲁班锁", eyebrow: "bhccob · Bob Chung", withSound: "Enter with sound", noSound: "Enter without sound", note: "Best with headphones" };

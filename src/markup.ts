@@ -1,6 +1,6 @@
 /* Turns content.ts into HTML. Used twice: by the build (vite.config.ts), so the text is real HTML in the page
    even with no JavaScript or no WebGL, and by the browser for the project page. No DOM in here. */
-import { PIECES, ME_SLIPS, PROJECTS, CONTACT, SITE, LOADER, HERO, WORK, END, FORM, type PieceId, type Project } from "./content.ts";
+import { PIECES, ME_SIDES, PROJECTS, CONTACT, SITE, LOADER, HERO, WORK, END, FORM, type PieceId, type Project } from "./content.ts";
 import { ORDER, CH } from "./timeline.ts";
 
 export const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -12,26 +12,24 @@ export function chips(w: Project) {
   return w.uses.map((id) => { const p = PIECES[pieceIndex(id)]; return `<i style="--c:${p.color}">${esc(p.short)}</i>`; }).join("");
 }
 
+/** one side of the Me piece, as words: for screen readers and the plain page */
+const sideText = (s: (typeof ME_SIDES)[number]) => s.stats ? s.stats.map((x) => x[0] + " (" + x[1].toLowerCase() + ")").join(", ") : [s.big, s.small].filter(Boolean).join(". ");
+
+/* each chapter: a huge title in two lines with the piece floating on the seam between them, and one short line under
+   it. the title sits behind the 3D (the layer is under the canvas), so the piece crosses in front of the letters */
 function panels() {
   let h = "";
   for (let c = 0; c < 6; c++) { // in the order you meet them, so the plain page reads in the same order as the 3D one
-    const i = ORDER[c], p = PIECES[i], num = `${two(CH[i])} / 06 · ${esc(p.role)}`;
-    if (p.id === "me") {
-      h += `<section class="panel" data-k="p${i}" style="--c:${p.color}" aria-labelledby="h-${p.id}">`
-        + `<div class="eyebrow">${cn(p.cn)}<span>${num}<span class="live"> · <span id="meNum">Line 1 of 6</span></span></span></div>`
-        + `<h2 class="t2" id="h-${p.id}">${esc(p.heading)}</h2>`
-        + `<p class="lead live" id="meLine" aria-hidden="true">${esc(ME_SLIPS[0][1])}</p>`
-        + `<dl class="me-all">${ME_SLIPS.map((s) => `<div><dt>${esc(s[0])}</dt><dd>${esc(s[1])}</dd></div>`).join("")}</dl>`
-        + "</section>";
-    } else {
-      h += `<section class="panel" data-k="p${i}" style="--c:${p.color}" aria-labelledby="h-${p.id}">`
-        + `<div class="eyebrow">${cn(p.cn)}<span>${num}</span></div>`
-        + `<h2 class="t2" id="h-${p.id}">${esc(p.heading)}</h2>`
-        + (p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : "")
-        + `<div class="facts">${(p.facts || []).map((f) => `<div><h3>${esc(f[0])}</h3><p>${esc(f[1])}</p></div>`).join("")}</div>`
-        + (p.tools?.length ? `<p class="tools">${p.tools.map((t) => `<span><b>${esc(t[0])}</b> ${esc(t[1])}</span>`).join("")}</p>` : "")
-        + "</section>";
-    }
+    const i = ORDER[c], p = PIECES[i], num = `${two(CH[i])} / 06`, me = p.id === "me";
+    h += `<section class="panel chap${me ? " me" : ""}" data-k="p${i}" style="--c:${p.color}" aria-labelledby="h-${p.id}">`
+      + `<h2 class="sr" id="h-${p.id}">${esc(p.name)}</h2>`
+      + `<div class="t-up"><div class="eyebrow">${cn(p.cn)}<span>${num}</span><span class="st">${esc(p.role)}</span></div>`
+      + `<div class="ttl" aria-hidden="true">${esc(p.title[0])}</div></div>`
+      + `<div class="t-down"><div class="ttl c" aria-hidden="true">${esc(p.title[1])}</div>`
+      + (p.desc ? `<p class="${me ? "turn" : "desc"}"${me ? ' aria-hidden="true"' : ""}>${esc(p.desc)}</p>` : "")
+      + (p.tools ? `<p class="tools">${esc(p.tools)}</p>` : "")
+      + (me ? `<dl class="me-all">${ME_SIDES.map((s) => `<div><dt>${esc(s.label)}</dt><dd>${esc(sideText(s))}</dd></div>`).join("")}</dl>` : "")
+      + "</div></section>";
   }
   return h;
 }

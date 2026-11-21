@@ -6,9 +6,11 @@ export const ORDER = [5, 0, 1, 2, 3, 4];
 /** extra screens of scroll with the finished wall standing still */
 export const HOLD = 0.4;
 export const HERO_END = 0.09;
-/** where in the Me chapter the six about-me lines start, and how much of the chapter they take */
-export const ME_A = 0.36, ME_L = 0.46;
-export const UNIT = 0.91 / 7.8;
+/** the Me chapter's four stops (as a share of the chapter): the name, then one stop for each quarter turn of the piece */
+export const ME_STOPS = [0.3, 0.49, 0.65, 0.81];
+/** where in the Me chapter each quarter turn happens. the fourth brings side 1 back to the front as the camera leaves */
+export const ME_TURNS: [number, number][] = [[0.36, 0.46], [0.52, 0.62], [0.68, 0.78], [0.84, 0.93]];
+export const UNIT = 0.91 / 7.2; // 2.2 units for Me, 1 for each of the other five
 export const START: number[] = [];
 export const DUR: number[] = [];
 /** chapter number (1..6) of each piece */
@@ -16,7 +18,7 @@ export const CH: number[] = [];
 (() => {
   let a = HERO_END;
   for (let c = 0; c < 6; c++) {
-    DUR[c] = UNIT * (c === 0 ? 2.8 : 1); // the Me chapter is much longer: the name animation, then six lines with room to read each
+    DUR[c] = UNIT * (c === 0 ? 2.2 : 1); // the Me chapter is longer: the name animation, then three quarter turns of the piece
     START[c] = a;
     a += DUR[c];
     CH[ORDER[c]] = c + 1;
@@ -49,5 +51,5 @@ export function readScroll(workEl: HTMLElement, endEl: HTMLElement, s: Scroll): 
   return s;
 }
 
-/** where the menu's "About" lands: on the first of the six lines */
-export const aboutTop = (workTop: number, vh: number) => (START[0] + DUR[0] * (ME_A + ME_L / 12)) * Math.max(1, workTop - (2 + HOLD) * vh);
+/** where the menu's "About" lands: on the name, side 1 of the Me piece */
+export const aboutTop = (workTop: number, vh: number) => (START[0] + DUR[0] * ME_STOPS[0]) * Math.max(1, workTop - (2 + HOLD) * vh);

@@ -1,13 +1,11 @@
-/* the journey moves in steps. the first view, the name, each about-me line, each block and the wall are stops. one turn
+/* the journey moves in steps. the first view, each side of the Me piece, each block and the wall are stops. one turn
    of the wheel, one swipe or one key carries you to the next stop and no further, so nobody flies past a block by
    accident, and every arrival takes the same time, so the knock can land with it. below the wall (the work list and
    the last page) the page scrolls freely, as any page does.
    the page itself still scrolls: a step is only the scroll position being moved for you */
-import { START, DUR, ME_A, ME_L, HOLD } from "../timeline";
+import { START, DUR, ME_STOPS, HOLD } from "../timeline";
 import { clamp, $ } from "../util";
 
-/** where in the Me chapter the name has been built and the piece has not opened yet */
-const NAME_T = 0.3;
 /** the wall stands whole from 1.45 to 1 screens above the work list. its stop is in the middle of that */
 const WALL_UP = 1.22;
 /** after landing, the page rests this long before the next step can start (ms) */
@@ -23,8 +21,8 @@ const blocked = () => root.classList.contains("loading") || root.classList.conta
 /** every stop, as a scroll position, top to bottom. the last one is the top of the work list, where free scrolling begins */
 function stops(): number[] {
   const vh = window.innerHeight, workTop = work.offsetTop, span = Math.max(1, workTop - (2 + HOLD) * vh);
-  const out = [0, span * (START[0] + DUR[0] * NAME_T)];
-  for (let k = 0; k < 6; k++) out.push(span * (START[0] + DUR[0] * (ME_A + ME_L * (k + 0.5) / 6)));
+  const out = [0];
+  for (const m of ME_STOPS) out.push(span * (START[0] + DUR[0] * m)); // the name, then one stop per side of the Me piece
   for (let c = 1; c < 6; c++) out.push(span * (START[c] + DUR[c] * 0.5));
   out.push(workTop - WALL_UP * vh, workTop);
   return out;

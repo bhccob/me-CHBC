@@ -6,7 +6,7 @@ Vite, TypeScript and three.js. No UI framework.
 
 ## Editing the site
 
-Everything you can edit lives in **`src/content.ts`**: the six pieces, the six about-me lines, the project list and the contact links.
+Everything you can edit lives in **`src/content.ts`**: the six pieces (title, status and one short line each), the four sides of the About me piece (`ME_SIDES`), the project list and the contact links.
 
 - **Add a project:** add one object to `PROJECTS`. Put its wide picture and its short preview video in `public/work/` and name the files in `picture` and `video`. Leave `picture` as `""` for a soft glow, `video` as `""` for no video, and `url` as `""` for "Coming soon" with no Visit button.
 - **Contact links:** fill in `CONTACT`.
