@@ -31,14 +31,19 @@
 <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
+<!-- the loader: a boot log, no box. see src/loader.ts. on the way in, its line and the name glide to the first view's -->
 <div id="loader">
+  <div class="lbg"></div>
+  <div class="lblobs" aria-hidden="true">{{loader.blobs}}</div>
+  <div class="lglow" aria-hidden="true"></div>
   <div class="lwrap">
-    <div class="eyebrow">{{loader.cn}}<span>{{loader.eyebrow}}</span></div>
-    <div class="lpct" role="status" aria-live="polite"><span id="lpct">0</span><small>%</small></div>
-    <div class="lbar"><i id="lline"></i></div>
-    <div class="lstatus" id="lstatus">Loading the 3D engine</div>
-    <div class="enter lenter" id="enter"><button type="button" id="withSound">{{loader.withSound}}</button><button type="button" id="noSound">{{loader.noSound}}</button></div>
-    <div class="lnote">{{loader.note}}</div>
+    <div class="lhead-row"><div class="eyebrow lhead" id="lhead">{{loader.cn}}<span>{{loader.eyebrow}}</span></div><span class="lver">{{loader.version}}</span></div>
+    <p class="lname" id="lname" aria-hidden="true"></p>
+    <ol class="llog" id="llog" role="log" aria-live="polite" aria-label="Loading">{{loader.rows}}</ol>
+    <div class="lfoot">
+      <p class="lstatus"><b id="lstate">{{loader.denied}}</b> · <span id="lcount">00 / {{loader.total}}</span><i class="lcaret" aria-hidden="true"></i></p>
+      <div class="lenter" id="enter"><button type="button" id="withSound"><span class="caret" aria-hidden="true">&gt;</span>{{loader.withSound}}<span class="wide"> ({{loader.note}})</span></button><button type="button" id="noSound"><span class="caret" aria-hidden="true">&gt;</span>{{loader.noSound}}</button></div>
+    </div>
   </div>
 </div>
 <canvas id="gl" aria-hidden="true"></canvas>

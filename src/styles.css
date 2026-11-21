@@ -70,27 +70,71 @@ body{overflow-x:hidden}
 .me-all dt{font:500 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:16px 0 6px}
 .me-all dd{font-weight:500;line-height:1.4;max-width:60ch}
 
-/* loader */
-#loader{position:fixed;inset:0;z-index:20;background:var(--ink);display:grid;place-items:center;overflow:hidden;transition:opacity .9s ease .15s}
-#loader::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:56px 56px;
-  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 70%);opacity:.5}
-/* leaving: the number rushes towards you and you pass through it, as the dark clears onto the first view */
-#loader.done{opacity:0;pointer-events:none}
-#loader.done .lwrap{transform:scale(7);filter:blur(6px)}
-.lwrap{transition:transform 1.05s cubic-bezier(.6,0,.9,.4),filter 1.05s ease;position:relative;display:flex;flex-direction:column;align-items:center;gap:clamp(14px,2.8vh,28px);padding:var(--gut);text-align:center}
-.lwrap .eyebrow{margin:0;justify-content:center}
-.lpct{font:800 clamp(5rem,17vw,12.5rem)/.8 var(--display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
-.lpct small{font-size:.22em;letter-spacing:0;color:var(--dim);margin-left:.15em}
-.lbar{width:min(62vw,420px);height:2px;background:var(--line);position:relative}
-.lbar i{position:absolute;inset:0;background:var(--gold);transform-origin:0 50%;transform:scaleX(0);transition:transform .3s}
-.lstatus{font:400 11px/1.4 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);min-height:50px;display:grid;place-items:center}
-#loader .lenter{display:none;margin:0}          /* the two buttons only appear once everything is ready */
+/* loader: a boot log with no box, the name being cracked above it. see src/loader.ts */
+#loader{position:fixed;inset:0;z-index:20;display:grid;place-items:center;overflow:hidden}
+#loader .lbg{position:absolute;inset:0;background:var(--ink)}
+.lblobs{position:absolute;inset:0;filter:blur(56px);opacity:.42}
+.lblobs i{position:absolute;border-radius:28px;background:var(--c);opacity:.12;transition:opacity .8s ease;animation:ldrift 14s ease-in-out infinite alternate}
+.lblobs i.on{opacity:.9}
+@keyframes ldrift{from{transform:translate(0,0) rotate(var(--r))}to{transform:translate(var(--dx),var(--dy)) rotate(calc(var(--r) + 8deg))}}
+.lglow{position:absolute;inset:0;background:radial-gradient(ellipse 46% 52% at 50% 50%,rgba(10,9,18,.85),rgba(10,9,18,0))}
+#loader .lbg,.lblobs,.lglow{transition:opacity 1s ease}
+#loader.fade .lbg,#loader.fade .lblobs,#loader.fade .lglow{opacity:0}
+.lwrap{position:relative;width:min(660px,calc(100% - 40px))}
+.lhead-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.lhead.eyebrow{display:inline-flex;margin:0;will-change:transform}      /* the first view's line, exactly: it glides there */
+.lver{font:500 11px/1.2 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);transition:opacity .25s}
+.lname{margin:18px 0 22px;font-weight:800;font-size:clamp(44px,6.4vw,74px);line-height:.9;letter-spacing:-.035em;white-space:nowrap;will-change:transform}
+.lname i{font-style:normal;display:inline-block;width:.6em;text-align:center;font-family:var(--mono);font-weight:500;color:#5a5574}
+.lname i.sp{width:.26em}
+.lname i.on{font-family:var(--display);font-weight:800;color:var(--bone);animation:lsnap .5s cubic-bezier(.2,.8,.2,1.4)}
+.lname.done{animation:lflash 1.1s ease}
+@keyframes lsnap{0%{transform:translateY(-6px) scale(1.14)}100%{transform:none}}
+@keyframes lflash{0%{color:#f2cf7a;text-shadow:0 0 28px rgba(242,207,122,.6)}100%{color:var(--bone);text-shadow:none}}
+.llog{list-style:none;margin:0;padding:0;font:400 13px/1.75 var(--mono)}
+.llog li{display:flex;align-items:baseline;gap:12px;min-height:1.75em;white-space:nowrap;visibility:hidden;transition:opacity .2s} /* rows keep their height as they dissolve, so nothing above them moves during the glide */
+.llog li.ok,.llog li.now{visibility:visible}
+.llog .tg{width:6ch;flex:none;color:var(--gold);white-space:pre}
+.llog li.ok .tg{color:#5fd6ab}
+.llog .tx{color:var(--bone);overflow:hidden;text-overflow:ellipsis}
+.llog .ld{flex:1;min-width:20px;border-bottom:1px dotted rgba(239,232,214,.18);transform:translateY(-4px)}
+.llog .tm{width:6ch;flex:none;text-align:right;color:var(--dim)}
+.llog li.now .ld{visibility:hidden}
+.llog li.gone{opacity:0}
+.lfoot{min-height:112px;margin-top:26px;transition:opacity .25s}
+.lstatus{margin:0 0 8px;font:500 13px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#a8a2bd}
+.lstatus b{font-weight:500;color:#ff6a55}
+#loader.ready .lstatus b{color:#5fd6ab}
+.lcaret{display:inline-block;width:8px;height:15px;margin-left:10px;vertical-align:-2px;background:var(--gold);animation:lblink 1s steps(1) infinite}
+#loader.ready .lcaret{display:none}
+@keyframes lblink{50%{opacity:0}}
+#loader .lenter{display:none;flex-wrap:wrap;gap:4px 32px}
 #loader.ready .lenter{display:flex}
-#loader.ready .lstatus{display:none}
-.lnote{font:400 11px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);visibility:hidden}
-#loader.ready .lnote{visibility:visible}
+.lenter button{display:flex;align-items:center;gap:12px;min-height:44px;padding:12px 0;background:none;border:0;cursor:pointer;font:500 14px/1.2 var(--mono);letter-spacing:.06em;color:#a8a2bd;text-align:left;transition:color .2s}
+.lenter button:hover,.lenter button:focus-visible{color:var(--bone)}
+.lenter button:focus-visible{outline:none;text-decoration:underline;text-underline-offset:.35em;text-decoration-color:var(--gold)}
+.lenter .caret{color:var(--gold);display:inline-block;transition:transform .2s}
+.lenter button:hover .caret,.lenter button:focus-visible .caret{transform:translateX(6px)}
+.lenter .wide{opacity:.6}
+#loader.leaving{pointer-events:none}
+#loader.leaving .lfoot,#loader.leaving .lver{opacity:0}
+#loader.plain{opacity:0;transition:opacity .7s ease}   /* reduced motion: nothing glides, the whole loader fades onto the first view */
 .loading,.loading body{overflow:hidden}
-@media (prefers-reduced-motion:reduce){#loader,.lwrap{transition:none}#loader.done .lwrap{transform:none;filter:none}}
+@media (max-width:600px){.llog{font-size:11px}.llog .ld,.llog .tm,.lenter .wide{display:none}}
+/* until the loader hands over, the first view keeps its line and name hidden (they are the loader's, gliding in) and
+   its sentence, the menu and the scroll hint faded out */
+/* the first view's line and the loader's line are laid out alike, on one line, so the glide lands exactly */
+.eyebrow b{flex:none}
+.panel.hero .eyebrow span,.lhead.eyebrow span{white-space:nowrap}
+@media (max-width:600px){.panel.hero .eyebrow,.lhead.eyebrow{gap:10px;font-size:11px;letter-spacing:.12em}}
+.prehero .panel.hero .eyebrow,.prehero .panel.hero .t1{visibility:hidden}
+.panel.hero .lead{transition:opacity .9s ease .1s}
+.prehero .panel.hero .lead{opacity:0}
+.hud{transition:opacity .9s ease .2s}
+.prehero .hud{opacity:0}
+.hint{transition:opacity .9s ease .3s}
+.prehero .hint{opacity:0!important}
+@media (prefers-reduced-motion:reduce){.lblobs i,.lcaret{animation:none}.lname i.on,.lname.done{animation:none}}
 
 .eyebrow{display:flex;align-items:baseline;gap:14px;font:500 13px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:clamp(8px,1.4vh,16px)}
 .eyebrow b{font:900 clamp(26px,3.4vw,46px)/1 var(--cn);letter-spacing:0;color:var(--c,var(--gold))}

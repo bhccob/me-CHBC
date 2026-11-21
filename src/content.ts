@@ -149,7 +149,12 @@ export const SITE = {
   description: "Bob Chung (bhccob): software engineering, product design, mechatronics and a cybersecurity internship, as the six pieces of a Lu Ban lock.",
 };
 
-export const LOADER = { cn: "鲁班锁", eyebrow: "bhccob · Bob Chung", withSound: "Enter with sound", noSound: "Enter without sound", note: "Best with headphones" };
+/* the loader: a boot log with the name being cracked above it. `eyebrow` rewrites itself into HERO.eyebrow on the way in */
+export const LOADER = {
+  cn: "鲁班锁", eyebrow: "The Lock · boot", version: "bhccob v3",
+  denied: "Access denied", granted: "Access granted",
+  withSound: "Enter with sound", noSound: "Enter without sound", note: "best with headphones",
+};
 
 export const HERO = {
   cn: "鲁班锁",
