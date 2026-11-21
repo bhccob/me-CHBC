@@ -66,11 +66,26 @@ function links() {
   return a("GitHub", gh ? `https://github.com/${gh}` : "") + a("Instagram", ig ? `https://www.instagram.com/${ig}/` : "") + a("Email", mail ? `mailto:${mail}` : "");
 }
 
+/* the loader's log has one row per thing the page gets ready (13: see the task() calls). loader.ts counts the rows */
+const LOADER_ROWS = 13;
+function loaderRows() {
+  let h = "";
+  for (let k = 0; k < LOADER_ROWS; k++) h += `<li${k ? "" : ' class="now"'}><span class="tg">${k ? "[&nbsp;&nbsp;&nbsp;&nbsp;]" : "[ .. ]"}</span><span class="tx"></span><span class="ld"></span><span class="tm"></span></li>`;
+  return h;
+}
+/* behind the log: the six pieces as soft blurred colours, each lit when the site has built it */
+const BLOBS: [string, string, string, string, string, string, string][] = [
+  ["14%", "12%", "30%", "11%", "-14deg", "40px", "30px"], ["62%", "8%", "9%", "30%", "10deg", "-30px", "40px"], ["6%", "58%", "26%", "10%", "8deg", "50px", "-30px"],
+  ["34%", "76%", "24%", "9%", "-6deg", "-40px", "-20px"], ["80%", "46%", "8%", "28%", "-10deg", "-30px", "30px"], ["58%", "64%", "32%", "12%", "6deg", "30px", "-40px"],
+];
+const loaderBlobs = () => PIECES.map((p, i) => { const b = BLOBS[i]; return `<i style="--c:${p.id === "me" ? "#f2cf7a" : p.color};left:${b[0]};top:${b[1]};width:${b[2]};height:${b[3]};--r:${b[4]};--dx:${b[5]};--dy:${b[6]}"></i>`; }).join("");
+
 /** fills the {{tokens}} in index.html */
 export function renderHtml(html: string) {
   const map: Record<string, string> = {
     title: esc(SITE.title), description: esc(SITE.description), url: SITE.url, handle: esc(SITE.handle), name: esc(SITE.name),
-    "loader.cn": cn(LOADER.cn), "loader.eyebrow": esc(LOADER.eyebrow), "loader.withSound": esc(LOADER.withSound), "loader.noSound": esc(LOADER.noSound), "loader.note": esc(LOADER.note),
+    "loader.cn": cn(LOADER.cn), "loader.eyebrow": esc(LOADER.eyebrow), "loader.version": esc(LOADER.version), "loader.denied": esc(LOADER.denied), "loader.total": String(LOADER_ROWS),
+    "loader.withSound": esc(LOADER.withSound), "loader.noSound": esc(LOADER.noSound), "loader.note": esc(LOADER.note), "loader.rows": loaderRows(), "loader.blobs": loaderBlobs(),
     "hero.cn": cn(HERO.cn), "hero.eyebrow": esc(HERO.eyebrow), "hero.heading": esc(HERO.heading), "hero.lead": esc(HERO.lead),
     panels: panels(),
     "work.cn": cn(WORK.cn), "work.eyebrow": esc(WORK.eyebrow), "work.count": String(PROJECTS.length), "work.heading": esc(WORK.heading), "work.lead": esc(WORK.lead), "work.more": esc(WORK.more),

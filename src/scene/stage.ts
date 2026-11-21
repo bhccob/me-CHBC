@@ -13,6 +13,7 @@ import { makeFrame, type Pose } from "./frame";
 import { wallMetrics, placeInWall } from "./wall";
 import { ending, placeInLock, burst, initDrag } from "./ending";
 import { form, initForm, updateForm } from "./form";
+import { handoff } from "../handoff";
 
 export interface StageHooks {
   /** one more thing is ready: moves the loader's number */
@@ -40,7 +41,7 @@ export function startStage(hooks: StageHooks) {
 
   const tiltQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.52, 0, 0.18)), spinQ = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
   const presQ = new THREE.Quaternion(), eul = new THREE.Euler(), orbQ = new THREE.Quaternion(), tq = new THREE.Quaternion();
-  const lockPos = new THREE.Vector3(), vA = new THREE.Vector3(), vP = new THREE.Vector3(), vK = new THREE.Vector3(), vL = new THREE.Vector3(), home = new THREE.Vector3(), focusV = new THREE.Vector3();
+  const farV = new THREE.Vector3(), lockPos = new THREE.Vector3(), vA = new THREE.Vector3(), vP = new THREE.Vector3(), vK = new THREE.Vector3(), vL = new THREE.Vector3(), home = new THREE.Vector3(), focusV = new THREE.Vector3();
   const zoom = [0, 0, 0, 0, 0, 0], slide = [0, 0, 0, 0, 0, 0], done = [0, 0, 0, 0, 0, 0];
   /* the words on the last page: LET'S TALK, or THANK YOU after a message has been sent */
   const bigWords = bigBack.querySelectorAll("span"), endLead = endText.querySelector<HTMLElement>(".lead")!, endEyebrow = endText.querySelector<HTMLElement>(".eyebrow span")!;
@@ -246,6 +247,10 @@ export function startStage(hooks: StageHooks) {
       if (i === ME && meTurn % 4 > 0) { turnQ.setFromAxisAngle(LONG, (meTurn % 4) * Math.PI / 2); P.quat.multiply(turnQ); } // the Me piece rolls to its next side
       if (hero) { /* first view: the pieces hang all around the camera. on the first scroll they scatter, each to its place far down the trail */
         vK.set(HEROPOS[i].x * kx + Math.sin(tt * 0.2 + i) * 0.4, HEROPOS[i].y + Math.cos(tt * 0.17 + i * 2) * 0.4, HEROPOS[i].z);
+        /* until the visitor enters they wait deep in the fog, out of sight. on entering they come in to their places,
+           each a little after the one before, as the loader's blurred colours fade (handoff.ts) */
+        const ic = handoff.at < 0 ? 0 : reduce ? 1 : clamp((ms - handoff.at) / 1000 / 1.7 - i * 0.05, 0, 1), ie = 1 - Math.pow(1 - ic, 3);
+        if (ie < 1) { farV.set(vK.x * 1.7, vK.y * 1.7, vK.z - 38); vK.lerpVectors(farV, vK, ie); }
         P.pos.lerpVectors(vK, P.pos, h); P.sc = lerp(1.3 * fullScale, P.sc, h);
       }
       P.glow = 0.5 + 0.7 * ss(0.5, 1, zoom[i]) + 0.3 * done[i]; // a piece you have met stays brighter
