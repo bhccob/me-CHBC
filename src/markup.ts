@@ -85,8 +85,7 @@ export function renderHtml(html: string) {
   const map: Record<string, string> = {
     title: esc(SITE.title), description: esc(SITE.description), url: SITE.url, handle: esc(SITE.handle), name: esc(SITE.name),
     "loader.cn": cn(LOADER.cn), "loader.eyebrow": esc(LOADER.eyebrow), "loader.version": esc(LOADER.version), "loader.denied": esc(LOADER.denied), "loader.total": String(LOADER_ROWS),
-    "loader.withSound": esc(LOADER.withSound), "loader.noSound": esc(LOADER.noSound), "loader.note": esc(LOADER.note), "loader.rows": loaderRows(), "loader.blobs": loaderBlobs(),
-    "hero.cn": cn(HERO.cn), "hero.eyebrow": esc(HERO.eyebrow), "hero.heading": esc(HERO.heading), "hero.lead": esc(HERO.lead),
+    "loader.withSound": esc(LOADER.withSound), "loader.noSound": esc(LOADER.noSound), "loader.note": esc(LOADER.note), "loader.rows": loaderRows(), "loader.blobs": loaderBlobs(),    "hero.cn": cn(HERO.cn), "hero.eyebrow": esc(HERO.eyebrow), "hero.heading": esc(HERO.heading), "hero.lead": esc(HERO.lead),
     panels: panels(),
     "work.cn": cn(WORK.cn), "work.eyebrow": esc(WORK.eyebrow), "work.count": String(PROJECTS.length), "work.heading": esc(WORK.heading), "work.lead": esc(WORK.lead), "work.more": esc(WORK.more),
     rows: rows(),

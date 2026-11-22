@@ -23,6 +23,11 @@ head.writeUInt16LE(1, 10); head.writeUInt16LE(32, 12); head.writeUInt32LE(png.le
 writeFileSync(pub("favicon.ico"), Buffer.concat([head, png]));
 console.log("favicon.ico written");
 
+/* icon-192.png: the bold logo, larger, for search results. Google shows a site's icon beside its name and wants one that
+   is a multiple of 48 px square; 192 stays sharp on any screen */
+await sharp(pub("favicon.svg"), { density: 1200 }).resize(192, 192).png().toFile(pub("icon-192.png"));
+console.log("icon-192.png written");
+
 const browsers = [
   process.env.BROWSER_PATH,
   "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",

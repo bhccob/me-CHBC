@@ -78,8 +78,9 @@ body{overflow-x:hidden}
 .lblobs i.on{opacity:.9}
 @keyframes ldrift{from{transform:translate(0,0) rotate(var(--r))}to{transform:translate(var(--dx),var(--dy)) rotate(calc(var(--r) + 8deg))}}
 .lglow{position:absolute;inset:0;background:radial-gradient(ellipse 46% 52% at 50% 50%,rgba(10,9,18,.85),rgba(10,9,18,0))}
-#loader .lbg,.lblobs,.lglow{transition:opacity 1s ease}
-#loader.fade .lbg,#loader.fade .lblobs,#loader.fade .lglow{opacity:0}
+.lglow{transition:opacity .9s ease}
+#loader.fade .lglow{opacity:0}   /* the dark itself opens like an iris, and the colours fly out to the pieces: both in loader.ts */
+#loader .lbg,.lblobs{will-change:transform,opacity}
 .lwrap{position:relative;width:min(660px,calc(100% - 40px))}
 .lhead-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .lhead.eyebrow{display:inline-flex;margin:0;will-change:transform}      /* the first view's line, exactly: it glides there */

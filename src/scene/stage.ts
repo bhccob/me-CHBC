@@ -3,9 +3,9 @@ import * as THREE from "three";
 import { PIECES, END, FORM } from "../content";
 import { clamp, ss, lerp, step, $ } from "../util";
 import { ORDER, START, DUR, CH, HERO_END, ME_STOPS, ME_TURNS, readScroll, type Scroll } from "../timeline";
-import { arrive, seal, wind, clack, isSoundOn } from "../audio";
+import { arrive, seal, travel, pass as passBy, clack, slide as drag, isSoundOn } from "../audio";
 import { createPanels } from "../ui/panels";
-import { createRig, CAM_Z, PI } from "./rig";
+import { createRig, CAM_Z, TAN, PI } from "./rig";
 import { buildPieces, ME } from "./pieces";
 import { buildEnvironment } from "./environment";
 import { DRAW } from "./faces";
@@ -38,11 +38,20 @@ export function startStage(hooks: StageHooks) {
   const FIELD: THREE.Vector3[] = [];
   [[0, 0, 0], [9, 3, -26], [0, -3, -52], [-9, 2.5, -78], [0, -2.5, -104], [9, 3, -130]].forEach((a, c) => { FIELD[ORDER[c]] = new THREE.Vector3(a[0], a[1], a[2]); });
   const HEROPOS = [[5.2, -2.4, 6], [-6.5, -3.2, 2], [7.5, 3.4, -2], [-3, 5, -6], [3.2, -5.2, -10], [-5.5, 2.2, 10]].map((a) => new THREE.Vector3(a[0], a[1], a[2]));
+  /** where a piece at world point v, at size sc, shows on screen once the camera has settled. written into handoff.spots */
+  function spot(i: number, v: THREE.Vector3, sc: number) {
+    const hh = TAN * (CAM_Z - v.z), W = window.innerWidth, H = window.innerHeight, s = handoff.spots[i] || (handoff.spots[i] = { x: 0, y: 0, r: 0 });
+    s.x = (v.x / (hh * view.aspect) + 1) / 2 * W; s.y = (1 - v.y / hh) / 2 * H; s.r = 2.4 * sc / hh * H / 2; // 2.4: between half its length and half its width
+  }
+  /** the way in: how much further back the camera starts, and how far it is turned (radians), before it settles */
+  const INTRO_BACK = 6, INTRO_ROLL = -0.08;
 
   const tiltQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.52, 0, 0.18)), spinQ = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
   const presQ = new THREE.Quaternion(), eul = new THREE.Euler(), orbQ = new THREE.Quaternion(), tq = new THREE.Quaternion();
   const farV = new THREE.Vector3(), lockPos = new THREE.Vector3(), vA = new THREE.Vector3(), vP = new THREE.Vector3(), vK = new THREE.Vector3(), vL = new THREE.Vector3(), home = new THREE.Vector3(), focusV = new THREE.Vector3();
   const zoom = [0, 0, 0, 0, 0, 0], slide = [0, 0, 0, 0, 0, 0], done = [0, 0, 0, 0, 0, 0];
+  /** pass-by: each block's side of PASS_AT last frame (1 nearer, 0 further, -1 not on the flight), so a crossing is heard once */
+  const passNear = [-1, -1, -1, -1, -1, -1], PASS_AT = 9;
   /* the words on the last page: LET'S TALK, or THANK YOU after a message has been sent */
   const bigWords = bigBack.querySelectorAll("span"), endLead = endText.querySelector<HTMLElement>(".lead")!, endEyebrow = endText.querySelector<HTMLElement>(".eyebrow span")!;
   let thanksShown = false, prevFt = 0, footLive = true;
@@ -108,7 +117,7 @@ export function startStage(hooks: StageHooks) {
   let reduce = motion.matches;
   motion.addEventListener?.("change", () => { reduce = motion.matches; });
 
-  let p = 0, mx = 0, my = 0, smx = 0, smy = 0, meName = 1, lastName = 1, arriveArmed = true, prevDc = 0, lastT = -1, frameNo = 0, counted = false, sidesOn = false;
+  let p = 0, mx = 0, my = 0, smx = 0, smy = 0, meName = 1, lastName = 1, arriveArmed = true, prevDc = 0, lastT = -1, frameNo = 0, counted = false, sidesOn = false, lastTurning = -1;
   /* the Me piece turns about its own long axis, a quarter turn per stop */
   const LONG = new THREE.Vector3(1, 0, 0), turnQ = new THREE.Quaternion();
   /** the Me piece no longer opens into slips: it turns instead. kept at 0 so the glow and size behave as before the slips opened */
@@ -167,6 +176,7 @@ export function startStage(hooks: StageHooks) {
        direct. the steps (src/ui/steps.ts) already ease the scroll, so little smoothing is needed here */
     const meT = (p - START[0]) / DUR[0];
     p = reduce || F.first ? target : p + (target - p) * step(meT > 0.2 && meT < 0.82 ? FOLLOW_TURNS : FOLLOW, dt);
+    const speed = Math.min(0.9, Math.abs(target - p) * 230 * (FOLLOW / 0.085)); // how fast the camera is travelling, for the sound: the same for the same scroll speed as before
     if (!warm) warmUp();
     if (!counted) { counted = true; hooks.task("First frame drawn"); }
     if (form.open) { A = 1; dc = 1; dop = 1; ep = 1; } // the page cannot move under the form
@@ -181,7 +191,7 @@ export function startStage(hooks: StageHooks) {
     /* one continuous camera move along the trail: it reaches a piece, pushes in, eases back a little, then travels on
        through the fog until the next piece appears. you never see the six together until they come back for the wall
        and, at the very end, the lock */
-    let i: number, t: number, active = -1, activeAmt = 0, meTurn = 0, meLive = false, curT = 0.5, curC = 0;
+    let i: number, t: number, active = -1, activeAmt = 0, meTurn = 0, meLive = false, curT = 0.5, curC = 0, turning = -1;
     const hero = p < HERO_END, h = ss(0.006, HERO_END, p); // h: 0 = among the pieces, 1 = pulled back
     const textOn = 1 - ss(0, 0.15, dc); // chapter text never sits on top of the wall or the pages after it
     /* the journey, u: -1 before the about-me chapter (and below 0 until its last side), 0 at its last side, c at block
@@ -205,6 +215,7 @@ export function startStage(hooks: StageHooks) {
            time (ME_TURNS) to show its other three sides. the last turn brings the name back round as the camera leaves */
         meName = clamp((t - 0.13) / 0.16, 0, 1);
         meTurn = ME_TURNS.reduce((a, w) => a + ss(w[0], w[1], t), 0);
+        turning = live ? ME_TURNS.findIndex((w) => t > w[0] + 0.004 && t < w[1]) : -1;
         meLive = live;
         /* as the camera leaves the piece, its title grows and fades, without dropping */
         ui.show("p" + i, ss(0.18, 0.23, t) * (1 - ss(0.86, 0.9, t)) * (1 - ss(0.818, 0.87, t)) * textOn, 1 + 0.22 * ss(0.814, 0.88, t), ss(0.8, 0.814, t));
@@ -306,6 +317,7 @@ export function startStage(hooks: StageHooks) {
       if (i === ME && meTurn % 4 > 0) { turnQ.setFromAxisAngle(LONG, (meTurn % 4) * Math.PI / 2); P.quat.multiply(turnQ); } // the Me piece rolls to its next side
       if (hero) { /* first view: the pieces hang all around the camera. on the first scroll they scatter, each to its place far down the trail */
         vK.set(HEROPOS[i].x * kx + Math.sin(tt * 0.2 + i) * 0.4, HEROPOS[i].y + Math.cos(tt * 0.17 + i * 2) * 0.4, HEROPOS[i].z);
+        if (handoff.at < 0) spot(i, vK, 1.3 * fullScale); // tells the loader where this piece will hang
         /* until the visitor enters they wait deep in the fog, out of sight. on entering they come in to their places,
            each a little after the one before, as the loader's blurred colours fade (handoff.ts) */
         const ic = handoff.at < 0 ? 0 : reduce ? 1 : clamp((ms - handoff.at) / 1000 / 1.7 - i * 0.05, 0, 1), ie = 1 - Math.pow(1 - ic, 3);
@@ -328,6 +340,10 @@ export function startStage(hooks: StageHooks) {
           const k = (dd - CAM_Z) * 0.2 * g, kk = Math.min(1, (dd - CAM_Z) / SPACING);
           jPos.x += D[0] * k; jPos.y += D[1] * k; jE.set(D[2] * kk, D[3] * kk, D[4] * kk); jQ.premultiply(dirQ.setFromEuler(jE));
         } else { const k = (CAM_Z - dd) * 0.12 * g; jPos.x += D[5] * k; jPos.y += D[6] * k; } // being passed: a little off-centre
+        /* the pass-by travel sound: a whoosh as the camera goes through a block, either way, from the side it is on */
+        const near = dd < PASS_AT ? 1 : 0;
+        if (journey > 0.5 && passNear[c] >= 0 && near !== passNear[c] && !F.first) passBy(jPos.x < 0 ? -1 : 1, speed);
+        passNear[c] = journey > 0.5 ? near : -1;
         const jSc = (wide ? Math.min(1.8, halfW * 0.155) : halfW * 0.26) * (c ? 1 : 1.18);
         P.pos.lerp(jPos, journey); P.quat.slerp(jQ, journey); P.sc = lerp(P.sc, jSc, journey);
         /* full strength until the camera is 13 units from it, gone at 3.5, before the camera reaches its front face */
@@ -405,7 +421,7 @@ export function startStage(hooks: StageHooks) {
 
     /* sound that follows what is on screen */
     if (isSoundOn()) {
-      wind(Math.min(0.9, Math.abs(target - p) * 230 * (FOLLOW / 0.085))); // the same wind for the same scroll speed as before
+      travel(speed);
       if (dc >= 1 && prevDc < 1) seal();
     }
     /* the arrival knock lands the moment the piece fills the view: not on the way in, and not after the camera has
@@ -413,12 +429,20 @@ export function startStage(hooks: StageHooks) {
        past makes no knock. it is ready again once the camera has pulled well back from a piece */
     if (arriveArmed && close >= 0.95 && Math.abs(target - p) < PASSING) { arriveArmed = false; if (isSoundOn() && active >= 0 && dc <= 0) arrive(); }
     else if (close < 0.5) arriveArmed = true;
+    /* the about-me piece drags as it rolls to its next side (a slide set only), the moment the turn starts. not when the
+       camera is only flying past it */
+    if (turning >= 0 && turning !== lastTurning && !F.first && Math.abs(target - p) < PASSING) drag("turn");
+    lastTurning = turning;
     prevDc = dc; F.first = false;
 
     /* hold the camera on the centre line while it passes through the wall */
     const steady = (1 - 0.7 * ft) * (hero ? 1.6 - 0.6 * h : 1) * (dop > 0 && dop < 1 ? 0 : 1 - dc * (dop < 1 ? 1 : 0));
     const sh = reduce || time - ending.shakeT > 1.2 ? 0 : ending.shakeAmp * Math.exp(-(time - ending.shakeT) * 7);
-    camera.position.set(smx * 1.5 * steady + Math.sin(time * 71) * sh, -smy * 1.0 * steady + Math.cos(time * 83) * sh, CAM_Z); camera.lookAt(0, 0, 0);
+    /* the way in: the camera starts a little further back and a little turned, and settles as the pieces arrive, so the
+       first view is flown into rather than faded up. it has settled two seconds in, well before anyone scrolls */
+    const inK = handoff.at < 0 ? 0 : reduce ? 1 : clamp((ms - handoff.at) / 2000, 0, 1), back = Math.pow(1 - inK, 3);
+    camera.position.set(smx * 1.5 * steady + Math.sin(time * 71) * sh, -smy * 1.0 * steady + Math.cos(time * 83) * sh, CAM_Z + INTRO_BACK * back); camera.lookAt(0, 0, 0);
+    if (back > 0.0001) camera.rotateZ(INTRO_ROLL * back);
     env.dust.rotation.y = p * 1.2 + tt * 0.01; env.dust.position.y = p * 6;
     const fog = scene.fog as THREE.Fog; fog.near = lerp(22, 26, fogOpen); fog.far = lerp(48, 100, fogOpen);
     renderer.render(scene, camera);
