@@ -65,7 +65,7 @@ export const PIECES: Piece[] = [
 
 /* The Directions piece draws these as branching paths, lighting one at a time. Keep them short, in capitals.
    The last one is drawn in gold: the long-term goal. Seven fit best. */
-export const DIRECTIONS = ["SYSTEMS BUILDER", "CREATIVE TECHNOLOGIST", "CONTROL SYSTEMS ENGINEER", "CYBERSECURITY", "DATA ENGINEER", "ROBOTICS", "FOUNDER"];
+export const DIRECTIONS = ["SYSTEMS BUILDER", "PRODUCT ENGINEER", "CONTROL SYSTEMS ENGINEER", "CYBERSECURITY", "DATA ENGINEER", "ROBOTICS", "FOUNDER"];
 
 /* The Me piece has four long sides and the scroll turns it, one side per stop. Side 1 is the name being built (drawn
    in faces.ts). Sides 2 to 4 come from here. `big` is large, `small` sits under it. With two `stats` the side is split in two */
@@ -146,8 +146,8 @@ export const SITE = {
   url: "https://bhccob.com",
   /* the browser tab, the search result and what a shared link shows. In English, like the site. Keep the title under
      about 60 characters and the description under about 160, or search engines cut them off. Wording by Claude, Bob may edit. */
-  title: "Bob Chung · Student technologist",
-  description: "Code, design and machines. Bob Chung, a student in Rotterdam from Aruba, is mastering 3+ fields, because specialists in one are the first AI replaces.",
+  title: "Bob Chung · Creative technologist",
+  description: "Bob Chung, from Aruba with Chinese roots, studying in Rotterdam. Code, design and machines, interlocked like a Lu Ban lock: harder for AI to replace.",
 };
 
 /* the loader: a boot log with the name being cracked above it. `eyebrow` rewrites itself into HERO.eyebrow on the way in */
