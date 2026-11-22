@@ -4,7 +4,7 @@
    (the form is opened by the "Send a message" button under the lock, not by the lock) */
 import * as THREE from "three";
 import { clamp, ss, lerp } from "../util";
-import { clack, finale } from "../audio";
+import { clack, finale, slide } from "../audio";
 import { form, formPose } from "./form";
 import type { PieceRig } from "./pieces";
 import type { Frame, Pose } from "./frame";
@@ -26,12 +26,14 @@ export const ending = {
 const hit = [0, 0, 0, 0, 0, 0];
 /* how far out each piece is, 0 home .. 1 out, and where it was when the lock was last pressed */
 const pull = [0, 0, 0, 0, 0, 0], from = [0, 0, 0, 0, 0, 0];
+/* slide sets: which pieces have started dragging back in since the last press, and which have started being rammed */
+const homed = [0, 0, 0, 0, 0, 0], rammed = [0, 0, 0, 0, 0, 0];
 
 /** a press on the finished lock: apart, or back together */
 function toggleLock() {
   ending.apart = !ending.apart; ending.playT = performance.now() / 1000;
-  for (let k = 0; k < 6; k++) from[k] = pull[k];
-  if (ending.apart) clack(0.35); // it lets go with one soft knock
+  for (let k = 0; k < 6; k++) { from[k] = pull[k]; homed[k] = 0; }
+  if (ending.apart) { clack(0.35); slide("out"); } // it lets go with one soft knock, and in a slide set the six drag out together
 }
 /** how far out piece k is this frame. out: all six slide away together, Me a touch ahead. back: one at a time, each
     driven home with a knock, Me last and hardest */
@@ -41,7 +43,10 @@ function pulled(k: number, F: Frame) {
   let v: number;
   if (F.reduce) v = ending.apart ? 1 : 0;
   else if (ending.apart) { const u = clamp((el - (5 - k) * 0.04) / 0.5, 0, 1); v = lerp(from[k], 1, 1 - Math.pow(1 - u, 3)); }
-  else { const u = clamp((el - k * 0.085) / 0.15, 0, 1); v = from[k] * (1 - u * u * u); }
+  else {
+    const u = clamp((el - k * 0.085) / 0.15, 0, 1); v = from[k] * (1 - u * u * u);
+    if (u > 0 && !homed[k] && from[k] > 0.05 && !form.open && !F.reduce) { homed[k] = 1; slide("home"); } // each one drags as it starts back in
+  }
   if (!ending.apart && pull[k] > 0.001 && v <= 0.001 && !form.open && (!F.reduce || k === 5)) {
     clack(k === 5 ? 0.85 : 0.5); ending.shakeT = F.time; ending.shakeAmp = k === 5 ? 0.5 : 0.16;
   }
@@ -66,6 +71,9 @@ export function placeInLock(k: number, pc: PieceRig, P: Pose, F: Frame) {
     P.glow = 0.6 + 0.15 * ram;
     if (F.ft > 0) formPose(k, pc, P, F);
   }
+  /* slide sets: the piece drags as it is driven in (not if the page jumped straight past) */
+  const ramming = A > T - 0.06 + 0.002 && A < T;
+  if (ramming && !rammed[k]) { rammed[k] = 1; if (!F.first && !form.open) slide("ram"); } else if (A < T - 0.07) rammed[k] = 0;
   /* the moment it seats: knock, shake, and for the last one the big close */
   if (A >= T && !hit[k]) {
     hit[k] = 1;

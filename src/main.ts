@@ -6,7 +6,8 @@ import { initNav } from "./ui/nav";
 import { initSteps } from "./ui/steps";
 
 const loader = createLoader((withSound) => {
-  if (withSound) { try { initSound(); setSound(true); } catch { /* the page works without sound */ } }
+  /* without sound also turns off any set the visitor tried in the loader */
+  try { if (withSound) initSound(); setSound(withSound); } catch { /* the page works without sound */ }
 });
 initWork();
 initNav();

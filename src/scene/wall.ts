@@ -2,11 +2,11 @@
 import * as THREE from "three";
 import { clamp, ss, lerp } from "../util";
 import { CH } from "../timeline";
-import { tock } from "../audio";
+import { tock, slide } from "../audio";
 import { CAM_Z } from "./rig";
 import type { Frame, Pose } from "./frame";
 
-const wallHit = [0, 0, 0, 0, 0, 0];
+const wallHit = [0, 0, 0, 0, 0, 0], wallSlid = [0, 0, 0, 0, 0, 0];
 const vK = new THREE.Vector3(), flatQ = new THREE.Quaternion(); // flat: square to the camera
 
 /** two columns of three pieces, big enough to cover the screen. its bottom edge sits exactly on the top edge of the
@@ -26,6 +26,7 @@ export function placeInWall(i: number, P: Pose, F: Frame) {
   P.pos.lerp(vK, d);
   P.pos.x += arc * Math.cos(dir + 1.6) * 5; P.pos.y += arc * 3; P.pos.z += arc * 4;
   P.quat.slerp(flatQ, ss(0.35, 1, d0)); P.sc = lerp(P.sc, F.sd * 1.004, d); P.glow = lerp(P.glow, 0.9, d);
-  /* each slab knocks into place as it lands */
+  /* each slab drags the last stretch into place (a slide set only), and knocks as it lands */
+  if (d0 >= 0.55 && !wallSlid[slot]) { wallSlid[slot] = 1; if (!F.first && d0 < 1) slide("in"); } else if (d0 < 0.45) wallSlid[slot] = 0;
   if (d0 >= 1 && !wallHit[slot]) { wallHit[slot] = 1; if (!F.first) tock(); } else if (d0 < 0.9) wallHit[slot] = 0;
 }

@@ -48,8 +48,8 @@ export const PIECES: Piece[] = [
   },
   {
     id: "combination", name: "The combination", short: "Combination", cn: "组合", big: "THE COMBINATION", color: "#ff6a55",
-    role: "Conclusion", title: ["THE", "COMBINATION"],
-    desc: "Specialising is betting your career on one field surviving AI. I hold three. Wherever the work goes, I’m already there.",
+    role: "Jack of all trades", title: ["THE", "COMBINATION"],
+    desc: "Master of all, weakness to none. Specialising bets your career on one field surviving AI. I hold 3+.",
   },
   {
     id: "directions", name: "Directions", short: "Directions", cn: "方向", big: "DIRECTIONS", color: "#5fd6ab",
@@ -144,9 +144,10 @@ export const SITE = {
   handle: "bhccob",
   name: "Bob Chung",
   url: "https://bhccob.com",
-  /* the browser tab and what a shared link shows. Wording by Claude, Bob may edit. */
-  title: "Bob Chung · bhccob",
-  description: "Bob Chung (bhccob): software engineering, product design and mechatronics, and why the combination works, as the six pieces of a Lu Ban lock.",
+  /* the browser tab, the search result and what a shared link shows. In English, like the site. Keep the title under
+     about 60 characters and the description under about 160, or search engines cut them off. Wording by Claude, Bob may edit. */
+  title: "Bob Chung · Student technologist",
+  description: "Code, design and machines. Bob Chung, a student in Rotterdam from Aruba, is mastering 3+ fields, because specialists in one are the first AI replaces.",
 };
 
 /* the loader: a boot log with the name being cracked above it. `eyebrow` rewrites itself into HERO.eyebrow on the way in */
@@ -155,6 +156,42 @@ export const LOADER = {
   denied: "Access denied", granted: "Access granted",
   withSound: "Enter with sound", noSound: "Enter without sound", note: "best with headphones",
 };
+
+/* the sound sets (src/audio.ts makes them). visitors hear DEFAULT_SOUND; the others can be tried and tuned in the sound
+   lab (sounds.html, dev server only), which can also set another for this browser. two kinds: "knock" sets only sound
+   when something lands; "slide" sets also drag: the about-me piece turning, the slabs gliding into the wall, the pieces
+   rammed into the lock, and scrolling itself. `short` is the name in the loader, under its kind; `line` says what it
+   sounds like, shown under the choice */
+export type SoundId = "stone" | "wood" | "iron" | "felt" | "deep" | "deepslide" | "drawer" | "grind" | "rail";
+export type SoundKind = "knock" | "slide";
+export const SOUND_KINDS: { id: SoundKind; name: string }[] = [{ id: "knock", name: "Knock" }, { id: "slide", name: "Slide" }];
+export const SOUNDS: { id: SoundId; kind: SoundKind; name: string; short: string; line: string }[] = [
+  { id: "stone", kind: "knock", name: "Stone", short: "Stone", line: "Dry knocks, stone on stone." },
+  { id: "wood", kind: "knock", name: "Wood", short: "Wood", line: "Hollow hardwood, like a real Lu Ban lock." },
+  { id: "iron", kind: "knock", name: "Iron", short: "Iron", line: "A heavy mechanism. Latches and clunks." },
+  { id: "felt", kind: "knock", name: "Felt", short: "Felt", line: "Soft and padded. The quietest." },
+  { id: "deep", kind: "knock", name: "Deep", short: "Deep", line: "Big, low hits in a dark hall, and a rush of air between them." },
+  { id: "deepslide", kind: "slide", name: "Deep slide", short: "Deep", line: "Deep, and every move a heavy slab dragged over stone." },
+  { id: "drawer", kind: "slide", name: "Drawer", short: "Drawer", line: "Hardwood sliding in a tight groove, then a knock." },
+  { id: "grind", kind: "slide", name: "Grind", short: "Grind", line: "Rough stone grinding over stone, then a thud." },
+  { id: "rail", kind: "slide", name: "Rail", short: "Rail", line: "A heavy door rolling on a steel rail, then a clunk." },
+];
+/** what a first visit hears: Deep, travelling with Rush (its own travel, in audio.ts) */
+export const DEFAULT_SOUND: SoundId = "deep";
+
+/* what you hear while the camera travels between the pieces, chosen apart from the hits (the sound lab, sounds.html,
+   sets it for this browser). with none chosen, each set uses its own: rush for Deep, drag for the slide sets, wind for
+   the other knock sets */
+export type TravelId = "wind" | "drag" | "rush" | "thrum" | "track" | "passby" | "none";
+export const TRAVELS: { id: TravelId; name: string; line: string }[] = [
+  { id: "wind", name: "Wind", line: "Low air that rises with your speed. The original." },
+  { id: "drag", name: "Drag", line: "The pieces' own material dragged along, catching faster as you go." },
+  { id: "rush", name: "Rush", line: "Air pressure: a deep rush that opens up the faster you go." },
+  { id: "thrum", name: "Thrum", line: "A heavy rotor pulse that quickens with speed. No note in it." },
+  { id: "track", name: "Track", line: "Wheels over rail joints: a soft double knock, closer together as you speed up." },
+  { id: "passby", name: "Pass-by", line: "Each block you fly through whooshes past you, side to side, over a quiet rush." },
+  { id: "none", name: "Silence", line: "Nothing between the pieces. Only the hits." },
+];
 
 export const HERO = {
   cn: "鲁班锁",

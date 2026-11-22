@@ -4,22 +4,36 @@
    ways in. Nothing else opens the page.
 
    Entering is one continuous move into the first view, with no cut:
-   1. the log dissolves into noise, bottom row first, and the line above the name rewrites itself into the first view's
-      line ("Six pieces. Not yet a lock.");
-   2. that line and the name glide to exactly where the first view has them, the name growing to its size, while the
-      dark behind them fades and the six pieces come in out of the fog (stage.ts, from `handoff.at`);
+   1. the log folds up into the name, bottom row first, each row breaking into noise as it goes, and the line above the
+      name starts rewriting itself into the first view's line ("Six pieces. Not yet a lock.");
+   2. the line and the name glide to exactly where the first view has them, the name growing to its size. the dark
+      opens around the name as it travels, like an iris, and the six blurred colours behind the log fly out to where
+      their six pieces will hang, tightening as they go, while the pieces come in out of the fog there and the camera
+      settles (stage.ts, from `handoff.at`). with sound, a flight in from deep space, wide air swelling and settling (no hits);
    3. the first view's own line and name take over in the same spot, and its sentence and the menu fade in. */
-import { $ } from "./util";
+import { $, clamp } from "./util";
 import { HERO, LOADER } from "./content";
 import { handoff } from "./handoff";
+import { entrance, landing } from "./audio";
 
 const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghkmnpqrstuvwxyz0123456789#%&$@*+=?";
 const noise = () => GLYPHS.charAt(Math.floor(Math.random() * GLYPHS.length));
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+/** a CSS cubic-bezier as a function, so a drawn thing can follow an element on that same curve */
+function bezier(x1: number, y1: number, x2: number, y2: number) {
+  const at = (a: number, b: number, t: number) => 3 * a * t * (1 - t) * (1 - t) + 3 * b * t * t * (1 - t) + t * t * t;
+  return (x: number) => {
+    let lo = 0, hi = 1, t = x;
+    for (let k = 0; k < 24; k++) { t = (lo + hi) / 2; if (at(x1, x2, t) < x) lo = t; else hi = t; }
+    return at(y1, y2, t);
+  };
+}
+/** the curve the line and the name glide on */
+const GLIDE_EASE = "cubic-bezier(.65,0,.2,1)", glideAt = bezier(0.65, 0, 0.2, 1);
 
 export function createLoader(onEnter: (withSound: boolean) => void) {
   const root = document.documentElement, el = $("loader"), nameEl = $("lname"), head = $("lhead"), state = $("lstate"), count = $("lcount");
-  const headText = head.querySelector("span")!;
+  const headText = head.querySelector("span")!, bg = el.querySelector<HTMLElement>(".lbg")!, blobWrap = el.querySelector<HTMLElement>(".lblobs")!;
   const rows = Array.from(el.querySelectorAll<HTMLLIElement>(".llog li")), blobs = Array.from(el.querySelectorAll<HTMLElement>(".lblobs i"));
   const TOTAL = rows.length, t0 = performance.now(), calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let done = 0, ready = false, gone = false;
@@ -40,7 +54,7 @@ export function createLoader(onEnter: (withSound: boolean) => void) {
   shuffled.forEach((i, rank) => { lockAt[i] = Math.max(1, Math.round((rank + 1) * (TOTAL - 1) / letters.length)); });
   NAME.split("").forEach((ch, i) => {
     const c = document.createElement("i");
-    if (ch === " ") { c.className = "sp"; c.textContent = " "; } else c.textContent = calm ? ch : noise();
+    if (ch === " ") { c.className = "sp"; c.textContent = " "; } else c.textContent = calm ? ch : noise();
     nameEl.appendChild(c); cells.push(c);
   });
   /* the display font draws its letters differently at different sizes (its optical size axis, which the browser sets
@@ -92,6 +106,14 @@ export function createLoader(onEnter: (withSound: boolean) => void) {
       requestAnimationFrame(step);
     }, delay);
   }
+  /** a row breaks into noise and is pulled up into the name, gathering speed, folding flat as it goes. only its picture
+      moves: the row keeps its place in the column, so nothing above it shifts while the name glides */
+  function fold(row: HTMLElement, toY: number, delay: number) {
+    const r = row.getBoundingClientRect(), dy = toY - (r.top + r.height / 2);
+    dissolve(row, delay);
+    row.animate([{ transform: "none", opacity: 1 }, { transform: `translateY(${(dy * 0.9).toFixed(1)}px) scaleY(.15)`, opacity: 0 }],
+      { duration: 360, delay, easing: "cubic-bezier(.55,0,.85,.3)", fill: "forwards" });
+  }
   /** the text rewrites itself into another, left to right, through noise */
   function rewrite(span: HTMLElement, to: string, ms: number) {
     const from = span.textContent || "", start = performance.now();
@@ -106,19 +128,57 @@ export function createLoader(onEnter: (withSound: boolean) => void) {
       requestAnimationFrame(step);
     });
   }
-  /** moves `from` onto `to`: same left edge and top of the text, scaled to the same width */
-  function glide(from: HTMLElement, to: HTMLElement, ms: number) {
-    const text = (n: Element) => { const r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect(); };
-    const a = text(from), b = text(to), box = from.getBoundingClientRect(), k = a.width > 0 ? b.width / a.width : 1;
+  /** the box around an element's text, not around the element */
+  const textBox = (n: Element) => { const r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect(); };
+  /** moves `from` onto `to`: same left edge and top of the text and, with `grow`, scaled to the same width. the line
+      only moves: it is the same size in both places, and it is still rewriting itself while it travels */
+  function glide(from: HTMLElement, to: HTMLElement, ms: number, grow: boolean) {
+    const a = textBox(from), b = textBox(to), box = from.getBoundingClientRect(), k = grow && a.width > 0 ? b.width / a.width : 1;
     from.style.transformOrigin = (a.left - box.left) + "px " + (a.top - box.top) + "px";
-    from.style.transition = "transform " + ms + "ms cubic-bezier(.65,0,.2,1)";
+    from.style.transition = "transform " + ms + "ms " + GLIDE_EASE;
     from.style.transform = "translate(" + (b.left - a.left).toFixed(1) + "px," + (b.top - a.top).toFixed(1) + "px) scale(" + k.toFixed(4) + ")";
+  }
+  /** the dark opens from the name outwards, with a soft edge, and follows the name as it glides. drawn with a mask on the
+      dark layer only, so the blurred colours stay over it while they fly out */
+  function iris(from: DOMRect, to: DOMRect, ms: number) {
+    const W = window.innerWidth, H = window.innerHeight, feather = Math.max(160, 0.32 * Math.min(W, H));
+    const ax = from.left + from.width / 2, ay = from.top + from.height / 2, bx = to.left + to.width / 2, by = to.top + to.height / 2;
+    const far = Math.hypot(Math.max(bx, W - bx), Math.max(by, H - by)) + 40, start = performance.now();
+    if (!(window.CSS?.supports?.("mask-image", "radial-gradient(#000,transparent)") || window.CSS?.supports?.("-webkit-mask-image", "radial-gradient(#000,transparent)"))) {
+      bg.style.transition = "opacity " + ms + "ms ease"; bg.style.opacity = "0"; return; // no masks here: the dark simply fades
+    }
+    const step = () => {
+      const u = Math.min(1, (performance.now() - start) / ms), e = glideAt(u);
+      const x = ax + (bx - ax) * e, y = ay + (by - ay) * e, r = -feather + (far + feather) * u * u * (3 - 2 * u); // eases open, and eases out past the corners
+      const m = `radial-gradient(circle at ${x.toFixed(1)}px ${y.toFixed(1)}px, transparent ${r.toFixed(1)}px, #000 ${(r + feather).toFixed(1)}px)`;
+      bg.style.maskImage = m; bg.style.webkitMaskImage = m;
+      if (u < 1) requestAnimationFrame(step); else bg.style.opacity = "0";
+    };
+    requestAnimationFrame(step);
+  }
+  /** the six blurred colours fly to the places their pieces will hang in the first view, shrinking to the size of the
+      piece and tightening as they go, and fade there as the piece itself arrives out of the fog. if the scene has not
+      said where that is, they simply fly outwards */
+  function fling(ms: number) {
+    const W = window.innerWidth, H = window.innerHeight;
+    blobs.forEach((b, i) => {
+      const r = b.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, s = handoff.spots[i];
+      const tx = s ? s.x : W / 2 + (x - W / 2) * 1.8, ty = s ? s.y : H / 2 + (y - H / 2) * 1.8;
+      const size = Math.max(b.offsetWidth, b.offsetHeight, 1), k = s ? clamp(2.4 * s.r / size, 0.3, 1.6) : 0.6;
+      const m = getComputedStyle(b).transform, M = m && m !== "none" ? m : ""; // where its drift had taken it: it leaves from there
+      b.style.animation = "none"; b.style.transform = M;
+      b.animate([{ transform: `translate(0px,0px) ${M} scale(1)` }, { transform: `translate(${(tx - x).toFixed(1)}px,${(ty - y).toFixed(1)}px) ${M} scale(${k.toFixed(3)})` }],
+        { duration: ms, delay: i * 30, easing: "cubic-bezier(.45,0,.15,1)", fill: "forwards" });
+    });
+    blobWrap.animate([{ filter: "blur(56px)", opacity: 0.42 }, { filter: "blur(34px)", opacity: 0.6, offset: 0.45 }, { filter: "blur(18px)", opacity: 0 }],
+      { duration: ms + 200, easing: "ease-in", fill: "forwards" });
   }
 
   async function enter(withSound: boolean) {
     if (gone) return;
     gone = true;
     onEnter(withSound); // sound starts at once, whatever happens next
+    entrance(); // the chosen set's way in: one hit now, and air while the pieces come in. silent without sound
     el.classList.add("leaving");
     toTop(); // the glide lands on the first view, so that is where the page must be
     const heroName = document.getElementById("h-hero"), heroLine = document.querySelector<HTMLElement>(".panel.hero .eyebrow");
@@ -126,17 +186,25 @@ export function createLoader(onEnter: (withSound: boolean) => void) {
       handoff.at = performance.now(); root.classList.remove("prehero"); el.classList.add("fade", "plain");
       await wait(700); finish(); return;
     }
-    /* 1. the log dissolves, the line rewrites itself */
-    rows.forEach((r, i) => dissolve(r, (rows.length - 1 - i) * 22));
-    await rewrite(headText, HERO.eyebrow, 420);
-    /* 2. the glide, while the dark lifts and the pieces come in */
+    matchHeading(); // again, in case the window changed size since the page opened
+    const nameBox = textBox(nameEl);
+    /* 1. the log folds up into the name, the line starts rewriting itself */
+    rows.forEach((r, i) => fold(r, nameBox.bottom, (rows.length - 1 - i) * 20));
+    void rewrite(headText, HERO.eyebrow, 460);
+    await wait(120);
+    /* 2. all at once: the glide, the iris, the colours flying out to the pieces, and in the scene the pieces and the camera */
+    const GLIDE = 1100;
     handoff.at = performance.now();
     el.classList.add("fade");
-    matchHeading(); // again, in case the window changed size since the page opened
-    glide(head, heroLine, 1050); glide(nameEl, heroName, 1050);
-    await wait(1080);
-    /* 3. the first view's own words take over where these landed */
-    root.classList.remove("prehero");
+    iris(nameBox, textBox(heroName), 1250);
+    fling(1300);
+    glide(head, heroLine, GLIDE, false); glide(nameEl, heroName, GLIDE, true);
+    await wait(GLIDE + 30);
+    /* 3. the first view's own words take over where these landed, and the page can scroll */
+    root.classList.remove("prehero", "loading");
+    head.style.visibility = nameEl.style.visibility = "hidden";
+    landing();
+    await wait(560); // the last of the colours and the dark, then the loader is gone
     finish();
   }
   function finish() { root.classList.remove("loading"); el.style.display = "none"; }

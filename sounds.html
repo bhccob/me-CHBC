@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- the sound lab: every sound set, every moment, side by side. served by the dev server only (npm run dev, then
+     /sounds.html). the build takes index.html alone, so this page is never on the live site. see src/lab.ts -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sound lab · The Lock</title>
+<style>
+@font-face{font-family:"Bricolage Grotesque";font-weight:200 800;src:url(/fonts/bricolage-grotesque.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:400;src:url(/fonts/ibm-plex-mono-400.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:500;src:url(/fonts/ibm-plex-mono-500.woff2) format("woff2")}
+:root{--ink:#0a0912;--bone:#efe8d6;--dim:#8d88a3;--gold:#e0b85a;--jade:#5fd6ab;--line:rgba(239,232,214,.14);color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--bone);font:400 13px/1.5 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;padding:clamp(18px,4vw,56px)}
+h1{font:800 clamp(34px,5vw,56px)/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em;margin-bottom:10px}
+.intro{color:var(--dim);max-width:72ch;margin-bottom:26px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;margin-bottom:26px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.bar label{display:flex;align-items:center;gap:10px}
+.bar input[type=range]{width:180px;accent-color:var(--gold)}
+.state b{font-weight:500;color:#ff6a55}.state.on b{color:var(--jade)}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;min-width:1100px}
+th,td{padding:8px 6px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--line)}
+thead th{font-weight:500;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);vertical-align:bottom}
+thead th small{display:block;text-transform:none;letter-spacing:.02em;font-size:10px;color:#5a5574;margin-top:3px;max-width:13ch}
+tr.kind td{padding-top:22px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);border-bottom:0}
+td.name{min-width:190px}
+td.name b{display:block;font:800 20px/1.1 "Bricolage Grotesque",sans-serif;letter-spacing:-.01em}
+td.name span{color:var(--dim);font-size:11px}
+tr.cur td.name b::after{content:" ◂ on the site";font:500 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--jade);vertical-align:middle}
+button{font:500 11px/1 "IBM Plex Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--bone);background:none;border:1px solid var(--line);border-radius:2px;padding:9px 10px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--bone)}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button.tour{border-color:var(--gold);color:var(--gold)}
+button.use{color:var(--dim)}
+button.playing{background:var(--bone);color:var(--ink);border-color:var(--bone)}
+.now{position:sticky;bottom:0;margin-top:22px;padding:12px 0;min-height:1.5em;background:var(--ink);color:var(--gold);letter-spacing:.06em}
+.part{margin-bottom:46px}
+h2{font:800 30px/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.02em;margin-bottom:8px}
+.hits{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:14px}
+.hits #hits{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.hk0,.hk{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.hk0{color:var(--gold);margin-right:6px}.hk{margin:0 4px 0 10px}
+.hits button[aria-pressed=true]{background:var(--bone);color:var(--ink);border-color:var(--bone)}
+table.trips{min-width:0}
+table.trips td.name{min-width:0;width:min(560px,60vw)}
+tr.cur td.name b::after{content:" ◂ on the site";font:500 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--jade);vertical-align:middle}
+#ownTravel{margin-top:12px}
+</style>
+</head>
+<body>
+<h1>Sound lab</h1>
+<p class="intro">Every sound set, every moment on the site, side by side. <b>Tour</b> plays a set's whole visit in about fourteen seconds: the way in, a piece arriving, the about-me piece turning, a step and a jump between pieces, the wall, the lock. <b>Use</b> makes that set the one the site opens with on this browser. Headphones help: most of this is low. This page only exists on the dev server.</p>
+<div class="bar">
+  <span class="state" id="state">Sound <b>off</b> · press anything</span>
+  <label for="speed">Travel speed <input type="range" id="speed" min="0" max="0.9" step="0.01" value="0"></label>
+  <button type="button" id="stop">Stop</button>
+</div>
+<section class="part">
+  <h2>Travel</h2>
+  <p class="intro">What you hear while the camera moves between the pieces, tried over any set's hits. <b>Step</b> is one scroll to the next piece: one block flown through, then the arrival. <b>Jump</b> is a menu jump across the page: four blocks flown through. Hold a speed with the slider above to hear a travel sound on its own.</p>
+  <div class="hits"><span class="hk0">Hits</span><span id="hits"></span></div>
+  <div class="wrap"><table id="trips" class="trips"></table></div>
+  <button type="button" class="use" id="ownTravel">Use each set's own travel</button>
+</section>
+<section class="part">
+  <h2>Sets</h2>
+  <div class="wrap"><table id="lab"></table></div>
+</section>
+<p class="now" id="now" aria-live="polite"></p>
+<script type="module" src="/src/lab.ts"></script>
+</body>
+</html>
