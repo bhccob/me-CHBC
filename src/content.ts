@@ -147,7 +147,7 @@ export const SITE = {
   /* the browser tab, the search result and what a shared link shows. In English, like the site. Keep the title under
      about 60 characters and the description under about 160, or search engines cut them off. Wording by Claude, Bob may edit. */
   title: "Bob Chung · Creative technologist",
-  description: "Bob Chung, from Aruba with Chinese roots, studying in Rotterdam. Code, design and machines, interlocked like a Lu Ban lock: harder for AI to replace.",
+  description: "Bob Chung, from Aruba with Chinese roots, studying in Rotterdam. Versatility, adaptability and depth, interlocked like a Lu Ban lock: harder for AI to replace.",
 };
 
 /* the loader: a boot log with the name being cracked above it. `eyebrow` rewrites itself into HERO.eyebrow on the way in */
