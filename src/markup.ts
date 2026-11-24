@@ -16,12 +16,13 @@ export function chips(w: Project) {
 const sideText = (s: (typeof ME_SIDES)[number]) => s.stats ? s.stats.map((x) => x[0] + " (" + x[1].toLowerCase() + ")").join(", ") : [s.big, s.small].filter(Boolean).join(". ");
 
 /* each chapter: a huge title in two lines with the piece floating on the seam between them, and one short line under
-   it. the title sits behind the 3D (the layer is under the canvas), so the piece crosses in front of the letters */
+   it. the title sits behind the 3D (the layer is under the canvas), so the piece crosses in front of the letters.
+   the About section has data-nosnippet: Google was adding its facts to the search text. it can still index them */
 function panels() {
   let h = "";
   for (let c = 0; c < 6; c++) { // in the order you meet them, so the plain page reads in the same order as the 3D one
     const i = ORDER[c], p = PIECES[i], num = `${two(CH[i])} / 06`, me = p.id === "me";
-    h += `<section class="panel chap${me ? " me" : ""}" data-k="p${i}" style="--c:${p.color}" aria-labelledby="h-${p.id}">`
+    h += `<section class="panel chap${me ? " me" : ""}" data-k="p${i}" style="--c:${p.color}" aria-labelledby="h-${p.id}"${me ? " data-nosnippet" : ""}>`
       + `<h2 class="sr" id="h-${p.id}">${esc(p.name)}</h2>`
       + `<div class="t-up"><div class="eyebrow">${cn(p.cn)}<span>${num}</span><span class="st">${esc(p.role)}</span></div>`
       + `<div class="ttl" aria-hidden="true">${esc(p.title[0])}</div></div>`
