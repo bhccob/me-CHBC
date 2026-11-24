@@ -73,7 +73,7 @@ export interface MeSide { label: string; big?: string; small?: string; stats?: [
 export const ME_SIDES: MeSide[] = [
   { label: "Name", big: "bhccob", small: "Chun Ho Bob Chung · hcc is Chung Chun Ho, backwards" },
   { label: "Basics", stats: [["2006", "Born"], ["INTP-T", "Personality"]] },
-  { label: "Sport", big: "National champion", small: "Powerlifting · Table tennis" },
+  { label: "Sport", big: "Ex-national champion", small: "Powerlifting · Table tennis" },
   { label: "Languages", big: "4+", small: "Languages spoken" },
 ];
 
