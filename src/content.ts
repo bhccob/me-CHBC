@@ -33,13 +33,13 @@ export const PIECES: Piece[] = [
   {
     id: "software", name: "Software engineering", short: "Software", cn: "软件", big: "SOFTWARE ENGINEERING", color: "#e0b85a",
     role: "Graduated", title: ["SOFTWARE", "ENGINEERING"],
-    desc: "Write it once, run it for millions: nothing else scales like software. Every industry already runs on it, and AI is software too.",
+    desc: "Write it once, run it for millions: nothing else scales like software. Every industry runs on it, AI included, so protecting it matters as much as building it.",
     tools: "Full-stack · multiple languages",
   },
   {
     id: "design", name: "Product design", short: "Design", cn: "设计", big: "PRODUCT DESIGN", color: "#a488ff",
     role: "On every project", title: ["PRODUCT", "DESIGN"],
-    desc: "From concept and name to logo and interface, I design every project myself, so it looks as considered as it works.",
+    desc: "From concept and name to logo and interface, I design, troubleshoot and secure every project myself, so it looks as considered as it works.",
   },
   {
     id: "mechatronics", name: "Mechatronics", short: "Mechatronics", cn: "机电", big: "MECHATRONICS", color: "#6cc4ff",
@@ -147,7 +147,7 @@ export const SITE = {
   /* the browser tab, the search result and what a shared link shows. In English, like the site. Keep the title under
      about 60 characters and the description under about 160, or search engines cut them off. Wording by Claude, Bob may edit. */
   title: "Bob Chung · Creative technologist",
-  description: "Bob Chung, from Aruba with Chinese roots, studying in Rotterdam. Versatility, adaptability and depth, interlocked like a Lu Ban lock: harder for AI to replace.",
+  description: "Bob Chung, from Aruba with Chinese roots, studying in Rotterdam. I design, troubleshoot and secure every project. Specialising bets on one field surviving AI.",
 };
 
 /* the loader: a boot log with the name being cracked above it. `eyebrow` rewrites itself into HERO.eyebrow on the way in */
